@@ -67,16 +67,28 @@ export default function AdminBooks() {
     }
   };
 
-  // 3. Supprimer un livre
+// 3. Supprimer un livre (CORRIGÉ)
   const handleDelete = async (id) => {
     if (window.confirm("⚠️ Attention : Voulez-vous vraiment supprimer ce livre définitivement ?")) {
       try {
-        await axios.delete(`https://daara-app.onrender.com/api/books/${id}`);
+        // 1. Récupération du token
+        const token = localStorage.getItem('token');
+        
+        // 2. Envoi de la requête AVEC le header Authorization
+        await axios.delete(`https://daara-app.onrender.com/api/books/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
         setBooks(books.filter(book => book._id !== id));
         alert("Livre supprimé avec succès !");
       } catch (error) {
         console.error(error);
-        alert("Erreur lors de la suppression. Vérifiez que le serveur tourne.");
+        // Gestion plus précise de l'erreur 401
+        if (error.response && error.response.status === 401) {
+            alert("Votre session a expiré. Veuillez vous reconnecter.");
+        } else {
+            alert("Erreur lors de la suppression. Vérifiez que le serveur tourne.");
+        }
       }
     }
   };
