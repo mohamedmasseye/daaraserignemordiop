@@ -41,7 +41,90 @@ const SmartTimeline = ({ status }) => {
 };
 
 const DeliveredBanner = () => (<div className="bg-green-50 p-4 rounded text-center text-green-700 font-bold">Commande Livrée !</div>);
-const ClassyTicket = ({ ticket, onClose }) => (<div className="fixed inset-0 z-50 bg-white p-4"><h1>Billet {ticket._id}</h1><button onClick={onClose}>Fermer</button></div>);
+// Remplacez la version courte par celle-ci :
+const ClassyTicket = ({ ticket, onClose, userName }) => {
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <motion.div 
+        initial={{ scale: 0.9, opacity: 0, y: 50 }}
+        animate={{ scale: 1, opacity: 1, y: 0 }}
+        exit={{ scale: 0.9, opacity: 0, y: 50 }}
+        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative"
+      >
+        {/* En-tête du Billet */}
+        <div className="bg-primary-900 p-6 text-center relative overflow-hidden">
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
+            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
+                <Ticket className="text-gold-500" size={32} />
+            </div>
+            <h2 className="text-gold-500 font-serif font-bold text-xl tracking-wide uppercase">Billet Électronique</h2>
+            <p className="text-white/60 text-xs mt-1">Daara Serigne Mor Diop</p>
+        </div>
+
+        {/* Corps du Billet */}
+        <div className="p-6 relative">
+            {/* Cercles de découpe (Design billet) */}
+            <div className="absolute -left-3 top-0 w-6 h-6 bg-black/80 rounded-full"></div>
+            <div className="absolute -right-3 top-0 w-6 h-6 bg-black/80 rounded-full"></div>
+            
+            <div className="text-center space-y-4 border-b border-dashed border-gray-200 pb-6 mb-6">
+                <div>
+                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Événement</span>
+                    <h3 className="text-2xl font-bold text-gray-900 leading-tight">{ticket.event?.title || "Événement Spécial"}</h3>
+                </div>
+                
+                <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                        <span className="text-xs font-bold text-gray-400 block mb-1">Date</span>
+                        <div className="flex items-center justify-center gap-1 font-bold text-gray-700">
+                            <Calendar size={14} className="text-primary-600"/> 
+                            {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}
+                        </div>
+                    </div>
+                    <div className="bg-gray-50 p-3 rounded-xl">
+                        <span className="text-xs font-bold text-gray-400 block mb-1">Heure</span>
+                        <div className="flex items-center justify-center gap-1 font-bold text-gray-700">
+                            <Clock size={14} className="text-primary-600"/> 
+                            {ticket.event?.date ? new Date(ticket.event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--"}
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <span className="text-xs font-bold text-gray-400 uppercase">Détenteur</span>
+                    <p className="font-bold text-primary-900 text-lg">{userName || "Client"}</p>
+                </div>
+            </div>
+
+            {/* QR Code (Simulation) */}
+            <div className="text-center">
+                <div className="bg-white border-2 border-gray-100 p-2 rounded-xl inline-block shadow-sm">
+                   {/* Ici on utilise une icône, mais vous pourrez mettre un vrai QR Code plus tard */}
+                   <QrCode size={100} className="text-gray-800" />
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2 font-mono">{ticket.qrCode || ticket._id}</p>
+            </div>
+        </div>
+
+        {/* Pied de Billet */}
+        <div className="bg-gray-50 p-4 border-t border-gray-100 flex gap-3">
+            <button 
+                onClick={onClose}
+                className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition"
+            >
+                Fermer
+            </button>
+            <button 
+                className="flex-1 py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2"
+                onClick={() => window.print()} 
+            >
+                <Download size={18}/> Télécharger
+            </button>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 
 export default function Profile() {
