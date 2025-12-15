@@ -22,6 +22,7 @@ export default function Login() {
         identifier: email, 
         password 
       });
+      console.log("api login", `${API_URL}/api/auth/login`)
       
       // ✅ CORRECTION 2 : On stocke sous le nom 'token' (pas 'daara_token')
       localStorage.setItem('token', res.data.token);
