@@ -10,6 +10,25 @@ export default function Books() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tout');
 
+  // --- FONCTION DE CORRECTION D'URL (Le secret !) ---
+  // Transforme les vieux liens 'localhost' en liens 'onrender' valides
+  const getSecureUrl = (url) => {
+    if (!url) return null;
+    
+    // Si l'URL contient localhost, on la remplace par l'URL de production
+    if (url.includes('localhost:5000')) {
+      return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
+    }
+    
+    // Si l'URL est en HTTP sur Render, on force HTTPS
+    if (url.includes('daara-app.onrender.com') && url.startsWith('http://')) {
+        return url.replace('http://', 'https://');
+    }
+
+    // Sinon on retourne l'URL telle quelle (si c'est déjà bon ou externe)
+    return url;
+  };
+
   // Charger les livres
   useEffect(() => {
     const fetchBooks = async () => {
@@ -48,7 +67,8 @@ export default function Books() {
       {/* --- LE LECTEUR (MODAL) --- */}
       {selectedBook && (
         <BookReader 
-          pdfUrl={selectedBook.pdfUrl} 
+          // ✅ ICI : On utilise la fonction pour corriger l'URL du PDF avant de l'envoyer
+          pdfUrl={getSecureUrl(selectedBook.pdfUrl)} 
           title={selectedBook.title}
           onClose={() => setSelectedBook(null)} 
         />
@@ -107,30 +127,28 @@ export default function Books() {
             filteredBooks.map((book) => (
               <div key={book._id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 flex flex-col h-full group overflow-hidden">
                 
-                {/* ZONE DE COUVERTURE (MODIFIÉE) */}
+                {/* ZONE DE COUVERTURE */}
                 <div className="h-48 bg-primary-50 relative overflow-hidden flex items-center justify-center">
                    
-                   {/* Si une image de couverture existe, on l'affiche */}
+                   {/* ✅ ICI : On corrige aussi l'URL de l'image de couverture */}
                    {book.coverImageUrl ? (
-      <img 
-        src={book.coverImageUrl} 
-        alt={book.title} 
-        className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
-      />
-   ) : (
-      /* Sinon, affichage par défaut (Icone) */
-      <>
-        <div className="absolute inset-0 bg-primary-900/5 group-hover:bg-primary-900/10 transition duration-500"></div>
-        <Book className="h-20 w-20 text-primary-200 group-hover:text-primary-300 group-hover:scale-110 transition duration-500" />
-      </>
-   )}
+                      <img 
+                        src={getSecureUrl(book.coverImageUrl)} 
+                        alt={book.title} 
+                        className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
+                        onError={(e) => { e.target.style.display = 'none'; }} // Cache l'image si elle est cassée
+                      />
+                   ) : (
+                      <>
+                        <div className="absolute inset-0 bg-primary-900/5 group-hover:bg-primary-900/10 transition duration-500"></div>
+                        <Book className="h-20 w-20 text-primary-200 group-hover:text-primary-300 group-hover:scale-110 transition duration-500" />
+                      </>
+                   )}
                    
-                   {/* Badge Catégorie */}
                    <span className="absolute top-3 right-3 text-[10px] font-bold text-primary-900 bg-gold-400 px-2 py-1 rounded shadow-sm z-10">
                      {book.category || 'Général'}
                    </span>
 
-                   {/* Overlay Action */}
                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center gap-3 z-20">
                      <button 
                        onClick={() => setSelectedBook(book)}
@@ -163,8 +181,9 @@ export default function Books() {
                       <BookOpen className="h-4 w-4" /> Lire
                     </button>
                     
+                    {/* ✅ ICI : On corrige aussi l'URL de téléchargement */}
                     <a 
-                      href={book.pdfUrl} 
+                      href={getSecureUrl(book.pdfUrl)} 
                       download 
                       target="_blank"
                       rel="noreferrer"
