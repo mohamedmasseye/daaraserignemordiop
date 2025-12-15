@@ -41,86 +41,142 @@ const SmartTimeline = ({ status }) => {
 };
 
 const DeliveredBanner = () => (<div className="bg-green-50 p-4 rounded text-center text-green-700 font-bold">Commande Livrée !</div>);
-// Remplacez la version courte par celle-ci :
+
+// ===== NOUVEAU COMPOSANT TICKET HORIZONTAL (Optimisé Impression) =====
 const ClassyTicket = ({ ticket, onClose, userName }) => {
+  if (!ticket) return null;
+
+  // Fonction pour gérer l'impression
+  const handlePrint = () => {
+    window.print();
+  };
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+    // Le z-index doit être très élevé pour passer au-dessus de tout
+    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto print:bg-white print:p-0 print:absolute print:inset-0">
+      
+      {/* BLOC CSS POUR L'IMPRESSION UNIQUEMENT */}
+      <style type="text/css" media="print">
+        {`
+          @page { size: landscape; margin: 0; }
+          body * { visibility: hidden; }
+          #printable-ticket-container, #printable-ticket-container * { visibility: visible; }
+          #printable-ticket-container {
+            position: absolute;
+            left: 50%;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            width: 100%;
+            max-width: 900px; /* Largeur max sur papier */
+            box-shadow: none !important;
+            border: 1px solid #ddd;
+          }
+          .no-print { display: none !important; }
+        `}
+      </style>
+
+      {/* Conteneur principal du billet */}
       <motion.div 
-        initial={{ scale: 0.9, opacity: 0, y: 50 }}
-        animate={{ scale: 1, opacity: 1, y: 0 }}
-        exit={{ scale: 0.9, opacity: 0, y: 50 }}
-        className="bg-white w-full max-w-sm rounded-3xl shadow-2xl overflow-hidden relative"
+        id="printable-ticket-container"
+        initial={{ scale: 0.95, opacity: 0 }}
+        animate={{ scale: 1, opacity: 1 }}
+        exit={{ scale: 0.95, opacity: 0 }}
+        // Sur mobile : vertical, sur Desktop : horizontal (flex-row)
+        className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden relative flex flex-col md:flex-row print:shadow-none print:rounded-none print:border print:border-gray-200"
       >
-        {/* En-tête du Billet */}
-        <div className="bg-primary-900 p-6 text-center relative overflow-hidden">
-            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
-            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-md">
-                <Ticket className="text-gold-500" size={32} />
-            </div>
-            <h2 className="text-gold-500 font-serif font-bold text-xl tracking-wide uppercase">Billet Électronique</h2>
-            <p className="text-white/60 text-xs mt-1">Daara Serigne Mor Diop</p>
-        </div>
+        {/* Bouton Fermer (Invisible à l'impression) */}
+        <button 
+            onClick={onClose}
+            className="absolute top-4 right-4 z-50 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition no-print md:text-gray-800 md:bg-gray-100 md:hover:bg-gray-200"
+        >
+            <X size={20} />
+        </button>
 
-        {/* Corps du Billet */}
-        <div className="p-6 relative">
-            {/* Cercles de découpe (Design billet) */}
-            <div className="absolute -left-3 top-0 w-6 h-6 bg-black/80 rounded-full"></div>
-            <div className="absolute -right-3 top-0 w-6 h-6 bg-black/80 rounded-full"></div>
+        {/* ================= SECTION GAUCHE (Info Principale) ================= */}
+        <div className="relative bg-primary-900 text-white p-6 md:p-8 flex-1 overflow-hidden print:bg-primary-900 print:text-white">
+            {/* Motif de fond et déco */}
+            <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none"></div>
+            <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-50 rounded-full z-10 hidden md:block print:hidden"></div> {/* Encoche Droite */}
             
-            <div className="text-center space-y-4 border-b border-dashed border-gray-200 pb-6 mb-6">
-                <div>
-                    <span className="text-xs font-bold text-gray-400 uppercase tracking-wider">Événement</span>
-                    <h3 className="text-2xl font-bold text-gray-900 leading-tight">{ticket.event?.title || "Événement Spécial"}</h3>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                        <span className="text-xs font-bold text-gray-400 block mb-1">Date</span>
-                        <div className="flex items-center justify-center gap-1 font-bold text-gray-700">
-                            <Calendar size={14} className="text-primary-600"/> 
-                            {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}
-                        </div>
+            {/* En-tête */}
+            <div className="flex items-center justify-between mb-8 relative z-10">
+                <div className="flex items-center gap-3">
+                    <div className="w-12 h-12 bg-gold-500/20 rounded-xl flex items-center justify-center backdrop-blur-md border border-gold-500/30">
+                        <Ticket className="text-gold-400" size={24} />
                     </div>
-                    <div className="bg-gray-50 p-3 rounded-xl">
-                        <span className="text-xs font-bold text-gray-400 block mb-1">Heure</span>
-                        <div className="flex items-center justify-center gap-1 font-bold text-gray-700">
-                            <Clock size={14} className="text-primary-600"/> 
-                            {ticket.event?.date ? new Date(ticket.event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--"}
-                        </div>
+                    <div>
+                        <h2 className="text-gold-400 font-serif font-bold tracking-widest uppercase text-sm">Billet Officiel</h2>
+                        <p className="text-white/60 text-xs">Daara Serigne Mor Diop</p>
                     </div>
-                </div>
-
-                <div>
-                    <span className="text-xs font-bold text-gray-400 uppercase">Détenteur</span>
-                    <p className="font-bold text-primary-900 text-lg">{userName || "Client"}</p>
                 </div>
             </div>
 
-            {/* QR Code (Simulation) */}
-            <div className="text-center">
-                <div className="bg-white border-2 border-gray-100 p-2 rounded-xl inline-block shadow-sm">
-                   {/* Ici on utilise une icône, mais vous pourrez mettre un vrai QR Code plus tard */}
-                   <QrCode size={100} className="text-gray-800" />
+            {/* Titre Événement */}
+            <div className="mb-8 relative z-10">
+                <span className="text-gold-300/60 text-xs font-bold uppercase tracking-wider block mb-2">Événement</span>
+                <h3 className="text-2xl md:text-4xl font-bold leading-tight md:max-w-lg text-white">
+                    {ticket.event?.title || "Événement Spécial"}
+                </h3>
+            </div>
+
+            {/* Grille Détails (Date, Heure, Détenteur) */}
+            <div className="grid grid-cols-3 gap-6 relative z-10">
+                <div>
+                    <span className="text-gold-300/60 text-xs font-bold block mb-1 uppercase">Date</span>
+                    <div className="flex items-center gap-2 font-bold text-lg">
+                        <Calendar size={18} className="text-gold-500"/> 
+                        {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}
+                    </div>
                 </div>
-                <p className="text-[10px] text-gray-400 mt-2 font-mono">{ticket.qrCode || ticket._id}</p>
+                <div>
+                    <span className="text-gold-300/60 text-xs font-bold block mb-1 uppercase">Heure</span>
+                    <div className="flex items-center gap-2 font-bold text-lg">
+                        <Clock size={18} className="text-gold-500"/> 
+                        {ticket.event?.date ? new Date(ticket.event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--"}
+                    </div>
+                </div>
+                <div className="col-span-3 md:col-span-1">
+                    <span className="text-gold-300/60 text-xs font-bold block mb-1 uppercase">Détenteur du billet</span>
+                    <p className="font-bold text-lg truncate text-white">{userName || "Client"}</p>
+                </div>
             </div>
         </div>
 
-        {/* Pied de Billet */}
-        <div className="bg-gray-50 p-4 border-t border-gray-100 flex gap-3">
-            <button 
-                onClick={onClose}
-                className="flex-1 py-3 text-gray-600 font-bold hover:bg-gray-200 rounded-xl transition"
-            >
-                Fermer
-            </button>
-            <button 
-                className="flex-1 py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2"
-                onClick={() => window.print()} 
-            >
-                <Download size={18}/> Télécharger
-            </button>
+        {/* ================= SÉPARATEUR (Ligne pointillée) ================= */}
+        <div className="hidden md:flex flex-col items-center justify-center relative bg-gray-50 w-8 print:flex">
+            <div className="h-full border-l-2 border-dashed border-gray-300"></div>
+             {/* Encoche Gauche sur le séparateur */}
+            <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-primary-900 rounded-full z-10 print:hidden"></div>
         </div>
+
+
+        {/* ================= SECTION DROITE (Talon / QR) ================= */}
+        <div className="bg-gray-50 p-6 md:w-80 flex flex-col justify-between relative overflow-hidden print:bg-gray-50 print:w-auto">
+             {/* Encoche Gauche pour mobile */}
+            <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary-900 rounded-full z-10 md:hidden print:hidden"></div>
+             {/* Encoche Droite pour mobile */}
+            <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/80 rounded-full z-10 md:hidden no-print"></div>
+
+            <div className="text-center pt-4 relative z-10">
+                <h4 className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-4">Scanner à l'entrée</h4>
+                 {/* QR Code Container */}
+                <div className="bg-white border-2 border-gray-200 p-3 rounded-2xl inline-block shadow-sm mx-auto mb-4 print:border-gray-800">
+                   <QrCode size={120} className="text-gray-800" />
+                </div>
+                <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest break-all">ID: {ticket.qrCode || ticket._id}</p>
+            </div>
+
+            {/* Boutons d'action (Cachés à l'impression) */}
+            <div className="mt-6 flex flex-col gap-3 no-print relative z-10">
+                <button 
+                    className="w-full py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2 active:scale-95"
+                    onClick={handlePrint}
+                >
+                    <Download size={18}/> Télécharger / Imprimer
+                </button>
+            </div>
+        </div>
+
       </motion.div>
     </div>
   );
