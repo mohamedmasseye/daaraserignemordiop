@@ -22,7 +22,7 @@ export default function ProductDetails() {
       try {
         // Idéalement : axios.get(`/api/products/${id}`)
         // Ici on filtre comme dans votre code précédent
-        const res = await axios.get('http://https://daara-app.onrender.com/api/products');
+        const res = await axios.get('https://daara-app.onrender.com/api/products');
         const found = res.data.find(p => p._id === id);
         
         if (found) {

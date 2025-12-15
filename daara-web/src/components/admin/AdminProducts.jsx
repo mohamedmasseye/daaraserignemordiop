@@ -39,10 +39,10 @@ export default function AdminProducts() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const resProds = await axios.get('http://https://daara-app.onrender.com/api/products');
+      const resProds = await axios.get('https://daara-app.onrender.com/api/products');
       setProducts(resProds.data);
 
-      const resCats = await axios.get('http://https://daara-app.onrender.com/api/categories?type=product');
+      const resCats = await axios.get('https://daara-app.onrender.com/api/categories?type=product');
       setCategories(resCats.data);
 
     } catch (err) {
@@ -79,7 +79,7 @@ export default function AdminProducts() {
     if(!newCatName.trim()) return;
     try {
         const token = localStorage.getItem('token');
-        await axios.post('http://https://daara-app.onrender.com/api/categories', 
+        await axios.post('https://daara-app.onrender.com/api/categories', 
             { name: newCatName, type: 'product' },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -92,7 +92,7 @@ export default function AdminProducts() {
   const handleUpdateCategory = async (id) => {
     try {
         const token = localStorage.getItem('token');
-        await axios.put(`http://https://daara-app.onrender.com/api/categories/${id}`, 
+        await axios.put(`https://daara-app.onrender.com/api/categories/${id}`, 
             { name: editCatName },
             { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -105,7 +105,7 @@ export default function AdminProducts() {
       if(!confirm("Supprimer cette catégorie ?")) return;
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`http://https://daara-app.onrender.com/api/categories/${id}`, { headers: { Authorization: `Bearer ${token}` } });
+          await axios.delete(`https://daara-app.onrender.com/api/categories/${id}`, { headers: { Authorization: `Bearer ${token}` } });
           fetchData();
       } catch (err) { alert("Impossible de supprimer"); }
   };
@@ -159,10 +159,10 @@ export default function AdminProducts() {
           const config = { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } };
 
           if (editingProduct) {
-              await axios.put(`http://https://daara-app.onrender.com/api/products/${editingProduct._id}`, formData, config);
+              await axios.put(`https://daara-app.onrender.com/api/products/${editingProduct._id}`, formData, config);
               alert("Produit mis à jour !");
           } else {
-              await axios.post('http://https://daara-app.onrender.com/api/products', formData, config);
+              await axios.post('https://daara-app.onrender.com/api/products', formData, config);
               alert("Produit créé !");
           }
 
@@ -178,7 +178,7 @@ export default function AdminProducts() {
       if(!confirm("Voulez-vous vraiment supprimer ce produit ?")) return;
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`http://https://daara-app.onrender.com/api/products/${id}`, { 
+          await axios.delete(`https://daara-app.onrender.com/api/products/${id}`, { 
               headers: { Authorization: `Bearer ${token}` } 
           });
           setProducts(products.filter(p => p._id !== id));

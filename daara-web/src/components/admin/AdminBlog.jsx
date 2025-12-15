@@ -19,7 +19,7 @@ export default function AdminBlog() {
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get('http://https://daara-app.onrender.com/api/blog');
+      const res = await axios.get('https://daara-app.onrender.com/api/blog');
       setPosts(res.data);
     } catch (err) { console.error(err); }
   };
@@ -46,7 +46,7 @@ export default function AdminBlog() {
       if (imageFile) data.append('coverImageFile', imageFile);
       if (pdfFile) data.append('pdfDocumentFile', pdfFile);
 
-      await axios.post('http://https://daara-app.onrender.com/api/blog', data, {
+      await axios.post('https://daara-app.onrender.com/api/blog', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -74,7 +74,7 @@ export default function AdminBlog() {
   const handleDelete = async (id) => {
     if(window.confirm("Supprimer cet article ?")) {
       try {
-        await axios.delete(`http://https://daara-app.onrender.com/api/blog/${id}`);
+        await axios.delete(`https://daara-app.onrender.com/api/blog/${id}`);
         setPosts(posts.filter(p => p._id !== id));
       } catch (err) { alert("Erreur suppression"); }
     }

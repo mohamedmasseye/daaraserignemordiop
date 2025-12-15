@@ -14,7 +14,7 @@ export default function AdminMessages() {
     try {
       const token = localStorage.getItem('token');
       // ⚠️ IMPORTANT : On ajoute le header Authorization
-      const res = await axios.get('http://https://daara-app.onrender.com/api/contact', {
+      const res = await axios.get('https://daara-app.onrender.com/api/contact', {
           headers: { Authorization: `Bearer ${token}` }
       });
       setMessages(res.data);
@@ -34,7 +34,7 @@ export default function AdminMessages() {
       if(!window.confirm("Supprimer ce message ?")) return;
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`http://https://daara-app.onrender.com/api/contact/${id}`, {
+          await axios.delete(`https://daara-app.onrender.com/api/contact/${id}`, {
               headers: { Authorization: `Bearer ${token}` }
           });
           setMessages(messages.filter(m => m._id !== id));

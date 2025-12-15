@@ -16,7 +16,7 @@ export default function AdminBooks() {
   // 1. Charger les livres
   const fetchBooks = async () => {
     try {
-      const res = await axios.get('http://https://daara-app.onrender.com/api/books');
+      const res = await axios.get('https://daara-app.onrender.com/api/books');
       setBooks(res.data);
     } catch (err) { console.error(err); }
   };
@@ -45,7 +45,7 @@ export default function AdminBooks() {
         data.append('coverImage', coverFile);
       }
 
-      await axios.post('http://https://daara-app.onrender.com/api/books', data, {
+      await axios.post('https://daara-app.onrender.com/api/books', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -71,7 +71,7 @@ export default function AdminBooks() {
   const handleDelete = async (id) => {
     if (window.confirm("⚠️ Attention : Voulez-vous vraiment supprimer ce livre définitivement ?")) {
       try {
-        await axios.delete(`http://https://daara-app.onrender.com/api/books/${id}`);
+        await axios.delete(`https://daara-app.onrender.com/api/books/${id}`);
         setBooks(books.filter(book => book._id !== id));
         alert("Livre supprimé avec succès !");
       } catch (error) {

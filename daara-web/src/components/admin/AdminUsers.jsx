@@ -27,7 +27,7 @@ export default function AdminUsers() {
     setLoading(true);
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('http://https://daara-app.onrender.com/api/users', {
+      const res = await axios.get('https://daara-app.onrender.com/api/users', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setUsers(res.data);
@@ -77,14 +77,14 @@ export default function AdminUsers() {
       try {
           if (modalType === 'add') {
               // Création
-              const res = await axios.post('http://https://daara-app.onrender.com/api/users', formData, {
+              const res = await axios.post('https://daara-app.onrender.com/api/users', formData, {
                   headers: { Authorization: `Bearer ${token}` }
               });
               setUsers([res.data, ...users]);
               alert("Utilisateur créé avec succès !");
           } else {
               // Modification (Pas le mot de passe ici)
-              const res = await axios.put(`http://https://daara-app.onrender.com/api/users/${currentUser._id}`, {
+              const res = await axios.put(`https://daara-app.onrender.com/api/users/${currentUser._id}`, {
                   fullName: formData.fullName,
                   role: formData.role
               }, {
@@ -103,7 +103,7 @@ export default function AdminUsers() {
       e.preventDefault();
       const token = localStorage.getItem('token');
       try {
-          await axios.put(`http://https://daara-app.onrender.com/api/users/${currentUser._id}/reset-password`, {
+          await axios.put(`https://daara-app.onrender.com/api/users/${currentUser._id}/reset-password`, {
               newPassword: newPassword
           }, {
               headers: { Authorization: `Bearer ${token}` }
@@ -119,7 +119,7 @@ export default function AdminUsers() {
     if (window.confirm("Êtes-vous sûr ? Cette action est irréversible.")) {
       try {
         const token = localStorage.getItem('token');
-        await axios.delete(`http://https://daara-app.onrender.com/api/users/${id}`, {
+        await axios.delete(`https://daara-app.onrender.com/api/users/${id}`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         setUsers(users.filter(user => user._id !== id));

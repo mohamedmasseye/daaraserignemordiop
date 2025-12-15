@@ -113,7 +113,7 @@ const handleImageUpload = async (e, callback) => {
         // Petit indicateur visuel (optionnel, on change le curseur)
         document.body.style.cursor = 'wait';
 
-        const res = await fetch('http://https://daara-app.onrender.com/api/upload', {
+        const res = await fetch('https://daara-app.onrender.com/api/upload', {
             method: 'POST',
             body: formData,
             // Pas besoin de Content-Type pour FormData, fetch le fait tout seul
@@ -123,7 +123,7 @@ const handleImageUpload = async (e, callback) => {
         const data = await res.json();
         
         if (data.url) {
-            // 3. On reçoit l'URL (ex: http://https://daara-app.onrender.com/uploads/...)
+            // 3. On reçoit l'URL (ex: https://daara-app.onrender.com/uploads/...)
             // C'est cette URL légère qu'on sauvegarde
             callback(data.url);
             setHasChanges(true);

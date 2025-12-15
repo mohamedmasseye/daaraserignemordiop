@@ -88,7 +88,7 @@ export default function Checkout() {
         }
       };
 
-      await axios.post('http://https://daara-app.onrender.com/api/orders', orderData, {
+      await axios.post('https://daara-app.onrender.com/api/orders', orderData, {
           headers: { Authorization: `Bearer ${token}` }
       });
 

@@ -17,7 +17,7 @@ export default function Gallery() {
   useEffect(() => {
     const fetchMedia = async () => {
       try {
-        const response = await axios.get('http://https://daara-app.onrender.com/api/media');
+        const response = await axios.get('https://daara-app.onrender.com/api/media');
         setMediaItems(response.data);
       } catch (error) {
         console.error("Erreur chargement galerie:", error);

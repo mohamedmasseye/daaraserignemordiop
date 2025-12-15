@@ -33,7 +33,7 @@ export default function Events() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get('http://https://daara-app.onrender.com/api/events');
+        const response = await axios.get('https://daara-app.onrender.com/api/events');
         // Tri par date croissante
         const loadedEvents = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
@@ -104,7 +104,7 @@ export default function Events() {
         if (!token) { navigate('/login-public'); return; }
 
         // 1. Récupération USER via API
-        const userResponse = await axios.get('http://https://daara-app.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        const userResponse = await axios.get('https://daara-app.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
         const realUser = userResponse.data;
 
         // 2. Calculs Sécurisés (Adapté au nouveau modèle : price au lieu de ticketPrice)
@@ -126,7 +126,7 @@ export default function Events() {
             customerPhone: realUser.phone || 'Non renseigné'
         };
 
-        await axios.post('http://https://daara-app.onrender.com/api/orders', orderData, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post('https://daara-app.onrender.com/api/orders', orderData, { headers: { Authorization: `Bearer ${token}` } });
         setPurchaseStep('success');
 
       } catch (error) {

@@ -23,7 +23,7 @@ export default function Podcast() {
   useEffect(() => {
     const fetchPodcasts = async () => {
       try {
-        const response = await axios.get('http://https://daara-app.onrender.com/api/podcasts');
+        const response = await axios.get('https://daara-app.onrender.com/api/podcasts');
         // Si l'API retourne une liste vide, on utilise les MOCK pour la démo
         setPodcasts(response.data.length > 0 ? response.data : MOCK_PODCASTS);
       } catch (error) {

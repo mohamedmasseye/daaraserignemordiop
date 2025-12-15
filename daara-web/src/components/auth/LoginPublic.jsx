@@ -36,7 +36,7 @@ export default function LoginPublic() {
       console.log("Ticket Google reçu :", tokenGoogle);
 
       // Envoie au serveur Node.js
-      const res = await axios.post('http://https://daara-app.onrender.com/api/auth/google', {
+      const res = await axios.post('https://daara-app.onrender.com/api/auth/google', {
         token: tokenGoogle
       });
 
@@ -70,7 +70,7 @@ export default function LoginPublic() {
     setError('');
 
     try {
-      const res = await axios.post('http://https://daara-app.onrender.com/api/auth/login', formData);
+      const res = await axios.post('https://daara-app.onrender.com/api/auth/login', formData);
 
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user_info', JSON.stringify(res.data.user));

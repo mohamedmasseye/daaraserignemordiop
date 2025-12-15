@@ -31,10 +31,10 @@ export default function ShopHome() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const productsRes = await axios.get('http://https://daara-app.onrender.com/api/products');
+        const productsRes = await axios.get('https://daara-app.onrender.com/api/products');
         setProducts(productsRes.data);
 
-        const eventsRes = await axios.get('http://https://daara-app.onrender.com/api/events');
+        const eventsRes = await axios.get('https://daara-app.onrender.com/api/events');
         
         // On cherche le prochain événement futur
         const upcomingEvents = eventsRes.data

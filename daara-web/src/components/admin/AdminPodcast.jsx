@@ -17,7 +17,7 @@ export default function AdminPodcast() {
 
   const fetchPodcasts = async () => {
     try {
-      const res = await axios.get('http://https://daara-app.onrender.com/api/podcasts');
+      const res = await axios.get('https://daara-app.onrender.com/api/podcasts');
       setPodcasts(res.data);
     } catch (err) { console.error(err); }
   };
@@ -49,7 +49,7 @@ export default function AdminPodcast() {
         
         if (coverFile) data.append('coverImageFile', coverFile);
 
-        await axios.post('http://https://daara-app.onrender.com/api/podcasts', data, {
+        await axios.post('https://daara-app.onrender.com/api/podcasts', data, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
       }
@@ -75,7 +75,7 @@ export default function AdminPodcast() {
   const handleDelete = async (id) => {
       if(window.confirm("Voulez-vous vraiment supprimer cet audio ?")) {
           try {
-             await axios.delete(`http://https://daara-app.onrender.com/api/podcasts/${id}`);
+             await axios.delete(`https://daara-app.onrender.com/api/podcasts/${id}`);
              setPodcasts(podcasts.filter(p => p._id !== id));
           } catch (error) {
              console.error(error);

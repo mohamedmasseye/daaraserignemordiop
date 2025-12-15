@@ -63,11 +63,11 @@ export default function AdminEvents() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const eventsRes = await axios.get('http://https://daara-app.onrender.com/api/events');
+      const eventsRes = await axios.get('https://daara-app.onrender.com/api/events');
       setEvents(eventsRes.data);
 
       // Récupération des tickets vendus depuis les commandes
-      const ordersRes = await axios.get('http://https://daara-app.onrender.com/api/orders');
+      const ordersRes = await axios.get('https://daara-app.onrender.com/api/orders');
       const extractedTickets = [];
       ordersRes.data.forEach(order => {
           if (order.status !== 'Cancelled') {
@@ -136,10 +136,10 @@ export default function AdminEvents() {
         const config = { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } };
 
         if (isEditing) {
-            await axios.put(`http://https://daara-app.onrender.com/api/events/${editId}`, data, config);
+            await axios.put(`https://daara-app.onrender.com/api/events/${editId}`, data, config);
             alert("Événement modifié avec succès !");
         } else {
-            await axios.post('http://https://daara-app.onrender.com/api/events', data, config);
+            await axios.post('https://daara-app.onrender.com/api/events', data, config);
             alert("Événement créé avec succès !");
         }
         
@@ -166,7 +166,7 @@ export default function AdminEvents() {
     if(window.confirm("Voulez-vous vraiment supprimer cet événement ?")) {
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`http://https://daara-app.onrender.com/api/events/${id}`, {
+          await axios.delete(`https://daara-app.onrender.com/api/events/${id}`, {
               headers: { Authorization: `Bearer ${token}` }
           });
           setEvents(events.filter(e => e._id !== id));

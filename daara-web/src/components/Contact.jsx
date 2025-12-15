@@ -11,7 +11,7 @@ export default function Contact() {
     e.preventDefault();
     setStatus('loading');
     try {
-      await axios.post('http://https://daara-app.onrender.com/api/contact', formData);
+      await axios.post('https://daara-app.onrender.com/api/contact', formData);
       setStatus('success');
       setFormData({ name: '', emailOrPhone: '', message: '' });
     } catch (error) {

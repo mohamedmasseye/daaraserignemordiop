@@ -25,9 +25,9 @@ export default function AdminDashboard() {
 
         // Appels API simultanés
         const [usersRes, booksRes, ordersRes] = await Promise.all([
-            axios.get('http://https://daara-app.onrender.com/api/users', config),
-            axios.get('http://https://daara-app.onrender.com/api/books'),
-            axios.get('http://https://daara-app.onrender.com/api/orders', config)
+            axios.get('https://daara-app.onrender.com/api/users', config),
+            axios.get('https://daara-app.onrender.com/api/books'),
+            axios.get('https://daara-app.onrender.com/api/orders', config)
         ]);
 
         // --- FILTRAGE CORRECT ---

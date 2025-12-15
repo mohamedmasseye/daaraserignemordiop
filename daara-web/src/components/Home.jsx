@@ -135,7 +135,7 @@
       const checkEvents = async () => {
         try {
           // On récupère les événements frais depuis le serveur
-          const res = await axios.get('http://https://daara-app.onrender.com/api/events');
+          const res = await axios.get('https://daara-app.onrender.com/api/events');
           
           // On cherche le plus proche événement futur
           const upcoming = res.data
