@@ -26,6 +26,8 @@ export default function AdminBlog() {
 
   useEffect(() => { fetchPosts(); }, []);
 
+  // DANS AdminBlog.jsx -> handleSubmit
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.category) return alert("Veuillez sélectionner une catégorie");
@@ -42,22 +44,20 @@ export default function AdminBlog() {
       data.append('category', formData.category);
       data.append('author', formData.author);
 
-      // Ajout des fichiers (Attention aux noms exacts)
+      // Ajout des fichiers
       if (imageFile) data.append('coverImageFile', imageFile);
       if (pdfFile) data.append('pdfDocumentFile', pdfFile);
 
-      await axios.post('https://daara-app.onrender.com/api/blog', data, {
-          headers: { 'Content-Type': 'multipart/form-data' }
-      });
+      // ✅ CORRECTION ICI : On retire le header Content-Type manuel
+      // Axios va détecter le FormData et mettre le bon header avec le boundary automatiquement.
+      await axios.post('https://daara-app.onrender.com/api/blog', data);
       
       alert('Article publié avec succès !');
       
-      // Reset complet
+      // ... (Le reste du code de reset reste identique) ...
       setFormData({ title: '', summary: '', content: '', category: '', author: 'Administration' });
       setImageFile(null);
       setPdfFile(null);
-      
-      // Reset des inputs fichiers visuels
       if(document.getElementById('imageInput')) document.getElementById('imageInput').value = "";
       if(document.getElementById('pdfInput')) document.getElementById('pdfInput').value = "";
 
@@ -65,6 +65,7 @@ export default function AdminBlog() {
       fetchPosts();
     } catch (error) { 
         console.error("Erreur Blog:", error);
+        // Affiche l'erreur précise du serveur si dispo
         alert("Erreur lors de la publication : " + (error.response?.data?.error || error.message)); 
     } finally {
         setIsUploading(false);
