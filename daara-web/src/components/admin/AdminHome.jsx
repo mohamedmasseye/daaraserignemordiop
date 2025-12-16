@@ -70,21 +70,31 @@ export default function AdminHome() {
   const [activeTab, setActiveTab] = useState('slides');
   const [hasChanges, setHasChanges] = useState(false);
 
-  // Charger les données
+  // 1. Charger depuis l'API au démarrage
   useEffect(() => {
-    const stored = localStorage.getItem('daara_home_content');
-    if (stored) {
-      const parsed = JSON.parse(stored);
-      setContent({ ...DEFAULT_CONTENT, ...parsed });
-    }
+    const fetchContent = async () => {
+      try {
+        const res = await axios.get('https://daara-app.onrender.com/api/home-content');
+        if (res.data && Object.keys(res.data).length > 0) {
+           setContent({ ...DEFAULT_CONTENT, ...res.data });
+        }
+      } catch (err) { console.error(err); }
+    };
+    fetchContent();
   }, []);
 
-  const handleSave = () => {
-    localStorage.setItem('daara_home_content', JSON.stringify(content));
-    setHasChanges(false);
-    alert("Page d'accueil mise à jour avec succès !");
-    // Déclenche un événement pour que le frontend se mette à jour sans recharger
-    window.dispatchEvent(new Event('storage'));
+  // 2. Sauvegarder vers l'API
+  const handleSave = async () => {
+    try {
+        const token = localStorage.getItem('token');
+        await axios.post('https://daara-app.onrender.com/api/home-content', content, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        setHasChanges(false);
+        alert("Page d'accueil mise à jour (Visible par tous) !");
+    } catch (err) {
+        alert("Erreur lors de la sauvegarde.");
+    }
   };
 
   const handleReset = () => {

@@ -104,19 +104,17 @@
 
     // --- CHARGEMENT DU CONTENU (LocalStorage pour textes) ---
     useEffect(() => {
-      const loadContent = () => {
-        const storedContent = localStorage.getItem('daara_home_content');
-        if (storedContent) {
-          const parsed = JSON.parse(storedContent);
-          if (!parsed.slides || parsed.slides.length === 0) parsed.slides = DEFAULT_CONTENT.slides;
-          setContent(parsed);
+    const fetchContent = async () => {
+      try {
+        const res = await axios.get('https://daara-app.onrender.com/api/home-content');
+        // Si le serveur renvoie des données (non vide), on fusionne avec les défauts
+        if (res.data && Object.keys(res.data).length > 0) {
+            setContent(prev => ({ ...DEFAULT_CONTENT, ...res.data }));
         }
-      };
-      loadContent();
-      window.addEventListener('storage', (e) => {
-        if (e.key === 'daara_home_content') loadContent();
-      });
-    }, []);
+      } catch (err) { console.error("Erreur chargement contenu home", err); }
+    };
+    fetchContent();
+  }, []);
 
     // --- ANIMATIONS ---
     const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } };
