@@ -4,15 +4,15 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
-  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag 
+  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag, Image as ImageIcon
 } from 'lucide-react';
 
-// --- VALEURS PAR DÉFAUT (Si l'admin n'a rien touché) ---
+// --- VALEURS PAR DÉFAUT (Structure vide, sans images cassées) ---
 const DEFAULT_CONTENT = {
   slides: [
     {
       id: 1,
-      image: "https://images.unsplash.com/photo-1584551246679-0daf3d275d0f?q=80&w=1000&auto=format&fit=crop",
+      image: "", // Vide : sera remplacé par l'Admin ou le Placeholder
       badge: "Bienvenue au Daara",
       title: "La Science est une Lumière",
       subtitle: "Héritier d’une lumière spirituelle et bâtisseur d’un héritage intemporel.",
@@ -21,7 +21,7 @@ const DEFAULT_CONTENT = {
     },
     {
       id: 2,
-      image: "https://images.unsplash.com/photo-1576764402988-7143f6cca974?auto=format&fit=crop&q=80&w=2000",
+      image: "",
       badge: "Éducation & Excellence",
       title: "Servir le Coran",
       subtitle: "Un abreuvoir où chacun peut étancher sa soif de connaissances.",
@@ -30,7 +30,7 @@ const DEFAULT_CONTENT = {
     },
     {
       id: 3,
-      image: "https://images.unsplash.com/photo-1519817650390-64a93db51149?q=80&w=2000&auto=format&fit=crop",
+      image: "",
       badge: "Communauté & Partage",
       title: "Au Service de l'Humanité",
       subtitle: "Un sanctuaire où chaque échange devient une source d’inspiration.",
@@ -45,12 +45,12 @@ const DEFAULT_CONTENT = {
     highlight2: "savoir",
     text1: "Figure éminente de l’islam au Sénégal et pilier de la Tariqa Tidjaniyya, Serigne Mor Diop incarne l’excellence dans la transmission du savoir.",
     text2: "Fils cadet de Serigne Alioune Diop « Jubbal », il a su transformer chaque pas de sa vie en une leçon d'humilité.",
-    image: "https://images.unsplash.com/photo-1542300058-b94b8ab7411b?q=80&w=800&auto=format&fit=crop"
+    image: "" // Vide par défaut
   },
   pillars: {
-    shopImage: "https://images.unsplash.com/photo-1556742502-ec7c0e9f34b1?q=80&w=1000&auto=format&fit=crop",
-    libraryImage: "https://images.unsplash.com/photo-1524995997946-a1c2e315a42f?q=80&w=1000&auto=format&fit=crop",
-    mediaImage: "https://images.unsplash.com/photo-1478737270239-2f02b77ac6d5?q=80&w=1000&auto=format&fit=crop"
+    shopImage: "",
+    libraryImage: "",
+    mediaImage: ""
   },
   quote: {
     text: "Servir le Coran, c’est servir l’humanité. Votre soutien permet de perpétuer cet héritage de lumière.",
@@ -65,45 +65,51 @@ const DEFAULT_CONTENT = {
   }
 };
 
-// --- FONCTION DE CORRECTION D'URL (ESSENTIELLE) ---
+// --- FONCTION DE SÉCURISATION D'URL ---
 const getSecureUrl = (url) => {
   if (!url) return "";
-  // Si c'est une image Unsplash ou déjà HTTPS, on ne touche pas
-  if (url.includes('images.unsplash.com') || url.startsWith('https://')) return url;
-  
-  // Correction Localhost -> Render
   if (url.includes('localhost:5000')) {
     return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
   }
-  
-  // Correction HTTP -> HTTPS (Mixed Content Fix)
   if (url.startsWith('http://')) {
       return url.replace('http://', 'https://');
   }
-  
-  // Si c'est un chemin relatif (ex: /uploads/image.jpg), on ajoute le domaine
   if (url.startsWith('/uploads')) {
       return `https://daara-app.onrender.com${url}`;
   }
-
   return url;
 };
+
+// --- COMPOSANT PLACEHOLDER (S'affiche si pas d'image) ---
+const ImagePlaceholder = ({ label }) => (
+  <div className="w-full h-full bg-primary-800 flex flex-col items-center justify-center text-primary-200/50">
+    <ImageIcon size={48} className="mb-2 opacity-50" />
+    <span className="text-xs font-bold uppercase tracking-widest">{label || "Image non disponible"}</span>
+  </div>
+);
 
 // --- COMPOSANT POPUP ---
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
+  const imageUrl = getSecureUrl(event.image);
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative border-2 border-gold-500/30">
         <button onClick={onClose} className="absolute top-3 right-3 p-2 bg-black/10 hover:bg-black/20 rounded-full text-white z-20 transition-colors"><X size={20} /></button>
-        <div className="h-48 relative">
-          {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-          <img 
-            src={getSecureUrl(event.image) || "https://images.unsplash.com/photo-1555431189-0fabf2667795?auto=format&fit=crop&q=80"} 
-            alt={event.title} 
-            className="w-full h-full object-cover"
-            referrerPolicy="no-referrer"
-          />
+        <div className="h-48 relative bg-gray-100">
+          {imageUrl ? (
+            <img 
+              src={imageUrl} 
+              alt={event.title} 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-300">
+               <Calendar size={48}/>
+            </div>
+          )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
           <div className="absolute bottom-4 left-4 right-4"><span className="bg-gold-500 text-primary-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Prochain Événement</span><h3 className="text-white text-xl font-serif font-bold leading-tight">{event.title}</h3></div>
         </div>
@@ -128,32 +134,27 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
-  
-  // --- ÉTAT DU CONTENU DYNAMIQUE ---
   const [content, setContent] = useState(DEFAULT_CONTENT);
 
-  // --- CHARGEMENT DU CONTENU ---
+  // --- CHARGEMENT DU CONTENU (Priorité à l'Admin) ---
   useEffect(() => {
-  const fetchContent = async () => {
-    try {
-      const res = await axios.get('https://daara-app.onrender.com/api/home-content');
-      // Si le serveur renvoie des données, on fusionne avec les défauts
-      if (res.data && Object.keys(res.data).length > 0) {
-          setContent(prev => ({ ...DEFAULT_CONTENT, ...res.data }));
-      }
-    } catch (err) { console.error("Erreur chargement contenu home", err); }
-  };
-  fetchContent();
-}, []);
+    const fetchContent = async () => {
+      try {
+        const res = await axios.get('https://daara-app.onrender.com/api/home-content');
+        if (res.data && Object.keys(res.data).length > 0) {
+            // Fusion intelligente : On garde la structure par défaut, on écrase avec les données DB
+            setContent(prev => ({ ...prev, ...res.data }));
+        }
+      } catch (err) { console.error("Erreur chargement contenu home", err); }
+    };
+    fetchContent();
+  }, []);
 
-  // --- ANIMATIONS ---
   const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } };
   const staggerContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.2 } } };
 
-  // --- SLIDER LOGIC ---
   useEffect(() => {
     const timer = setInterval(() => {
-      // On vérifie que content.slides existe bien pour éviter le crash
       if(content.slides && content.slides.length > 0) {
         setCurrentSlide((prev) => (prev + 1) % content.slides.length);
       }
@@ -161,7 +162,6 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [content.slides]);
 
-  // --- POPUP LOGIC ---
   useEffect(() => {
     const checkEvents = async () => {
       try {
@@ -171,12 +171,10 @@ export default function Home() {
             .sort((a, b) => new Date(a.date) - new Date(b.date));
         
         const nextEvent = upcoming[0];
-
         if (nextEvent) {
             setFeaturedEvent(nextEvent);
             const todayStr = new Date().toDateString();
             const storedData = JSON.parse(localStorage.getItem('home_popup_log') || '{}');
-
             if (storedData.eventId !== nextEvent._id || storedData.lastSeenDate !== todayStr) {
                 setTimeout(() => setShowPopup(true), 2500); 
             }
@@ -202,18 +200,9 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
-      
-      {/* POPUP DYNAMIQUE */}
       <AnimatePresence>
         {showPopup && featuredEvent && (
-            <EventPopup 
-                event={featuredEvent} 
-                onClose={handleClosePopup} 
-                onBook={() => {
-                    handleClosePopup();
-                    navigate('/evenements');
-                }} 
-            />
+            <EventPopup event={featuredEvent} onClose={handleClosePopup} onBook={() => { handleClosePopup(); navigate('/evenements'); }} />
         )}
       </AnimatePresence>
 
@@ -221,17 +210,22 @@ export default function Home() {
       <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
-            {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-            <img 
-                src={getSecureUrl(content.slides[currentSlide]?.image)} 
-                alt="Hero" 
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-                onError={(e) => {
-                    e.target.src = DEFAULT_CONTENT.slides[currentSlide % 3].image;
-                }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-900/40 to-primary-900"></div>
+            
+            {/* ✅ LOGIQUE D'AFFICHAGE : Image Admin OU Placeholder neutre */}
+            {getSecureUrl(content.slides[currentSlide]?.image) ? (
+                <img 
+                    src={getSecureUrl(content.slides[currentSlide]?.image)} 
+                    alt="Hero" 
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                />
+            ) : (
+                <div className="w-full h-full bg-primary-900 flex items-center justify-center">
+                    <div className="text-primary-800 opacity-20 transform scale-[5]"><Star /></div>
+                </div>
+            )}
+
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/80 via-primary-900/50 to-primary-900"></div>
             <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
           </motion.div>
         </AnimatePresence>
@@ -253,21 +247,10 @@ export default function Home() {
           </AnimatePresence>
         </div>
 
-        {/* INDICATEUR SCROLL */}
-        <motion.div 
-          initial={{ opacity: 0 }} 
-          animate={{ opacity: 1, y: [0, 10, 0] }} 
-          transition={{ delay: 1, duration: 2, repeat: Infinity }}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 z-20 cursor-pointer"
-          onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })}
-        >
-          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1">
-            <div className="w-1 h-2 bg-white/50 rounded-full animate-scroll-down"></div>
-          </div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, y: [0, 10, 0] }} transition={{ delay: 1, duration: 2, repeat: Infinity }} className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 z-20 cursor-pointer" onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })}>
+          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1"><div className="w-1 h-2 bg-white/50 rounded-full animate-scroll-down"></div></div>
           <span className="text-[10px] uppercase tracking-widest">Découvrir</span>
         </motion.div>
-
-        {/* NAV SLIDER */}
         <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition z-20"><ChevronLeft size={24}/></button>
         <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition z-20"><ChevronRight size={24}/></button>
       </div>
@@ -277,15 +260,20 @@ export default function Home() {
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div variants={fadeInUp} className="relative">
             <div className="absolute inset-0 bg-gold-500 rounded-[2rem] rotate-3 transform translate-x-2 translate-y-2 opacity-20"></div>
-            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group">
-              {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-              <img 
-                src={getSecureUrl(content.about.image)} 
-                alt="Serigne Mor Diop" 
-                className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
-                referrerPolicy="no-referrer"
-                onError={(e) => { e.target.src = DEFAULT_CONTENT.about.image; }}
-              />
+            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group flex items-center justify-center">
+              
+              {/* ✅ LOGIQUE D'AFFICHAGE ABOUT : Image Admin OU Placeholder */}
+              {getSecureUrl(content.about.image) ? (
+                  <img 
+                    src={getSecureUrl(content.about.image)} 
+                    alt="Serigne Mor Diop" 
+                    className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
+                    referrerPolicy="no-referrer"
+                  />
+              ) : (
+                  <ImagePlaceholder label="Photo Serigne Mor" />
+              )}
+
               <div className="absolute inset-0 bg-gradient-to-t from-primary-950 via-transparent to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-8 text-white">
                 <p className="text-gold-400 font-bold uppercase tracking-wider text-sm mb-1">Guide Spirituel</p>
@@ -317,9 +305,10 @@ export default function Home() {
             
             {/* Boutique */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/boutique')}>
-              <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-                  <img src={getSecureUrl(content.pillars.shopImage)} alt="Boutique" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+              <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  {getSecureUrl(content.pillars.shopImage) ? (
+                      <img src={getSecureUrl(content.pillars.shopImage)} alt="Boutique" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                  ) : <ImagePlaceholder label="Boutique" />}
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-gold-500 text-primary-900 p-2 rounded-full shadow-lg"><ShoppingBag size={20} /></div>
               </div>
@@ -328,9 +317,10 @@ export default function Home() {
             
             {/* Bibliothèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/livres')}>
-              <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-                  <img src={getSecureUrl(content.pillars.libraryImage)} alt="Livres" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+              <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  {getSecureUrl(content.pillars.libraryImage) ? (
+                      <img src={getSecureUrl(content.pillars.libraryImage)} alt="Livres" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                  ) : <ImagePlaceholder label="Bibliothèque" />}
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-white text-primary-900 p-2 rounded-full shadow-lg"><BookOpen size={20} /></div>
               </div>
@@ -339,9 +329,10 @@ export default function Home() {
             
             {/* Médiathèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/podcast')}>
-              <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
-                  <img src={getSecureUrl(content.pillars.mediaImage)} alt="Media" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+              <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  {getSecureUrl(content.pillars.mediaImage) ? (
+                      <img src={getSecureUrl(content.pillars.mediaImage)} alt="Media" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                  ) : <ImagePlaceholder label="Médiathèque" />}
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg"><PlayCircle size={20} /></div>
               </div>
