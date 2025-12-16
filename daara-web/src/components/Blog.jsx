@@ -98,7 +98,8 @@ export default function Blog() {
                 <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-xs font-bold text-primary-900 uppercase tracking-wider">
                   {post.category}
                 </div>
-                {post.pdfUrl && (
+                {/* ✅ CORRECTION ICI : pdfUrl -> pdfDocument */}
+                {post.pdfDocument && (
                   <div className="absolute top-4 right-4 bg-red-600/90 backdrop-blur-sm p-1.5 rounded-lg text-white" title="Contient un PDF">
                     <FileText size={16} />
                   </div>
@@ -169,20 +170,23 @@ export default function Blog() {
                   </div>
 
                   {/* --- LECTEUR PDF INTÉGRÉ (Vertical) --- */}
-                  {selectedPost.pdfUrl && (
+                  {/* ✅ CORRECTION ICI : pdfUrl -> pdfDocument */}
+                  {selectedPost.pdfDocument && (
                     <div className="mt-8 mb-12 border-t border-b border-gray-100 py-8">
                       <div className="flex items-center justify-between mb-4">
                         <h3 className="text-xl font-bold text-primary-900 flex items-center gap-2">
                           <FileText className="text-red-500"/> Document attaché
                         </h3>
-                        <a href={selectedPost.pdfUrl} download target="_blank" className="text-sm font-bold text-primary-600 hover:underline flex items-center gap-1">
+                        {/* ✅ CORRECTION ICI : pdfUrl -> pdfDocument */}
+                        <a href={selectedPost.pdfDocument} download target="_blank" className="text-sm font-bold text-primary-600 hover:underline flex items-center gap-1">
                           <Download size={14}/> Télécharger
                         </a>
                       </div>
 
                       <div className="bg-gray-100 p-4 rounded-xl max-h-[600px] overflow-y-auto flex flex-col items-center custom-scrollbar">
                         <Document 
-                          file={selectedPost.pdfUrl} 
+                          /* ✅ CORRECTION ICI : pdfUrl -> pdfDocument */
+                          file={selectedPost.pdfDocument} 
                           onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                           loading={<div className="text-gray-500">Chargement du document...</div>}
                           error={<div className="text-red-500">Erreur de chargement PDF</div>}
