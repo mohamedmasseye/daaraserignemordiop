@@ -32,6 +32,8 @@ export default function AdminPodcast() {
     setIsUploading(true);
 
     try {
+      const token = localStorage.getItem('token'); // Récupération du token
+
       for (let i = 0; i < audioFiles.length; i++) {
         const currentAudio = audioFiles[i];
         const data = new FormData();
@@ -49,8 +51,9 @@ export default function AdminPodcast() {
         
         if (coverFile) data.append('coverImageFile', coverFile);
 
+        // ✅ CORRECTION : Ajout du token & Suppression du Content-Type manuel
         await axios.post('https://daara-app.onrender.com/api/podcasts', data, {
-            headers: { 'Content-Type': 'multipart/form-data' }
+            headers: { Authorization: `Bearer ${token}` }
         });
       }
       
@@ -66,7 +69,7 @@ export default function AdminPodcast() {
       fetchPodcasts();
     } catch (error) { 
       console.error(error);
-      alert("Erreur lors de l'upload."); 
+      alert("Erreur lors de l'upload : " + (error.response?.data?.error || error.message)); 
     } finally {
       setIsUploading(false);
     }
@@ -75,7 +78,13 @@ export default function AdminPodcast() {
   const handleDelete = async (id) => {
       if(window.confirm("Voulez-vous vraiment supprimer cet audio ?")) {
           try {
-             await axios.delete(`https://daara-app.onrender.com/api/podcasts/${id}`);
+             const token = localStorage.getItem('token');
+             
+             // ✅ CORRECTION ICI : Ajout du Header Authorization pour éviter l'erreur 401
+             await axios.delete(`https://daara-app.onrender.com/api/podcasts/${id}`, {
+                headers: { Authorization: `Bearer ${token}` }
+             });
+
              setPodcasts(podcasts.filter(p => p._id !== id));
           } catch (error) {
              console.error(error);
