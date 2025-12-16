@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import { 
   Save, Layout, BookOpen, Image as ImageIcon, Type, Info, 
   Plus, Trash2, ExternalLink, RotateCcw, UploadCloud 
@@ -86,16 +87,29 @@ export default function AdminHome() {
     fetchContent();
   }, []);
 
-  const handleSave = () => {
+  const handleSave = async () => {
+  try {
+    // 1. Sauvegarde Locale (Backup rapide)
     localStorage.setItem('daara_home_content', JSON.stringify(content));
+
+    // 2. Sauvegarde Serveur (LA VRAIE SAUVEGARDE)
+    // On récupère le token pour avoir le droit d'écrire
+    const token = localStorage.getItem('token'); 
     
-    // --- ICI : Code pour sauvegarder vers l'API aussi (si route active) ---
-    // axios.post('/api/home-content', content, { headers: ... })
+    // On envoie les données à votre backend (sur Render)
+    await axios.post('https://daara-app.onrender.com/api/home-content', content, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
 
     setHasChanges(false);
-    alert("Modifications enregistrées !");
+    alert("Modifications enregistrées et publiées en ligne !");
     window.dispatchEvent(new Event('storage'));
-  };
+
+  } catch (err) {
+    console.error("Erreur sauvegarde:", err);
+    alert("Erreur lors de la sauvegarde sur le serveur.");
+  }
+};
 
   const handleReset = () => {
     if(confirm("Attention : Cela va remettre le contenu par défaut (sans images). Continuer ?")) {
