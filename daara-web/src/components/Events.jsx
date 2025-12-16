@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar as CalIcon, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, 
-  Moon, ChevronDown, X, Ticket, Star, CheckCircle, Minus, Plus, Loader, FileText, Download, Info
+  Moon, ChevronDown, X, Ticket, Star, CheckCircle, Minus, Plus, Loader, FileText, Download
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -23,7 +23,7 @@ export default function Events() {
   // Modal State
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalType, setModalType] = useState('details'); // 'details' ou 'booking'
+  const [modalType, setModalType] = useState('details'); 
 
   // Booking State
   const [ticketQuantity, setTicketQuantity] = useState(1);
@@ -38,15 +38,15 @@ export default function Events() {
         const loadedEvents = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
         
-        // Trouver le prochain événement à venir
+        // Trouver le prochain événement
         const upcoming = loadedEvents.find(e => new Date(e.date) >= new Date());
-        setNextEvent(upcoming || loadedEvents[loadedEvents.length - 1]); // S'il n'y en a pas, prendre le dernier
+        setNextEvent(upcoming || loadedEvents[loadedEvents.length - 1]);
       } catch (error) { console.error(error); } finally { setLoading(false); }
     };
     fetchEvents();
   }, []);
 
-  // --- LOGIQUE CALENDRIER (Identique) ---
+  // --- LOGIQUE CALENDRIER ---
   const getHijriDate = (date) => new Intl.DateTimeFormat('fr-FR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
   const getDaysInMonth = () => {
     const year = currentDate.getFullYear();
@@ -77,7 +77,6 @@ export default function Events() {
   // --- ACTIONS ---
   const isLoggedIn = () => !!localStorage.getItem('token');
   
-  // Ouvre le modal en mode "Réservation"
   const handleBookClick = (event) => {
     if (!isLoggedIn()) { navigate('/login-public', { state: { from: '/evenements' } }); return; }
     setSelectedEvent(event);
@@ -88,7 +87,6 @@ export default function Events() {
     setIsModalOpen(true);
   };
 
-  // Ouvre le modal en mode "Détails"
   const handleDetailsClick = (event) => {
     setSelectedEvent(event);
     setModalType('details');
@@ -97,17 +95,14 @@ export default function Events() {
 
   const handleConfirmPurchase = async () => {
     setPurchaseStep('processing');
-    
     setTimeout(async () => {
       try {
         const token = localStorage.getItem('token');
         if (!token) { navigate('/login-public'); return; }
 
-        // 1. Récupération USER via API
         const userResponse = await axios.get('https://daara-app.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
         const realUser = userResponse.data;
 
-        // 2. Calculs Sécurisés (Adapté au nouveau modèle : price au lieu de ticketPrice)
         const unitPrice = Number(selectedEvent.price || selectedEvent.ticketPrice || 0);
         const qty = Number(ticketQuantity);
         const total = unitPrice * qty;
@@ -130,7 +125,6 @@ export default function Events() {
         setPurchaseStep('success');
 
       } catch (error) {
-        console.error("Erreur commande", error);
         if (error.response?.status === 401) { navigate('/login-public'); }
         else { alert("Erreur : " + (error.response?.data?.error || "Inconnue")); }
         setPurchaseStep('selection');
@@ -160,11 +154,17 @@ export default function Events() {
               <p className="text-lg md:text-xl text-primary-100 mb-8 leading-relaxed max-w-xl">{nextEvent ? (nextEvent.description || "").substring(0, 150) + "..." : "Découvrez nos prochains événements spirituels et culturels."}</p>
               {nextEvent && (
                 <div className="flex flex-wrap gap-4">
-                  {/* On vérifie hasTicket OU price > 0 pour afficher le bouton réserver */}
                   {(nextEvent.hasTicket || nextEvent.price > 0) && (
                       <button onClick={() => handleBookClick(nextEvent)} className="px-8 py-4 bg-gold-500 text-primary-900 rounded-full font-bold text-lg hover:bg-white transition-all shadow-lg shadow-gold-500/20 transform hover:-translate-y-1 flex items-center gap-2"><Ticket size={20} /> Réserver ma place</button>
                   )}
                   <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 border border-white/30 rounded-full font-bold text-white hover:bg-white/10 transition-all backdrop-blur-md">Plus d'infos</button>
+                  
+                  {/* Petit indicateur PDF HERO */}
+                  {nextEvent.documentUrl && (
+                      <div className="flex items-center gap-2 text-gold-400 text-sm font-bold border-l border-white/20 pl-4 ml-2">
+                          <FileText size={18}/> PDF Disponible
+                      </div>
+                  )}
                 </div>
               )}
             </motion.div>
@@ -255,10 +255,8 @@ export default function Events() {
              </div>
 
              <div className="space-y-6">
-                {/* On filtre selon le mode Billetterie ou Calendrier */}
                 {(activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0) : events).map((event, index) => {
                    const eventDate = new Date(event.date);
-                   const isTicketMode = activeTab === 'tickets';
                    const hasTicket = event.hasTicket || event.price > 0;
 
                    return (
@@ -269,11 +267,24 @@ export default function Events() {
                            ) : (
                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100"><Moon size={40} className="mb-2 opacity-20"/><span className="text-xs font-bold uppercase opacity-40">Pas d'image</span></div>
                            )}
+                           
+                           {/* --- DATE BADGE --- */}
                            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg text-center min-w-[70px]">
-                              <span className="block text-2xl font-bold text-primary-900 font-serif leading-none">{eventDate.getDate()}</span>
-                              <span className="block text-xs font-bold text-gold-600 uppercase mt-1">{eventDate.toLocaleDateString('fr-FR', {month:'short'})}</span>
+                             <span className="block text-2xl font-bold text-primary-900 font-serif leading-none">{eventDate.getDate()}</span>
+                             <span className="block text-xs font-bold text-gold-600 uppercase mt-1">{eventDate.toLocaleDateString('fr-FR', {month:'short'})}</span>
                            </div>
-                           {/* Affichage du prix si payant */}
+
+                           {/* --- BADGE PDF LISTE (Nouveau) --- */}
+                           {event.documentUrl && (
+                             <div className="absolute top-4 right-4 z-20">
+                                <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg flex flex-col items-center justify-center text-primary-900 group-hover:bg-gold-500 group-hover:text-white transition-colors duration-300 cursor-help" title="Document PDF disponible">
+                                  <FileText size={20} />
+                                  <span className="text-[8px] font-bold uppercase mt-1">PDF</span>
+                                </div>
+                             </div>
+                           )}
+
+                           {/* --- PRIX BADGE --- */}
                            {(event.price > 0 || event.ticketPrice > 0) && (
                              <div className="absolute bottom-4 right-4 bg-primary-900 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
                                {(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA
@@ -283,25 +294,24 @@ export default function Events() {
 
                         <div className="flex-1 p-6 md:p-8 flex flex-col">
                            <div className="flex justify-between items-start mb-4">
-                              <div>
-                                 {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE DIFFUSION</span>}
-                                 <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
-                              </div>
+                             <div>
+                                {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE DIFFUSION</span>}
+                                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
+                             </div>
                            </div>
                            <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
                            <div className="flex items-center gap-6 text-sm font-medium text-gray-600 mb-6">
-                              <span className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
-                              <span className="flex items-center gap-2"><MapPin size={16} className="text-gold-500"/> {event.location}</span>
+                             <span className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
+                             <span className="flex items-center gap-2"><MapPin size={16} className="text-gold-500"/> {event.location}</span>
                            </div>
                            <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
-                              <span className="text-xs font-bold text-primary-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
-                              
-                              {/* Bouton adapté selon le mode */}
-                              {hasTicket ? (
-                                <button onClick={() => handleBookClick(event)} className="bg-primary-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-gold-500 transition-colors shadow-lg shadow-primary-900/10 flex items-center gap-2"><Ticket size={16}/> Réserver</button>
-                              ) : (
-                                <button onClick={() => handleDetailsClick(event)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary-900 group-hover:text-white transition-all transform group-hover:rotate-[-45deg]"><ArrowRight size={20}/></button>
-                              )}
+                             <span className="text-xs font-bold text-primary-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
+                             
+                             {hasTicket ? (
+                               <button onClick={() => handleBookClick(event)} className="bg-primary-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-gold-500 transition-colors shadow-lg shadow-primary-900/10 flex items-center gap-2"><Ticket size={16}/> Réserver</button>
+                             ) : (
+                               <button onClick={() => handleDetailsClick(event)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary-900 group-hover:text-white transition-all transform group-hover:rotate-[-45deg]"><ArrowRight size={20}/></button>
+                             )}
                            </div>
                         </div>
                      </motion.div>
@@ -339,10 +349,25 @@ export default function Events() {
                           {selectedEvent.description || "Aucune description disponible."}
                       </div>
                       
+                      {/* --- BLOC TÉLÉCHARGEMENT PDF (Nouveau) --- */}
                       {selectedEvent.documentUrl && (
-                          <div className="flex justify-center">
-                              <a href={selectedEvent.documentUrl} target="_blank" rel="noopener noreferrer" className="w-full bg-blue-50 text-blue-700 py-3 rounded-xl font-bold flex items-center justify-center gap-2 hover:bg-blue-100 transition">
-                                  <FileText size={18}/> Télécharger le PDF
+                          <div className="bg-gradient-to-r from-gold-50 to-white border border-gold-200 rounded-2xl p-4 flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                  <div className="bg-gold-100 p-3 rounded-full text-gold-600">
+                                      <FileText size={24}/>
+                                  </div>
+                                  <div>
+                                      <p className="text-sm font-bold text-primary-900">Programme / Document</p>
+                                      <p className="text-xs text-gray-500">Format PDF disponible</p>
+                                  </div>
+                              </div>
+                              <a 
+                                href={selectedEvent.documentUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="bg-primary-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gold-500 transition-colors shadow-sm"
+                              >
+                                  <Download size={16}/> Télécharger
                               </a>
                           </div>
                       )}
