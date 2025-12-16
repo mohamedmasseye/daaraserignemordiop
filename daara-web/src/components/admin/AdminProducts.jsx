@@ -77,16 +77,32 @@ export default function AdminProducts() {
   const handleCreateCategory = async (e) => {
     e.preventDefault();
     if(!newCatName.trim()) return;
+    
     try {
         const token = localStorage.getItem('token');
+        
+        // On vérifie si le token existe avant d'envoyer
+        if (!token) {
+            alert("Vous avez été déconnecté. Veuillez vous reconnecter.");
+            return;
+        }
+
         await axios.post('https://daara-app.onrender.com/api/categories', 
             { name: newCatName, type: 'product' },
             { headers: { Authorization: `Bearer ${token}` } }
         );
+        
         setNewCatName('');
         fetchData(); 
-        alert("Catégorie créée !");
-    } catch (err) { alert("Erreur création"); }
+        alert("Catégorie créée avec succès !");
+    } catch (err) { 
+        console.error(err);
+        if (err.response && err.response.status === 403) {
+            alert("Votre session a expiré. Déconnectez-vous et reconnectez-vous.");
+        } else {
+            alert("Erreur lors de la création de la catégorie."); 
+        }
+    }
   };
 
   const handleUpdateCategory = async (id) => {
