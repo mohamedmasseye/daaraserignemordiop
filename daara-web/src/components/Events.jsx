@@ -3,7 +3,7 @@ import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { 
   Calendar as CalIcon, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, 
-  Moon, ChevronDown, X, Ticket, Star, CheckCircle, Minus, Plus, Loader, FileText, Download
+  Moon, ChevronDown, X, Ticket, Star, CheckCircle, Minus, Plus, Loader, FileText, Download, Eye
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -36,6 +36,7 @@ export default function Events() {
         const response = await axios.get('https://daara-app.onrender.com/api/events');
         const loadedEvents = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
+        
         const upcoming = loadedEvents.find(e => new Date(e.date) >= new Date());
         setNextEvent(upcoming || loadedEvents[loadedEvents.length - 1]);
       } catch (error) { console.error(error); } finally { setLoading(false); }
@@ -197,8 +198,8 @@ export default function Events() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* CALENDRIER GAUCHE (Uniquement visible si on est en mode calendrier ou sur grand écran) */}
-          <div className={`lg:col-span-4 ${activeTab === 'tickets' ? 'hidden lg:block opacity-50 pointer-events-none' : ''}`}>
+          {/* CALENDRIER GAUCHE */}
+          <div className="lg:col-span-4">
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 sticky top-24">
               <div className="bg-gradient-to-br from-primary-900 to-primary-800 p-6 text-white relative">
                 <div className="flex justify-between items-center">
@@ -244,8 +245,8 @@ export default function Events() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : LISTE AVEC DISTINCTION VISUELLE */}
-          <div className={`${activeTab === 'tickets' ? 'lg:col-span-12' : 'lg:col-span-8'}`}>
+          {/* COLONNE DROITE : LISTE (MÊME STRUCTURE POUR LES 2 ONGLETS) */}
+          <div className="lg:col-span-8">
              <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                     {activeTab === 'calendar' ? <><CalIcon className="text-gold-500"/> Agenda de {monthName}</> : <><Ticket className="text-gold-500"/> Billetterie Officielle</>}
@@ -253,7 +254,7 @@ export default function Events() {
                 <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0).length : events.length} Résultat(s)</span>
              </div>
 
-             <div className={`grid gap-6 ${activeTab === 'tickets' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
+             <div className="space-y-6">
                 {(activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0) : events).map((event, index) => {
                    const eventDate = new Date(event.date);
                    const hasTicket = event.hasTicket || event.price > 0;
@@ -265,10 +266,10 @@ export default function Events() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: index * 0.1 }} 
-                        // Style Conditionnel : Si Billetterie -> Bordure Dorée + Ombre Dorée
-                        className={`group bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 flex ${isTicketTab ? 'flex-col border-2 border-gold-200 shadow-md hover:shadow-gold-500/20' : 'flex-col md:flex-row border border-gray-100 shadow-sm'}`}
+                        // Style commun mais bordure dorée pour la billetterie
+                        className={`group bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row border ${isTicketTab ? 'border-gold-200 shadow-md' : 'border-gray-100 shadow-sm'}`}
                      >
-                        <div className={`${isTicketTab ? 'h-48' : 'md:w-1/3 h-56 md:h-auto'} relative overflow-hidden bg-gray-200`}>
+                        <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden bg-gray-200">
                            {event.image ? (
                              <img src={event.image} alt={event.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
                            ) : (
@@ -290,47 +291,56 @@ export default function Events() {
                              </div>
                            )}
 
-                           {/* Prix (Affiché différemment selon le mode) */}
-                           {(event.price > 0 || event.ticketPrice > 0) && isTicketTab && (
-                             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
-                                <span className="text-gold-400 text-xs font-bold uppercase tracking-wider block">Prix du billet</span>
-                                <span className="text-white text-2xl font-bold font-serif">{(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA</span>
+                           {/* PRIX (Uniquement si payant) */}
+                           {(event.price > 0 || event.ticketPrice > 0) && (
+                             <div className="absolute bottom-4 right-4 bg-primary-900 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
+                               {(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA
                              </div>
                            )}
                         </div>
 
-                        <div className={`flex-1 p-6 flex flex-col ${isTicketTab ? 'justify-between' : ''}`}>
-                           <div>
-                               {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE</span>}
-                               <h3 className={`font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors ${isTicketTab ? 'text-xl' : 'text-2xl'}`}>{event.title}</h3>
-                               
-                               {!isTicketTab && <p className="text-gray-500 text-sm line-clamp-2 mb-4">{event.description}</p>}
-                               
-                               <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-gray-600 mb-6">
-                                 <span className="flex items-center gap-1"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
-                                 <span className="flex items-center gap-1"><MapPin size={14} className="text-gold-500"/> {event.location}</span>
-                               </div>
+                        <div className="flex-1 p-6 md:p-8 flex flex-col">
+                           <div className="flex justify-between items-start mb-4">
+                             <div>
+                                {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE DIFFUSION</span>}
+                                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
+                             </div>
                            </div>
-
-                           <div className={`pt-4 border-t ${isTicketTab ? 'border-gold-100' : 'border-gray-100'} flex items-center justify-between mt-auto`}>
+                           
+                           <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
+                           
+                           <div className="flex items-center gap-6 text-sm font-medium text-gray-600 mb-6">
+                             <span className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
+                             <span className="flex items-center gap-2"><MapPin size={16} className="text-gold-500"/> {event.location}</span>
+                           </div>
+                           
+                           <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
                              <span className="text-xs font-bold text-primary-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
                              
-                             {hasTicket ? (
+                             {/* --- LOGIQUE BOUTONS --- */}
+                             {isTicketTab ? (
+                               // Onglet BILLETTERIE -> Bouton "ACHETER"
                                <button 
                                  onClick={() => handleBookClick(event)} 
-                                 className={`${isTicketTab ? 'w-full ml-4' : 'px-6'} py-3 bg-gold-500 text-white rounded-xl font-bold text-sm hover:bg-primary-900 transition-all shadow-lg flex items-center justify-center gap-2`}
+                                 className="bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-primary-900 transition-all shadow-lg flex items-center gap-2"
                                >
-                                 <Ticket size={16}/> {isTicketTab ? 'Acheter un billet' : 'Réserver'}
+                                 <Ticket size={16}/> Acheter un billet
                                </button>
                              ) : (
-                               <button onClick={() => handleDetailsClick(event)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary-900 group-hover:text-white transition-all transform group-hover:rotate-[-45deg]"><ArrowRight size={20}/></button>
+                               // Onglet CALENDRIER -> Bouton "VOIR PLUS"
+                               <button 
+                                 onClick={() => handleDetailsClick(event)} 
+                                 className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-primary-900 hover:text-white transition-all flex items-center gap-2"
+                               >
+                                 <Eye size={16}/> Voir plus
+                               </button>
                              )}
                            </div>
                         </div>
                      </motion.div>
                    );
                 })}
-                {events.length === 0 && <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 col-span-full"><CalIcon size={48} className="text-gray-300 mx-auto mb-4" /><p className="text-gray-500 text-lg">Aucun événement.</p></div>}
+                {events.length === 0 && <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200"><CalIcon size={48} className="text-gray-300 mx-auto mb-4" /><p className="text-gray-500 text-lg">Aucun événement.</p></div>}
              </div>
           </div>
         </div>
@@ -362,6 +372,7 @@ export default function Events() {
                           {selectedEvent.description || "Aucune description disponible."}
                       </div>
                       
+                      {/* BLOC PDF */}
                       {selectedEvent.documentUrl && (
                           <div className="bg-gradient-to-r from-gold-50 to-white border border-gold-200 rounded-2xl p-4 flex items-center justify-between">
                               <div className="flex items-center gap-3">
