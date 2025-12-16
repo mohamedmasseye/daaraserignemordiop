@@ -34,11 +34,8 @@ export default function Events() {
     const fetchEvents = async () => {
       try {
         const response = await axios.get('https://daara-app.onrender.com/api/events');
-        // Tri par date croissante
         const loadedEvents = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
-        
-        // Trouver le prochain événement
         const upcoming = loadedEvents.find(e => new Date(e.date) >= new Date());
         setNextEvent(upcoming || loadedEvents[loadedEvents.length - 1]);
       } catch (error) { console.error(error); } finally { setLoading(false); }
@@ -159,7 +156,7 @@ export default function Events() {
                   )}
                   <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 border border-white/30 rounded-full font-bold text-white hover:bg-white/10 transition-all backdrop-blur-md">Plus d'infos</button>
                   
-                  {/* Petit indicateur PDF HERO */}
+                  {/* Badge PDF Hero */}
                   {nextEvent.documentUrl && (
                       <div className="flex items-center gap-2 text-gold-400 text-sm font-bold border-l border-white/20 pl-4 ml-2">
                           <FileText size={18}/> PDF Disponible
@@ -200,8 +197,8 @@ export default function Events() {
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* CALENDRIER GAUCHE */}
-          <div className="lg:col-span-4">
+          {/* CALENDRIER GAUCHE (Uniquement visible si on est en mode calendrier ou sur grand écran) */}
+          <div className={`lg:col-span-4 ${activeTab === 'tickets' ? 'hidden lg:block opacity-50 pointer-events-none' : ''}`}>
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 sticky top-24">
               <div className="bg-gradient-to-br from-primary-900 to-primary-800 p-6 text-white relative">
                 <div className="flex justify-between items-center">
@@ -247,68 +244,84 @@ export default function Events() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : LISTE */}
-          <div className="lg:col-span-8">
+          {/* COLONNE DROITE : LISTE AVEC DISTINCTION VISUELLE */}
+          <div className={`${activeTab === 'tickets' ? 'lg:col-span-12' : 'lg:col-span-8'}`}>
              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-serif font-bold text-gray-900">{activeTab === 'calendar' ? `Agenda de ${monthName}` : 'Billetterie Officielle'}</h2>
-                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{events.length} Événements trouvés</span>
+                <h2 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
+                    {activeTab === 'calendar' ? <><CalIcon className="text-gold-500"/> Agenda de {monthName}</> : <><Ticket className="text-gold-500"/> Billetterie Officielle</>}
+                </h2>
+                <span className="text-xs font-bold text-gray-400 uppercase tracking-widest">{activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0).length : events.length} Résultat(s)</span>
              </div>
 
-             <div className="space-y-6">
+             <div className={`grid gap-6 ${activeTab === 'tickets' ? 'grid-cols-1 md:grid-cols-2 lg:grid-cols-3' : 'grid-cols-1'}`}>
                 {(activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0) : events).map((event, index) => {
                    const eventDate = new Date(event.date);
                    const hasTicket = event.hasTicket || event.price > 0;
+                   const isTicketTab = activeTab === 'tickets';
 
                    return (
-                     <motion.div key={event._id || index} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="group bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row">
-                        <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden bg-gray-200">
+                     <motion.div 
+                        key={event._id || index} 
+                        initial={{ opacity: 0, y: 20 }} 
+                        animate={{ opacity: 1, y: 0 }} 
+                        transition={{ delay: index * 0.1 }} 
+                        // Style Conditionnel : Si Billetterie -> Bordure Dorée + Ombre Dorée
+                        className={`group bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 flex ${isTicketTab ? 'flex-col border-2 border-gold-200 shadow-md hover:shadow-gold-500/20' : 'flex-col md:flex-row border border-gray-100 shadow-sm'}`}
+                     >
+                        <div className={`${isTicketTab ? 'h-48' : 'md:w-1/3 h-56 md:h-auto'} relative overflow-hidden bg-gray-200`}>
                            {event.image ? (
                              <img src={event.image} alt={event.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-700" />
                            ) : (
                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100"><Moon size={40} className="mb-2 opacity-20"/><span className="text-xs font-bold uppercase opacity-40">Pas d'image</span></div>
                            )}
                            
-                           {/* --- DATE BADGE --- */}
-                           <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-4 py-2 rounded-xl shadow-lg text-center min-w-[70px]">
-                             <span className="block text-2xl font-bold text-primary-900 font-serif leading-none">{eventDate.getDate()}</span>
-                             <span className="block text-xs font-bold text-gold-600 uppercase mt-1">{eventDate.toLocaleDateString('fr-FR', {month:'short'})}</span>
+                           {/* Date Badge */}
+                           <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg text-center min-w-[60px]">
+                             <span className="block text-xl font-bold text-primary-900 font-serif leading-none">{eventDate.getDate()}</span>
+                             <span className="block text-[10px] font-bold text-gold-600 uppercase mt-0.5">{eventDate.toLocaleDateString('fr-FR', {month:'short'})}</span>
                            </div>
 
-                           {/* --- BADGE PDF LISTE (Nouveau) --- */}
+                           {/* PDF Badge */}
                            {event.documentUrl && (
                              <div className="absolute top-4 right-4 z-20">
-                                <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg flex flex-col items-center justify-center text-primary-900 group-hover:bg-gold-500 group-hover:text-white transition-colors duration-300 cursor-help" title="Document PDF disponible">
-                                  <FileText size={20} />
-                                  <span className="text-[8px] font-bold uppercase mt-1">PDF</span>
+                                <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg text-primary-900 group-hover:bg-gold-500 group-hover:text-white transition-colors cursor-help" title="PDF disponible">
+                                  <FileText size={18} />
                                 </div>
                              </div>
                            )}
 
-                           {/* --- PRIX BADGE --- */}
-                           {(event.price > 0 || event.ticketPrice > 0) && (
-                             <div className="absolute bottom-4 right-4 bg-primary-900 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
-                               {(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA
+                           {/* Prix (Affiché différemment selon le mode) */}
+                           {(event.price > 0 || event.ticketPrice > 0) && isTicketTab && (
+                             <div className="absolute bottom-0 left-0 w-full bg-gradient-to-t from-black/80 to-transparent p-4 pt-10">
+                                <span className="text-gold-400 text-xs font-bold uppercase tracking-wider block">Prix du billet</span>
+                                <span className="text-white text-2xl font-bold font-serif">{(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA</span>
                              </div>
                            )}
                         </div>
 
-                        <div className="flex-1 p-6 md:p-8 flex flex-col">
-                           <div className="flex justify-between items-start mb-4">
-                             <div>
-                                {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE DIFFUSION</span>}
-                                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
-                             </div>
+                        <div className={`flex-1 p-6 flex flex-col ${isTicketTab ? 'justify-between' : ''}`}>
+                           <div>
+                               {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-1 rounded mb-2">● LIVE</span>}
+                               <h3 className={`font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors ${isTicketTab ? 'text-xl' : 'text-2xl'}`}>{event.title}</h3>
+                               
+                               {!isTicketTab && <p className="text-gray-500 text-sm line-clamp-2 mb-4">{event.description}</p>}
+                               
+                               <div className="flex flex-wrap items-center gap-4 text-sm font-medium text-gray-600 mb-6">
+                                 <span className="flex items-center gap-1"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
+                                 <span className="flex items-center gap-1"><MapPin size={14} className="text-gold-500"/> {event.location}</span>
+                               </div>
                            </div>
-                           <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
-                           <div className="flex items-center gap-6 text-sm font-medium text-gray-600 mb-6">
-                             <span className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
-                             <span className="flex items-center gap-2"><MapPin size={16} className="text-gold-500"/> {event.location}</span>
-                           </div>
-                           <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
+
+                           <div className={`pt-4 border-t ${isTicketTab ? 'border-gold-100' : 'border-gray-100'} flex items-center justify-between mt-auto`}>
                              <span className="text-xs font-bold text-primary-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
                              
                              {hasTicket ? (
-                               <button onClick={() => handleBookClick(event)} className="bg-primary-900 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-gold-500 transition-colors shadow-lg shadow-primary-900/10 flex items-center gap-2"><Ticket size={16}/> Réserver</button>
+                               <button 
+                                 onClick={() => handleBookClick(event)} 
+                                 className={`${isTicketTab ? 'w-full ml-4' : 'px-6'} py-3 bg-gold-500 text-white rounded-xl font-bold text-sm hover:bg-primary-900 transition-all shadow-lg flex items-center justify-center gap-2`}
+                               >
+                                 <Ticket size={16}/> {isTicketTab ? 'Acheter un billet' : 'Réserver'}
+                               </button>
                              ) : (
                                <button onClick={() => handleDetailsClick(event)} className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:bg-primary-900 group-hover:text-white transition-all transform group-hover:rotate-[-45deg]"><ArrowRight size={20}/></button>
                              )}
@@ -317,7 +330,7 @@ export default function Events() {
                      </motion.div>
                    );
                 })}
-                {events.length === 0 && <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200"><CalIcon size={48} className="text-gray-300 mx-auto mb-4" /><p className="text-gray-500 text-lg">Aucun événement.</p></div>}
+                {events.length === 0 && <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200 col-span-full"><CalIcon size={48} className="text-gray-300 mx-auto mb-4" /><p className="text-gray-500 text-lg">Aucun événement.</p></div>}
              </div>
           </div>
         </div>
@@ -349,7 +362,6 @@ export default function Events() {
                           {selectedEvent.description || "Aucune description disponible."}
                       </div>
                       
-                      {/* --- BLOC TÉLÉCHARGEMENT PDF (Nouveau) --- */}
                       {selectedEvent.documentUrl && (
                           <div className="bg-gradient-to-r from-gold-50 to-white border border-gold-200 rounded-2xl p-4 flex items-center justify-between">
                               <div className="flex items-center gap-3">
