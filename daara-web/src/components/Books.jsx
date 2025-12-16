@@ -10,22 +10,25 @@ export default function Books() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tout');
 
-  // --- FONCTION DE CORRECTION D'URL (Le secret !) ---
-  // Transforme les vieux liens 'localhost' en liens 'onrender' valides
+  // --- FONCTION DE CORRECTION D'URL (ROBUSTE) ---
   const getSecureUrl = (url) => {
     if (!url) return null;
     
-    // Si l'URL contient localhost, on la remplace par l'URL de production
+    // Correction Localhost -> Render
     if (url.includes('localhost:5000')) {
       return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
     }
     
-    // Si l'URL est en HTTP sur Render, on force HTTPS
-    if (url.includes('daara-app.onrender.com') && url.startsWith('http://')) {
+    // Force HTTPS partout (Cloudinary, Render, etc.) pour éviter Mixed Content
+    if (url.startsWith('http://')) {
         return url.replace('http://', 'https://');
     }
 
-    // Sinon on retourne l'URL telle quelle (si c'est déjà bon ou externe)
+    // Chemins relatifs
+    if (url.startsWith('/uploads')) {
+        return `https://daara-app.onrender.com${url}`;
+    }
+
     return url;
   };
 
@@ -67,7 +70,6 @@ export default function Books() {
       {/* --- LE LECTEUR (MODAL) --- */}
       {selectedBook && (
         <BookReader 
-          // ✅ ICI : On utilise la fonction pour corriger l'URL du PDF avant de l'envoyer
           pdfUrl={getSecureUrl(selectedBook.pdfUrl)} 
           title={selectedBook.title}
           onClose={() => setSelectedBook(null)} 
@@ -124,18 +126,22 @@ export default function Books() {
                <p>Aucun livre ne correspond à votre recherche.</p>
              </div>
           ) : (
-            filteredBooks.map((book) => (
+            filteredBooks.map((book) => {
+              // On récupère l'image peu importe le nom de la propriété (compatibilité anciens/nouveaux)
+              const coverImage = book.coverUrl || book.coverImage || book.coverImageUrl;
+
+              return (
               <div key={book._id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 flex flex-col h-full group overflow-hidden">
                 
                 {/* ZONE DE COUVERTURE */}
                 <div className="h-48 bg-primary-50 relative overflow-hidden flex items-center justify-center">
                    
-                   {/* ✅ ICI : Modification de coverImageUrl -> coverUrl */}
-                   {book.coverUrl ? (
+                   {coverImage ? (
                       <img 
-                        src={getSecureUrl(book.coverUrl)} 
+                        src={getSecureUrl(coverImage)} 
                         alt={book.title} 
                         className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
+                        referrerPolicy="no-referrer" // ✅ Empêche le blocage ORB
                         onError={(e) => { e.target.style.display = 'none'; }} // Cache l'image si elle est cassée
                       />
                    ) : (
@@ -181,7 +187,6 @@ export default function Books() {
                       <BookOpen className="h-4 w-4" /> Lire
                     </button>
                     
-                    {/* ✅ ICI : On corrige aussi l'URL de téléchargement */}
                     <a 
                       href={getSecureUrl(book.pdfUrl)} 
                       download 
@@ -195,7 +200,8 @@ export default function Books() {
                   </div>
                 </div>
               </div>
-            ))
+            );
+            })
           )}
         </div>
       </div>
