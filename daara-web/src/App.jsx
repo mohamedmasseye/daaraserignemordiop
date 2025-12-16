@@ -1,12 +1,17 @@
-import React from 'react';
+import React, { useEffect } from 'react'; // J'ai ajouté useEffect ici
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+
+// --- 1. IMPORTS CAPACITOR (NOUVEAU) ---
+import { PushNotifications } from '@capacitor/push-notifications';
+import { FCM } from '@capacitor-community/fcm';
+import { Capacitor } from '@capacitor/core';
 
 // --- IMPORTS COMPOSANTS PUBLICS ---
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
 import Books from './components/Books';
-import Events from './components/Events'; // Import du composant Events (Agenda & Billetterie)
+import Events from './components/Events'; 
 import Contact from './components/Contact';
 import Donate from './components/Donate';
 
@@ -42,9 +47,8 @@ import AdminHome from './components/admin/AdminHome';
 
 // --- GARDIENS DE SÉCURITÉ (PROTECTION DES ROUTES) ---
 
-// 1. Protection Public (Pour le Profil utilisateur connecté)
+// 1. Protection Public
 const PublicProtectedRoute = ({ children }) => {
-  // 👇 CORRECTION ICI : on cherche 'token'
   const token = localStorage.getItem('token'); 
   if (!token) {
     return <Navigate to="/login-public" replace />; 
@@ -52,11 +56,9 @@ const PublicProtectedRoute = ({ children }) => {
   return children;
 };
 
-// 2. Protection Admin (Pour le Back-office)
+// 2. Protection Admin
 const AdminProtectedRoute = ({ children }) => {
-    // 👇 CORRECTION ICI : on cherche 'token' (C'est le plus important !)
     const token = localStorage.getItem('token');
-    
     if (!token) {
         return <Navigate to="/admin-login" replace />; 
     }
@@ -64,7 +66,6 @@ const AdminProtectedRoute = ({ children }) => {
 }
 
 // --- LAYOUT PUBLIC GLOBAL ---
-// Ce layout assure que la Navbar et le Footer sont présents sur toutes les pages publiques
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
     <Navbar />
@@ -76,33 +77,75 @@ const PublicLayout = ({ children }) => (
 );
 
 function App() {
+
+  // --- 2. LOGIQUE DE NOTIFICATION (NOUVEAU) ---
+  useEffect(() => {
+    // On vérifie si on est sur mobile pour ne pas faire planter le site web
+    if (Capacitor.isNativePlatform()) {
+      
+      const initPush = async () => {
+        // A. Vérifier / Demander la permission
+        let permStatus = await PushNotifications.checkPermissions();
+        if (permStatus.receive === 'prompt') {
+          permStatus = await PushNotifications.requestPermissions();
+        }
+
+        if (permStatus.receive === 'granted') {
+          // B. Enregistrer l'appareil sur le réseau
+          await PushNotifications.register();
+          
+          // C. S'abonner au canal "all_users" pour recevoir les messages de l'admin
+          try {
+            await FCM.subscribeTo({ topic: 'all_users' });
+            console.log('✅ Mobile : Abonné au topic "all_users"');
+          } catch (err) {
+            console.error('❌ Erreur abonnement topic:', err);
+          }
+        }
+      };
+
+      initPush();
+
+      // D. Écouter les notifications reçues (App ouverte)
+      const listenerReceived = PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        alert(`🔔 ${notification.title}\n${notification.body}`);
+      });
+
+      // E. Écouter le clic sur la notification
+      const listenerAction = PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
+        console.log('Notification ouverte:', notification);
+        // Vous pourrez ajouter une redirection ici plus tard si besoin
+      });
+
+      // Nettoyage des écouteurs
+      return () => {
+        listenerReceived.remove();
+        listenerAction.remove();
+      };
+    }
+  }, []);
+  // ---------------------------------------------
+
   return (
     <Router>
       <Routes>
         
         {/* =======================================================
             ZONE ADMINISTRATION (BACK-OFFICE)
-            Accessibles uniquement via connexion Admin
-           ======================================================= */}
-        
-        {/* Connexion Admin */}
+            ======================================================= */}
         <Route path="/admin-login" element={<LoginAdmin />} /> 
         
-        {/* Dashboard & Général */}
         <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         
-        {/* Gestion Contenu (Médiathèque) */}
         <Route path="/admin/books" element={<AdminProtectedRoute><AdminBooks /></AdminProtectedRoute>} />
         <Route path="/admin/blog" element={<AdminProtectedRoute><AdminBlog /></AdminProtectedRoute>} />
         <Route path="/admin/galerie" element={<AdminProtectedRoute><AdminGallery /></AdminProtectedRoute>} />
         <Route path="/admin/podcast" element={<AdminProtectedRoute><AdminPodcast /></AdminProtectedRoute>} />
 
-        {/* Gestion Boutique */}
         <Route path="/admin/products" element={<AdminProtectedRoute><AdminProducts /></AdminProtectedRoute>} />
         <Route path="/admin/orders" element={<AdminProtectedRoute><AdminOrders /></AdminProtectedRoute>} />
 
-        {/* Gestion Communauté & Communication */}
         <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
         <Route path="/admin/events" element={<AdminProtectedRoute><AdminEvents /></AdminProtectedRoute>} />
         <Route path="/admin/notifications" element={<AdminProtectedRoute><AdminNotifications /></AdminProtectedRoute>} />
@@ -112,33 +155,26 @@ function App() {
 
         {/* =======================================================
             ZONE PUBLIQUE (VISITEURS & MEMBRES)
-            Utilise le PublicLayout (Navbar + Footer)
-           ======================================================= */}
+            ======================================================= */}
         
-        {/* Accueil */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         
-        {/* Boutique Client */}
         <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
         <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
         <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
 
-        {/* Médiathèque */}
         <Route path="/livres" element={<PublicLayout><Books /></PublicLayout>} />
         <Route path="/blog" element={<PublicLayout><Blog /></PublicLayout>} />
         <Route path="/galerie" element={<PublicLayout><Gallery /></PublicLayout>} />
         <Route path="/podcast" element={<PublicLayout><Podcast /></PublicLayout>} />
 
-        {/* Pages d'Information & Interaction */}
         <Route path="/evenements" element={<PublicLayout><Events /></PublicLayout>} />
         <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
         
-        {/* Authentification Membre */}
         <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
         <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
 
-        {/* Espace Membre (Protégé) */}
         <Route path="/profil" element={
           <PublicProtectedRoute>
              <PublicLayout>
@@ -147,10 +183,7 @@ function App() {
           </PublicProtectedRoute>
         } />
         
-        {/* Redirection par défaut pour /login */}
         <Route path="/login" element={<Navigate to="/admin-login" replace />} />
-        
-        {/* Route 404 (Optionnelle, redirige vers l'accueil) */}
         <Route path="*" element={<Navigate to="/" replace />} />
         
       </Routes>
