@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Book, Download, Search, Eye, BookOpen, Filter } from 'lucide-react';
+import { Book, Download, Search, Eye, BookOpen, Filter, Image as ImageIcon } from 'lucide-react';
 import BookReader from '../components/BookReader'; 
 
 export default function Books() {
@@ -10,21 +10,21 @@ export default function Books() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tout');
 
-  // --- FONCTION DE CORRECTION D'URL (ROBUSTE) ---
+  // --- FONCTION DE SÉCURISATION D'URL (ROBUSTE) ---
   const getSecureUrl = (url) => {
     if (!url) return null;
     
-    // Correction Localhost -> Render
+    // Si l'URL contient localhost, on la remplace par l'URL de production
     if (url.includes('localhost:5000')) {
       return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
     }
     
-    // Force HTTPS partout (Cloudinary, Render, etc.) pour éviter Mixed Content
+    // Force HTTPS pour éviter "Mixed Content"
     if (url.startsWith('http://')) {
         return url.replace('http://', 'https://');
     }
 
-    // Chemins relatifs
+    // Gestion des chemins relatifs
     if (url.startsWith('/uploads')) {
         return `https://daara-app.onrender.com${url}`;
     }
@@ -127,8 +127,8 @@ export default function Books() {
              </div>
           ) : (
             filteredBooks.map((book) => {
-              // On récupère l'image peu importe le nom de la propriété (compatibilité anciens/nouveaux)
-              const coverImage = book.coverUrl || book.coverImage || book.coverImageUrl;
+              // Sécurité : on cherche l'image peu importe le nom de la propriété
+              const coverUrl = getSecureUrl(book.coverUrl || book.coverImage);
 
               return (
               <div key={book._id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 flex flex-col h-full group overflow-hidden">
@@ -136,13 +136,13 @@ export default function Books() {
                 {/* ZONE DE COUVERTURE */}
                 <div className="h-48 bg-primary-50 relative overflow-hidden flex items-center justify-center">
                    
-                   {coverImage ? (
+                   {coverUrl ? (
                       <img 
-                        src={getSecureUrl(coverImage)} 
+                        src={coverUrl} 
                         alt={book.title} 
                         className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
-                        referrerPolicy="no-referrer" // ✅ Empêche le blocage ORB
-                        onError={(e) => { e.target.style.display = 'none'; }} // Cache l'image si elle est cassée
+                        referrerPolicy="no-referrer" // ✅ CORRECTION CLÉ (Évite l'erreur ORB)
+                        onError={(e) => { e.target.style.display = 'none'; }} 
                       />
                    ) : (
                       <>
