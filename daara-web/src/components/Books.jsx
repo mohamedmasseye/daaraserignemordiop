@@ -130,10 +130,10 @@ export default function Books() {
                 {/* ZONE DE COUVERTURE */}
                 <div className="h-48 bg-primary-50 relative overflow-hidden flex items-center justify-center">
                    
-                   {/* ✅ ICI : On corrige aussi l'URL de l'image de couverture */}
-                   {book.coverImageUrl ? (
+                   {/* ✅ ICI : Modification de coverImageUrl -> coverUrl */}
+                   {book.coverUrl ? (
                       <img 
-                        src={getSecureUrl(book.coverImageUrl)} 
+                        src={getSecureUrl(book.coverUrl)} 
                         alt={book.title} 
                         className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
                         onError={(e) => { e.target.style.display = 'none'; }} // Cache l'image si elle est cassée
