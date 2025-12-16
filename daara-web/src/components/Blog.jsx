@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Calendar, User, ArrowRight, MessageSquare, Tag, X, Send, Heart, LogIn, FileText, Download, Share2 } from 'lucide-react';
+import { Calendar, User, ArrowRight, MessageSquare, Tag, X, Send, Heart, LogIn, FileText, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { Document, Page, pdfjs } from 'react-pdf';
 
@@ -26,7 +26,7 @@ export default function Blog() {
   // États Interaction
   const [commentText, setCommentText] = useState('');
   const [user, setUser] = useState(null);
-  const [isLiking, setIsLiking] = useState(false); // Pour éviter le double-clic
+  const [isLiking, setIsLiking] = useState(false);
 
   useEffect(() => {
     const storedUser = JSON.parse(localStorage.getItem('user_info'));
@@ -43,14 +43,12 @@ export default function Blog() {
   };
 
   const handleLike = async (e, post) => {
-    e.stopPropagation(); // Empêche d'ouvrir le modal si on clique sur like depuis la liste
+    e.stopPropagation();
     if (isLiking) return;
     setIsLiking(true);
 
     try {
       const res = await axios.put(`https://daara-app.onrender.com/api/blog/${post._id}/like`);
-      
-      // Mise à jour locale optimiste
       const updatedPosts = posts.map(p => p._id === post._id ? res.data : p);
       setPosts(updatedPosts);
       
@@ -70,19 +68,18 @@ export default function Blog() {
       });
       const updatedPosts = posts.map(p => p._id === selectedPost._id ? res.data : p);
       setPosts(updatedPosts);
-      setSelectedPost(res.data); // Met à jour le modal ouvert
+      setSelectedPost(res.data);
       setCommentText('');
     } catch (error) { console.error(error); }
   };
 
-  // Fermeture du modal propre
   const closeModal = () => {
       setSelectedPost(null);
-      setNumPages(null); // Reset PDF
+      setNumPages(null);
   };
 
   if (loading) return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-emerald-800">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-50 text-primary-900">
         <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-current mb-4"></div>
         <p className="font-serif animate-pulse">Chargement du Journal...</p>
     </div>
@@ -91,10 +88,11 @@ export default function Blog() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans text-gray-800">
       
-      {/* Header Héroique */}
-      <div className="bg-emerald-900 text-white pt-28 pb-24 px-4 text-center relative overflow-hidden shadow-2xl">
+      {/* Header Héroique (REMISE DE LA COULEUR PRIMARY-900) */}
+      <div className="bg-primary-900 text-white pt-28 pb-24 px-4 text-center relative overflow-hidden shadow-2xl">
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] opacity-10"></div>
-        <div className="absolute inset-0 bg-gradient-to-b from-emerald-900/50 to-emerald-900"></div>
+        {/* Gradient adapté au Primary (Bleu Nuit) */}
+        <div className="absolute inset-0 bg-gradient-to-b from-primary-900/50 to-primary-900"></div>
         <motion.div 
           initial={{ y: 20, opacity: 0 }} animate={{ y: 0, opacity: 1 }}
           className="relative z-10"
@@ -103,7 +101,7 @@ export default function Blog() {
                 Médiathèque & Savoir
             </span>
             <h1 className="text-4xl md:text-6xl font-serif font-bold mb-4">Le Journal du Daara</h1>
-            <p className="text-emerald-100 text-lg max-w-2xl mx-auto font-light">
+            <p className="text-primary-100 text-lg max-w-2xl mx-auto font-light">
                 Explorez nos articles, reflexions spirituelles et documents d'étude.
             </p>
         </motion.div>
@@ -124,11 +122,11 @@ export default function Blog() {
                 {post.coverImage ? (
                   <img src={post.coverImage} alt={post.title} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full bg-emerald-50 flex items-center justify-center flex-col text-emerald-200">
+                  <div className="w-full h-full bg-primary-50 flex items-center justify-center flex-col text-primary-200">
                       <FileText size={48} />
                   </div>
                 )}
-                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-emerald-800 uppercase tracking-wider shadow-sm">
+                <div className="absolute top-4 left-4 bg-white/95 backdrop-blur px-3 py-1 rounded-full text-xs font-bold text-primary-900 uppercase tracking-wider shadow-sm">
                   {post.category}
                 </div>
                 {post.pdfDocument && (
@@ -153,14 +151,14 @@ export default function Blog() {
                   </button>
                 </div>
                 
-                <h3 className="text-xl font-bold text-gray-900 mb-3 font-serif group-hover:text-emerald-700 transition-colors line-clamp-2">
+                <h3 className="text-xl font-bold text-gray-900 mb-3 font-serif group-hover:text-primary-700 transition-colors line-clamp-2">
                   {post.title}
                 </h3>
                 <p className="text-gray-600 text-sm mb-6 line-clamp-3 flex-1 leading-relaxed">
                     {post.summary || "Aucun résumé disponible."}
                 </p>
                 
-                <div className="mt-auto w-full py-3 bg-gray-50 text-emerald-700 rounded-xl font-bold group-hover:bg-emerald-600 group-hover:text-white transition flex items-center justify-center gap-2 text-sm">
+                <div className="mt-auto w-full py-3 bg-gray-50 text-primary-700 rounded-xl font-bold group-hover:bg-primary-900 group-hover:text-white transition flex items-center justify-center gap-2 text-sm">
                   Lire l'article <ArrowRight size={16}/>
                 </div>
               </div>
@@ -169,15 +167,14 @@ export default function Blog() {
         </div>
       </div>
 
-      {/* --- MODAL ARTICLE (DESIGN REVU) --- */}
+      {/* --- MODAL ARTICLE --- */}
       <AnimatePresence>
         {selectedPost && (
           <motion.div 
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-emerald-950/80 backdrop-blur-md overflow-y-auto" // Scroll sur le parent
+            className="fixed inset-0 z-[100] bg-primary-950/80 backdrop-blur-md overflow-y-auto"
             onClick={closeModal}
           >
-            {/* Conteneur Flex items-start pour voir le haut */}
             <div className="min-h-full w-full flex items-start justify-center p-4 md:p-8">
               
               <motion.div 
@@ -185,10 +182,10 @@ export default function Blog() {
                 animate={{ y: 0, opacity: 1, scale: 1 }} 
                 exit={{ y: 50, opacity: 0, scale: 0.95 }}
                 transition={{ type: "spring", bounce: 0.3 }}
-                className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden relative my-4" // Marge verticale
+                className="bg-white w-full max-w-5xl rounded-2xl shadow-2xl overflow-hidden relative my-4"
                 onClick={e => e.stopPropagation()}
               >
-                {/* Bouton Fermer Flottant */}
+                {/* Bouton Fermer */}
                 <button 
                     onClick={closeModal} 
                     className="absolute top-4 right-4 z-30 p-2 bg-white/20 hover:bg-white/40 text-white rounded-full transition backdrop-blur-md"
@@ -201,16 +198,14 @@ export default function Blog() {
                   {selectedPost.coverImage ? (
                       <img src={selectedPost.coverImage} className="w-full h-full object-cover" alt="" />
                   ) : (
-                      <div className="w-full h-full bg-emerald-900 flex items-center justify-center">
-                          <Tag size={64} className="text-emerald-700 opacity-50"/>
+                      <div className="w-full h-full bg-primary-900 flex items-center justify-center">
+                          <Tag size={64} className="text-primary-700 opacity-50"/>
                       </div>
                   )}
-                  {/* Overlay Gradient */}
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent"></div>
                   
-                  {/* Titre et Infos sur l'image */}
                   <div className="absolute bottom-0 left-0 w-full p-6 md:p-10 text-white">
-                    <span className="bg-gold-500 text-emerald-950 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">
+                    <span className="bg-gold-500 text-primary-950 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-3 inline-block">
                         {selectedPost.category}
                     </span>
                     <h2 className="text-3xl md:text-5xl font-serif font-bold leading-tight mb-4 text-shadow-lg">
@@ -223,11 +218,11 @@ export default function Blog() {
                     </div>
                   </div>
 
-                  {/* BOUTON LIKE FLOTTANT (Gros) */}
+                  {/* BOUTON LIKE FLOTTANT */}
                   <motion.button 
                     whileTap={{ scale: 0.8 }}
                     onClick={(e) => handleLike(e, selectedPost)}
-                    className="absolute bottom-[-24px] right-8 md:right-12 bg-white text-emerald-900 p-4 rounded-full shadow-2xl flex items-center gap-2 z-20 border-4 border-gray-50 hover:border-emerald-100 transition-colors"
+                    className="absolute bottom-[-24px] right-8 md:right-12 bg-white text-primary-900 p-4 rounded-full shadow-2xl flex items-center gap-2 z-20 border-4 border-gray-50 hover:border-primary-100 transition-colors"
                   >
                     <Heart size={28} className={selectedPost.likes > 0 ? "fill-rose-500 text-rose-500" : "text-gray-400"} />
                     <span className="font-bold text-lg">{selectedPost.likes || 0}</span>
@@ -238,16 +233,16 @@ export default function Blog() {
                 <div className="p-6 md:p-12 bg-white">
                   
                   {/* Texte Riche */}
-                  <div className="prose prose-lg prose-emerald max-w-none font-serif text-gray-700 leading-loose mb-12 first-letter:text-5xl first-letter:font-bold first-letter:text-emerald-700 first-letter:mr-1 first-letter:float-left">
+                  <div className="prose prose-lg prose-primary max-w-none font-serif text-gray-700 leading-loose mb-12 first-letter:text-5xl first-letter:font-bold first-letter:text-primary-700 first-letter:mr-1 first-letter:float-left">
                     {selectedPost.content.split('\n').map((para, i) => (
                         <p key={i} className="mb-4">{para}</p>
                     ))}
                   </div>
 
-                  {/* --- 3. LECTEUR PDF AMÉLIORÉ --- */}
+                  {/* --- 3. LECTEUR PDF --- */}
                   {selectedPost.pdfDocument && (
                     <div className="my-12 bg-gray-50 rounded-2xl border border-gray-200 overflow-hidden">
-                      <div className="bg-emerald-900 text-white p-4 flex items-center justify-between">
+                      <div className="bg-primary-900 text-white p-4 flex items-center justify-between">
                         <h3 className="font-bold flex items-center gap-2"><FileText/> Document Joint</h3>
                         <a 
                             href={selectedPost.pdfDocument} 
@@ -284,14 +279,13 @@ export default function Blog() {
                   {/* --- 4. ZONE COMMENTAIRES --- */}
                   <div className="border-t border-gray-100 pt-12 mt-8">
                     <h3 className="text-2xl font-bold text-gray-800 mb-8 flex items-center gap-3">
-                      <div className="p-2 bg-emerald-100 rounded-lg text-emerald-700"><MessageSquare size={24}/></div>
+                      <div className="p-2 bg-primary-100 rounded-lg text-primary-700"><MessageSquare size={24}/></div>
                       Discussion <span className="text-gray-400 text-lg font-normal">({selectedPost.comments?.length || 0})</span>
                     </h3>
                     
-                    {/* Formulaire */}
                     {user ? (
                       <div className="flex gap-4 mb-10">
-                        <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center text-emerald-700 font-bold text-xl shrink-0">
+                        <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center text-primary-700 font-bold text-xl shrink-0">
                             {user.fullName.charAt(0)}
                         </div>
                         <div className="flex-1 relative">
@@ -299,12 +293,12 @@ export default function Blog() {
                                 value={commentText} 
                                 onChange={(e) => setCommentText(e.target.value)} 
                                 placeholder="Partagez votre avis avec la communauté..." 
-                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 focus:ring-2 focus:ring-emerald-500 outline-none min-h-[100px] resize-y text-gray-700"
+                                className="w-full bg-gray-50 border border-gray-200 rounded-2xl p-4 focus:ring-2 focus:ring-primary-500 outline-none min-h-[100px] resize-y text-gray-700"
                             ></textarea>
                             <button 
                                 onClick={handleCommentSubmit} 
                                 disabled={!commentText.trim()}
-                                className="absolute bottom-3 right-3 bg-emerald-600 disabled:bg-gray-300 text-white p-2 rounded-xl transition hover:bg-emerald-700"
+                                className="absolute bottom-3 right-3 bg-primary-900 disabled:bg-gray-300 text-white p-2 rounded-xl transition hover:bg-primary-800"
                             >
                                 <Send size={20}/>
                             </button>
@@ -318,7 +312,6 @@ export default function Blog() {
                       </div>
                     )}
 
-                    {/* Liste des commentaires */}
                     <div className="space-y-6">
                       {selectedPost.comments && selectedPost.comments.slice().reverse().map((comment, i) => (
                         <div key={i} className="group flex gap-4">
