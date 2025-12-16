@@ -97,7 +97,7 @@ const EventPopup = ({ event, onClose, onBook }) => {
       <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative border-2 border-gold-500/30">
         <button onClick={onClose} className="absolute top-3 right-3 p-2 bg-black/10 hover:bg-black/20 rounded-full text-white z-20 transition-colors"><X size={20} /></button>
         <div className="h-48 relative">
-          {/* ✅ Utilisation de getSecureUrl ici aussi + referrerPolicy */}
+          {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
           <img 
             src={getSecureUrl(event.image) || "https://images.unsplash.com/photo-1555431189-0fabf2667795?auto=format&fit=crop&q=80"} 
             alt={event.title} 
@@ -138,7 +138,6 @@ export default function Home() {
     try {
       const res = await axios.get('https://daara-app.onrender.com/api/home-content');
       // Si le serveur renvoie des données, on fusionne avec les défauts
-      // Cela garantit que si une image est manquante dans la DB, l'image Unsplash reste
       if (res.data && Object.keys(res.data).length > 0) {
           setContent(prev => ({ ...DEFAULT_CONTENT, ...res.data }));
       }
@@ -222,14 +221,13 @@ export default function Home() {
       <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
-            {/* ✅ APPLICATION DE getSecureUrl SUR LE SLIDER AVEC CORRECTION ORB */}
+            {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
             <img 
                 src={getSecureUrl(content.slides[currentSlide]?.image)} 
                 alt="Hero" 
                 className="w-full h-full object-cover"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
-                    // Fallback si l'image casse : on remet l'image par défaut correspondante
                     e.target.src = DEFAULT_CONTENT.slides[currentSlide % 3].image;
                 }}
             />
@@ -280,7 +278,7 @@ export default function Home() {
           <motion.div variants={fadeInUp} className="relative">
             <div className="absolute inset-0 bg-gold-500 rounded-[2rem] rotate-3 transform translate-x-2 translate-y-2 opacity-20"></div>
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group">
-              {/* ✅ APPLICATION DE getSecureUrl SUR L'IMAGE ABOUT + referrerPolicy */}
+              {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
               <img 
                 src={getSecureUrl(content.about.image)} 
                 alt="Serigne Mor Diop" 
@@ -320,7 +318,7 @@ export default function Home() {
             {/* Boutique */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/boutique')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ APPLICATION DE getSecureUrl + referrerPolicy */}
+                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
                   <img src={getSecureUrl(content.pillars.shopImage)} alt="Boutique" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-gold-500 text-primary-900 p-2 rounded-full shadow-lg"><ShoppingBag size={20} /></div>
@@ -331,7 +329,7 @@ export default function Home() {
             {/* Bibliothèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/livres')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ APPLICATION DE getSecureUrl + referrerPolicy */}
+                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
                   <img src={getSecureUrl(content.pillars.libraryImage)} alt="Livres" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-white text-primary-900 p-2 rounded-full shadow-lg"><BookOpen size={20} /></div>
@@ -342,7 +340,7 @@ export default function Home() {
             {/* Médiathèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/podcast')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden">
-                  {/* ✅ APPLICATION DE getSecureUrl + referrerPolicy */}
+                  {/* ✅ CORRECTION ICI : referrerPolicy ajouté */}
                   <img src={getSecureUrl(content.pillars.mediaImage)} alt="Media" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg"><PlayCircle size={20} /></div>
