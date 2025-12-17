@@ -1,5 +1,16 @@
 {
   "appId": "com.daara.app",
   "appName": "Daara App",
-  "webDir": "dist"
+  "webDir": "dist",  
+  "server": {
+    "androidScheme": "https",
+    "allowNavigation": [
+      "jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io"
+    ]
+  },
+  "plugins": {
+    "CapacitorHttp": {
+      "enabled": true
+    }
+  }
 }

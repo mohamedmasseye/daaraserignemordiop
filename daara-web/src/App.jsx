@@ -77,7 +77,21 @@ const PublicLayout = ({ children }) => (
 );
 
 function App() {
-   alert("API URL: " + (import.meta.env.VITE_API_URL || "Non définie"));
+  
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      const testUrl = 'https://jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io/api/books';
+      
+      fetch(testUrl)
+        .then(res => {
+          if(res.ok) alert("✅ SUCCÈS : Le serveur répond !");
+          else alert("⚠️ ERREUR SERVEUR : " + res.status);
+        })
+        .catch(err => {
+          alert("❌ ERREUR RÉSEAU : " + err.message);
+        });
+    }
+  }, []);
   // --- 2. LOGIQUE DE NOTIFICATION (NOUVEAU) ---
   useEffect(() => {
     // On vérifie si on est sur mobile pour ne pas faire planter le site web
