@@ -77,7 +77,7 @@ const PublicLayout = ({ children }) => (
 );
 
 function App() {
-
+   alert("API URL: " + (import.meta.env.VITE_API_URL || "Non définie"));
   // --- 2. LOGIQUE DE NOTIFICATION (NOUVEAU) ---
   useEffect(() => {
     // On vérifie si on est sur mobile pour ne pas faire planter le site web
