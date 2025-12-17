@@ -17,7 +17,7 @@ export default function Login() {
 
     try {
       // ✅ CORRECTION 1 : On envoie "identifier" (langage du serveur)
-      const API_URL = 'https://daara-app.onrender.com';
+      const API_URL = '';
       const res = await axios.post(`${API_URL}/api/auth/login`, { 
         identifier: email, 
         password 

@@ -16,7 +16,7 @@ export default function Books() {
     
     // Si l'URL contient localhost, on la remplace par l'URL de production
     if (url.includes('localhost:5000')) {
-      return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
+      return url.replace('http://localhost:5000', '');
     }
     
     // Force HTTPS pour éviter "Mixed Content"
@@ -26,7 +26,7 @@ export default function Books() {
 
     // Gestion des chemins relatifs
     if (url.startsWith('/uploads')) {
-        return `https://daara-app.onrender.com${url}`;
+        return `${url}`;
     }
 
     return url;
@@ -36,7 +36,7 @@ export default function Books() {
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get('https://daara-app.onrender.com/api/books');
+        const response = await axios.get('/api/books');
         setBooks(response.data);
         setLoading(false);
       } catch (error) {

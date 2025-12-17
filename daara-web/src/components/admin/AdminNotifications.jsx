@@ -18,7 +18,7 @@ export default function AdminNotifications() {
   const fetchNotifications = async () => {
     try {
       const token = localStorage.getItem('token');
-      const res = await axios.get('https://daara-app.onrender.com/api/notifications', {
+      const res = await axios.get('/api/notifications', {
         headers: { Authorization: `Bearer ${token}` }
       });
       setNotifications(res.data);
@@ -37,7 +37,7 @@ export default function AdminNotifications() {
       setIsSending(true);
       try {
           const token = localStorage.getItem('token');
-          const res = await axios.post('https://daara-app.onrender.com/api/notifications', formData, {
+          const res = await axios.post('/api/notifications', formData, {
               headers: { Authorization: `Bearer ${token}` }
           });
           setNotifications([res.data, ...notifications]);
@@ -55,7 +55,7 @@ export default function AdminNotifications() {
       if(!window.confirm("Supprimer cet historique ?")) return;
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`https://daara-app.onrender.com/api/notifications/${id}`, {
+          await axios.delete(`/api/notifications/${id}`, {
               headers: { Authorization: `Bearer ${token}` }
           });
           setNotifications(notifications.filter(n => n._id !== id));

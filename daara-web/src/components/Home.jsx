@@ -69,13 +69,13 @@ const DEFAULT_CONTENT = {
 const getSecureUrl = (url) => {
   if (!url) return "";
   if (url.includes('localhost:5000')) {
-    return url.replace('http://localhost:5000', 'https://daara-app.onrender.com');
+    return url.replace('http://localhost:5000', '');
   }
   if (url.startsWith('http://')) {
       return url.replace('http://', 'https://');
   }
   if (url.startsWith('/uploads')) {
-      return `https://daara-app.onrender.com${url}`;
+      return `${url}`;
   }
   return url;
 };
@@ -140,7 +140,7 @@ export default function Home() {
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await axios.get('https://daara-app.onrender.com/api/home-content');
+        const res = await axios.get('/api/home-content');
         if (res.data && Object.keys(res.data).length > 0) {
             // Fusion intelligente : On garde la structure par défaut, on écrase avec les données DB
             setContent(prev => ({ ...prev, ...res.data }));
@@ -165,7 +165,7 @@ export default function Home() {
   useEffect(() => {
     const checkEvents = async () => {
       try {
-        const res = await axios.get('https://daara-app.onrender.com/api/events');
+        const res = await axios.get('/api/events');
         const upcoming = res.data
             .filter(e => new Date(e.date) > new Date())
             .sort((a, b) => new Date(a.date) - new Date(b.date));

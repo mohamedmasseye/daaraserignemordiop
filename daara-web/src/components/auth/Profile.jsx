@@ -236,7 +236,7 @@ export default function Profile() {
 
       try {
         setLoading(true);
-        const resUser = await axios.get('https://daara-app.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        const resUser = await axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
         
         // Sécurité supplémentaire : on vérifie que les données existent
         if (resUser.data) {
@@ -274,8 +274,8 @@ export default function Profile() {
 
         try {
             const [resOrders, resTickets] = await Promise.all([
-                axios.get('https://daara-app.onrender.com/api/my-orders', { headers: { Authorization: `Bearer ${token}` } }),
-                axios.get('https://daara-app.onrender.com/api/my-tickets', { headers: { Authorization: `Bearer ${token}` } })
+                axios.get('/api/my-orders', { headers: { Authorization: `Bearer ${token}` } }),
+                axios.get('/api/my-tickets', { headers: { Authorization: `Bearer ${token}` } })
             ]);
             setOrders(resOrders.data);
             setTickets(resTickets.data);
@@ -321,7 +321,7 @@ export default function Profile() {
               dataToSend.append('avatar', selectedFile);
           }
 
-          const res = await axios.put('https://daara-app.onrender.com/api/auth/me', dataToSend, {
+          const res = await axios.put('/api/auth/me', dataToSend, {
               headers: { 
                   Authorization: `Bearer ${token}`,
                   'Content-Type': 'multipart/form-data'
@@ -342,7 +342,7 @@ export default function Profile() {
   const handleDeleteOrder = async (orderId) => {
       if(!window.confirm("Supprimer de l'historique ?")) return;
       try {
-          await axios.delete(`https://daara-app.onrender.com/api/orders/${orderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          await axios.delete(`/api/orders/${orderId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
           setOrders(orders.filter(o => o._id !== orderId));
       } catch (err) { alert("Erreur."); }
   };
@@ -350,7 +350,7 @@ export default function Profile() {
   const handleDeleteTicket = async (ticketId) => {
       if(!window.confirm("Supprimer ce billet ?")) return;
       try {
-          await axios.delete(`https://daara-app.onrender.com/api/tickets/${ticketId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
+          await axios.delete(`/api/tickets/${ticketId}`, { headers: { Authorization: `Bearer ${localStorage.getItem('token')}` } });
           setTickets(tickets.filter(t => t._id !== ticketId));
       } catch (err) { alert("Erreur."); }
   };

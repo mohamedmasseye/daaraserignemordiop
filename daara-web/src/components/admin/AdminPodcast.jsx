@@ -17,7 +17,7 @@ export default function AdminPodcast() {
 
   const fetchPodcasts = async () => {
     try {
-      const res = await axios.get('https://daara-app.onrender.com/api/podcasts');
+      const res = await axios.get('/api/podcasts');
       setPodcasts(res.data);
     } catch (err) { console.error(err); }
   };
@@ -52,7 +52,7 @@ export default function AdminPodcast() {
         if (coverFile) data.append('coverImageFile', coverFile);
 
         // ✅ CORRECTION : Ajout du token & Suppression du Content-Type manuel
-        await axios.post('https://daara-app.onrender.com/api/podcasts', data, {
+        await axios.post('/api/podcasts', data, {
             headers: { Authorization: `Bearer ${token}` }
         });
       }
@@ -81,7 +81,7 @@ export default function AdminPodcast() {
              const token = localStorage.getItem('token');
              
              // ✅ CORRECTION ICI : Ajout du Header Authorization pour éviter l'erreur 401
-             await axios.delete(`https://daara-app.onrender.com/api/podcasts/${id}`, {
+             await axios.delete(`/api/podcasts/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
              });
 

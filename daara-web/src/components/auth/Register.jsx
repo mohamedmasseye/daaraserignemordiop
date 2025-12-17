@@ -34,7 +34,7 @@ export default function Register() {
       const user = result.user;
       const tokenGoogle = await user.getIdToken();
 
-      const res = await axios.post('https://daara-app.onrender.com/api/auth/google', {
+      const res = await axios.post('/api/auth/google', {
         token: tokenGoogle
       });
 
@@ -64,7 +64,7 @@ export default function Register() {
     }
 
     try {
-      await axios.post('https://daara-app.onrender.com/api/auth/register', {
+      await axios.post('/api/auth/register', {
         fullName: formData.fullName,
         identifier: formData.identifier,
         password: formData.password

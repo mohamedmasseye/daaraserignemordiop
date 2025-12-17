@@ -20,7 +20,7 @@ export default function AdminOrders() {
       setLoading(true);
       const token = localStorage.getItem('token');
       // On ajoute le token ici aussi par sécurité, même si le GET est souvent public
-      const response = await axios.get('https://daara-app.onrender.com/api/orders', {
+      const response = await axios.get('/api/orders', {
           headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -65,7 +65,7 @@ export default function AdminOrders() {
         const token = localStorage.getItem('token');
         
         // C'EST CETTE LIGNE QUI FAIT LE TRAVAIL SUR LE SERVEUR
-        await axios.put(`https://daara-app.onrender.com/api/orders/${orderId}`, 
+        await axios.put(`/api/orders/${orderId}`, 
             { status: newStatus },
             { headers: { Authorization: `Bearer ${token}` } } // On montre le badge
         );
@@ -92,7 +92,7 @@ export default function AdminOrders() {
       try {
           const token = localStorage.getItem('token');
           // On envoie le token, sinon le serveur refuse (401 Unauthorized)
-          await axios.delete(`https://daara-app.onrender.com/api/orders/${orderId}`, {
+          await axios.delete(`/api/orders/${orderId}`, {
               headers: { Authorization: `Bearer ${token}` }
           });
 

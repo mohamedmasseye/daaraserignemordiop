@@ -36,7 +36,7 @@ export default function Blog() {
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get('https://daara-app.onrender.com/api/blog');
+      const res = await axios.get('/api/blog');
       setPosts(res.data);
     } catch (err) { console.error(err); } 
     finally { setLoading(false); }
@@ -48,7 +48,7 @@ export default function Blog() {
     setIsLiking(true);
 
     try {
-      const res = await axios.put(`https://daara-app.onrender.com/api/blog/${post._id}/like`);
+      const res = await axios.put(`/api/blog/${post._id}/like`);
       const updatedPosts = posts.map(p => p._id === post._id ? res.data : p);
       setPosts(updatedPosts);
       
@@ -63,7 +63,7 @@ export default function Blog() {
     if (!commentText.trim()) return;
     if (!user) return alert("Veuillez vous connecter pour commenter !");
     try {
-      const res = await axios.post(`https://daara-app.onrender.com/api/blog/${selectedPost._id}/comment`, {
+      const res = await axios.post(`/api/blog/${selectedPost._id}/comment`, {
         author: user.fullName, content: commentText
       });
       const updatedPosts = posts.map(p => p._id === selectedPost._id ? res.data : p);

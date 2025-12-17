@@ -33,7 +33,7 @@ export default function Events() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await axios.get('https://daara-app.onrender.com/api/events');
+        const response = await axios.get('/api/events');
         const loadedEvents = response.data.sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
         
@@ -98,7 +98,7 @@ export default function Events() {
         const token = localStorage.getItem('token');
         if (!token) { navigate('/login-public'); return; }
 
-        const userResponse = await axios.get('https://daara-app.onrender.com/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
+        const userResponse = await axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
         const realUser = userResponse.data;
 
         const unitPrice = Number(selectedEvent.price || selectedEvent.ticketPrice || 0);
@@ -119,7 +119,7 @@ export default function Events() {
             customerPhone: realUser.phone || 'Non renseigné'
         };
 
-        await axios.post('https://daara-app.onrender.com/api/orders', orderData, { headers: { Authorization: `Bearer ${token}` } });
+        await axios.post('/api/orders', orderData, { headers: { Authorization: `Bearer ${token}` } });
         setPurchaseStep('success');
 
       } catch (error) {

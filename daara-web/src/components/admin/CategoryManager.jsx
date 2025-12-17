@@ -11,7 +11,7 @@ export default function CategoryManager({ type, onCategoriesChange, selectedCate
   // Charger les catégories (Public, pas besoin de token obligatoirement si la route est publique)
   const fetchCategories = async () => {
     try {
-      const res = await axios.get(`https://daara-app.onrender.com/api/categories/${type}`);
+      const res = await axios.get(`/api/categories/${type}`);
       setCategories(res.data);
       // Remonter l'info au parent si besoin
       if (onCategoriesChange) onCategoriesChange(res.data);
@@ -30,7 +30,7 @@ export default function CategoryManager({ type, onCategoriesChange, selectedCate
       // 👇 AJOUT DU TOKEN ICI
       const token = localStorage.getItem('token');
       
-      await axios.post('https://daara-app.onrender.com/api/categories', 
+      await axios.post('/api/categories', 
         { name: newCatName, type },
         { headers: { Authorization: `Bearer ${token}` } } // 🔑 La clé pour entrer
       );
@@ -53,7 +53,7 @@ export default function CategoryManager({ type, onCategoriesChange, selectedCate
       // 👇 AJOUT DU TOKEN ICI
       const token = localStorage.getItem('token');
 
-      await axios.delete(`https://daara-app.onrender.com/api/categories/${id}`, {
+      await axios.delete(`/api/categories/${id}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       

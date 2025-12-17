@@ -17,7 +17,7 @@ export default function AdminGallery() {
 
   const fetchMedia = async () => {
     try {
-      const res = await axios.get('https://daara-app.onrender.com/api/media');
+      const res = await axios.get('/api/media');
       setMediaList(res.data);
     } catch (err) { console.error(err); }
   };
@@ -50,7 +50,7 @@ export default function AdminGallery() {
       try {
         // On boucle sur chaque ID sélectionné et on envoie une requête DELETE
         for (const id of selectedIds) {
-          await axios.delete(`https://daara-app.onrender.com/api/media/${id}`);
+          await axios.delete(`/api/media/${id}`);
         }
         
         // Mise à jour locale (plus rapide que de refetch tout)
@@ -86,7 +86,7 @@ export default function AdminGallery() {
         data.append('type', formData.type);
         data.append('mediaFile', currentFile);
 
-        await axios.post('https://daara-app.onrender.com/api/media', data, {
+        await axios.post('/api/media', data, {
             headers: { 'Content-Type': 'multipart/form-data' }
         });
       }

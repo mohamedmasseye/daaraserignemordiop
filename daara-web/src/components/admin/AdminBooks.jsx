@@ -16,7 +16,7 @@ export default function AdminBooks() {
   // 1. Charger les livres
   const fetchBooks = async () => {
     try {
-      const res = await axios.get('https://daara-app.onrender.com/api/books');
+      const res = await axios.get('/api/books');
       setBooks(res.data);
     } catch (err) { console.error(err); }
   };
@@ -45,7 +45,7 @@ export default function AdminBooks() {
         data.append('coverImage', coverFile);
       }
 
-      await axios.post('https://daara-app.onrender.com/api/books', data, {
+      await axios.post('/api/books', data, {
           headers: { 'Content-Type': 'multipart/form-data' }
       });
       
@@ -75,7 +75,7 @@ export default function AdminBooks() {
         const token = localStorage.getItem('token');
         
         // 2. Envoi de la requête AVEC le header Authorization
-        await axios.delete(`https://daara-app.onrender.com/api/books/${id}`, {
+        await axios.delete(`/api/books/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
 

@@ -22,7 +22,7 @@ export default function AdminBlog() {
 
   const fetchPosts = async () => {
     try {
-      const res = await axios.get('https://daara-app.onrender.com/api/blog');
+      const res = await axios.get('/api/blog');
       setPosts(res.data);
     } catch (err) { console.error(err); }
   };
@@ -91,11 +91,11 @@ export default function AdminBlog() {
 
       if (editingId) {
           // --- MODE MODIFICATION (PUT) ---
-          await axios.put(`https://daara-app.onrender.com/api/blog/${editingId}`, data, config);
+          await axios.put(`/api/blog/${editingId}`, data, config);
           alert('Article modifié avec succès !');
       } else {
           // --- MODE CRÉATION (POST) ---
-          await axios.post('https://daara-app.onrender.com/api/blog', data, config);
+          await axios.post('/api/blog', data, config);
           alert('Article publié avec succès !');
       }
       
@@ -115,7 +115,7 @@ export default function AdminBlog() {
       try {
         const token = localStorage.getItem('token');
         // ✅ CORRECTION ICI : Ajout du header Authorization
-        await axios.delete(`https://daara-app.onrender.com/api/blog/${id}`, {
+        await axios.delete(`/api/blog/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
         });
         setPosts(posts.filter(p => p._id !== id));

@@ -97,7 +97,7 @@ export default function AdminHome() {
     const token = localStorage.getItem('token'); 
     
     // On envoie les données à votre backend (sur Render)
-    await axios.post('https://daara-app.onrender.com/api/home-content', content, {
+    await axios.post('/api/home-content', content, {
         headers: { Authorization: `Bearer ${token}` }
     });
 
@@ -131,7 +131,7 @@ export default function AdminHome() {
     try {
         document.body.style.cursor = 'wait';
         // On suppose que l'API Upload fonctionne (Cloudinary)
-        const res = await fetch('https://daara-app.onrender.com/api/upload', {
+        const res = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
         });
