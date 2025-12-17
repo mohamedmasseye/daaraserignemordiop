@@ -121,35 +121,37 @@ export default function AdminHome() {
   };
 
   // --- GESTION UPLOAD ---
-  const handleImageUpload = async (e, callback) => {
-    const file = e.target.files[0];
-    if (!file) return;
+// Remplacez votre fonction handleImageUpload existante par celle-ci :
+const handleImageUpload = async (e, callback) => {
+  const file = e.target.files[0];
+  if (!file) return;
 
-    const formData = new FormData();
-    formData.append('file', file);
+  const formData = new FormData();
+  formData.append('file', file); // 'file' doit correspondre au backend
 
-    try {
-        document.body.style.cursor = 'wait';
-        // On suppose que l'API Upload fonctionne (Cloudinary)
-        const res = await fetch('/api/upload', {
-            method: 'POST',
-            body: formData,
-        });
-        const data = await res.json();
-        
-        if (data.url) {
-            callback(data.url);
-            setHasChanges(true);
-        } else {
-            alert("Erreur upload.");
-        }
-    } catch (err) {
-        console.error(err);
-        alert("Erreur serveur.");
-    } finally {
-        document.body.style.cursor = 'default';
+  try {
+    document.body.style.cursor = 'wait';
+    const token = localStorage.getItem('token'); // Récupère votre jeton admin
+
+    // Utilisation d'Axios pour envoyer le fichier avec les bons en-têtes
+    const res = await axios.post('/api/upload', formData, {
+      headers: { 
+        'Content-Type': 'multipart/form-data',
+        'Authorization': `Bearer ${token}` 
+      }
+    });
+
+    if (res.data.url) {
+      callback(res.data.url); // Met à jour l'image dans l'éditeur
+      setHasChanges(true);
     }
-  };
+  } catch (err) {
+    console.error("Erreur upload:", err);
+    alert("L'upload a échoué. Vérifiez votre connexion ou la taille du fichier.");
+  } finally {
+    document.body.style.cursor = 'default';
+  }
+};
 
   const updateSection = (section, key, value) => {
     setContent(prev => ({ ...prev, [section]: { ...prev[section], [key]: value } }));
