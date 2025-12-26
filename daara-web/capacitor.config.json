@@ -5,7 +5,7 @@
   "server": {
     "androidScheme": "http", 
     "allowNavigation": [
-      "jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io"
+      "http://91.99.200.188"
     ]
   },
   "plugins": {
