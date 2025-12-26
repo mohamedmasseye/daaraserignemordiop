@@ -4,13 +4,12 @@ import axios from 'axios'
 import './index.css'
 import App from './App.jsx'
 
-// --- CORRECTION ICI ---
-// On met l'adresse Coolify en "roue de secours" (fallback) au lieu de localhost
-const API_URL = 'https://jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io';
+// On force l'adresse HTTP (sans le S) pour contourner le problème de certificat
+const API_URL = 'http://jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io';
 
-axios.defaults.baseURL = import.meta.env.VITE_API_URL || API_URL;
-axios.defaults.withCredentials = true; // Important pour les cookies/sessions
-// ---------------------
+// 🛑 MODIFICATION ICI : On enlève le "import.meta.env..." pour ce test
+axios.defaults.baseURL = API_URL; 
+axios.defaults.withCredentials = true; 
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
