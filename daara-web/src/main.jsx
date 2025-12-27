@@ -5,7 +5,7 @@ import './index.css'
 import App from './App.jsx'
 
 // On force l'adresse HTTP (sans le S) pour contourner le problème de certificat
-const API_URL = 'http://91.99.200.188:3000';
+const API_URL = 'http://91.99.200.188:5000';
 
 // 🛑 MODIFICATION ICI : On enlève le "import.meta.env..." pour ce test
 axios.defaults.baseURL = API_URL; 
