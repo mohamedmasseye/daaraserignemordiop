@@ -1,10 +1,11 @@
-import React, { useEffect } from 'react'; // J'ai ajouté useEffect ici
+import React, { useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 
-// --- 1. IMPORTS CAPACITOR (NOUVEAU) ---
+// --- IMPORTS CAPACITOR & PLUGINS ---
 import { PushNotifications } from '@capacitor/push-notifications';
 import { FCM } from '@capacitor-community/fcm';
 import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth'; // ✅ NOUVEAU
 
 // --- IMPORTS COMPOSANTS PUBLICS ---
 import Navbar from './components/Navbar';
@@ -45,70 +46,53 @@ import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
 
-// --- GARDIENS DE SÉCURITÉ (PROTECTION DES ROUTES) ---
-
-// 1. Protection Public
+// --- PROTECTION DES ROUTES ---
 const PublicProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token'); 
-  if (!token) {
-    return <Navigate to="/login-public" replace />; 
-  }
-  return children;
+  return token ? children : <Navigate to="/login-public" replace />;
 };
 
-// 2. Protection Admin
 const AdminProtectedRoute = ({ children }) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-        return <Navigate to="/admin-login" replace />; 
-    }
-    return children;
-}
+  const token = localStorage.getItem('token');
+  return token ? children : <Navigate to="/admin-login" replace />;
+};
 
-// --- LAYOUT PUBLIC GLOBAL ---
+// --- LAYOUT PUBLIC ---
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
     <Navbar />
-    <div className="pt-16 flex-1">
-      {children}
-    </div>
+    <div className="pt-16 flex-1">{children}</div>
     <Footer />
   </div>
 );
 
 function App() {
-  
+
+  // --- 1. INITIALISATION GOOGLE & TEST RÉSEAU ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      const testUrl = 'https://jcwwc8sgs480c0goww848og0.91.99.200.188.sslip.io/api/books';
-      
+      // ✅ INITIALISATION GOOGLE AUTH
+      GoogleAuth.initialize();
+
+      // TEST RÉSEAU (Mis à jour avec ton IP directe)
+      const testUrl = 'http://91.99.200.188:5000/api/home-content';
       fetch(testUrl)
-        .then(res => {
-          if(res.ok) alert("✅ SUCCÈS : Le serveur répond !");
-          else alert("⚠️ ERREUR SERVEUR : " + res.status);
-        })
-        .catch(err => {
-          alert("❌ ERREUR RÉSEAU : " + err.message);
-        });
+        .then(res => console.log("Connexion API OK"))
+        .catch(err => console.log("Erreur test réseau au démarrage"));
     }
   }, []);
-  // --- 2. LOGIQUE DE NOTIFICATION (NOUVEAU) ---
+
+  // --- 2. LOGIQUE DE NOTIFICATION PUSH ---
   useEffect(() => {
-    // On vérifie si on est sur mobile pour ne pas faire planter le site web
     if (Capacitor.isNativePlatform()) {
-      
       const initPush = async () => {
-        // A. Vérifier / Demander la permission
         let permStatus = await PushNotifications.checkPermissions();
         if (permStatus.receive === 'prompt') {
           permStatus = await PushNotifications.requestPermissions();
         }
 
         if (permStatus.receive === 'granted') {
-          // B. Enregistrer l'appareil sur le réseau
           await PushNotifications.register();
-          
-          // C. S'abonner au canal "all_users" pour recevoir les messages de l'admin
           try {
             await FCM.subscribeTo({ topic: 'all_users' });
             console.log('✅ Mobile : Abonné au topic "all_users"');
@@ -120,86 +104,58 @@ function App() {
 
       initPush();
 
-      // D. Écouter les notifications reçues (App ouverte)
       const listenerReceived = PushNotifications.addListener('pushNotificationReceived', (notification) => {
         alert(`🔔 ${notification.title}\n${notification.body}`);
       });
 
-      // E. Écouter le clic sur la notification
-      const listenerAction = PushNotifications.addListener('pushNotificationActionPerformed', (notification) => {
-        console.log('Notification ouverte:', notification);
-        // Vous pourrez ajouter une redirection ici plus tard si besoin
-      });
-
-      // Nettoyage des écouteurs
       return () => {
         listenerReceived.remove();
-        listenerAction.remove();
       };
     }
   }, []);
-  // ---------------------------------------------
 
   return (
     <Router>
       <Routes>
-        
-        {/* =======================================================
-            ZONE ADMINISTRATION (BACK-OFFICE)
-            ======================================================= */}
+        {/* ROUTES ADMIN */}
         <Route path="/admin-login" element={<LoginAdmin />} /> 
-        
         <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-        
         <Route path="/admin/books" element={<AdminProtectedRoute><AdminBooks /></AdminProtectedRoute>} />
         <Route path="/admin/blog" element={<AdminProtectedRoute><AdminBlog /></AdminProtectedRoute>} />
         <Route path="/admin/galerie" element={<AdminProtectedRoute><AdminGallery /></AdminProtectedRoute>} />
         <Route path="/admin/podcast" element={<AdminProtectedRoute><AdminPodcast /></AdminProtectedRoute>} />
-
         <Route path="/admin/products" element={<AdminProtectedRoute><AdminProducts /></AdminProtectedRoute>} />
         <Route path="/admin/orders" element={<AdminProtectedRoute><AdminOrders /></AdminProtectedRoute>} />
-
         <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
         <Route path="/admin/events" element={<AdminProtectedRoute><AdminEvents /></AdminProtectedRoute>} />
         <Route path="/admin/notifications" element={<AdminProtectedRoute><AdminNotifications /></AdminProtectedRoute>} />
         <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
         <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />
 
-
-        {/* =======================================================
-            ZONE PUBLIQUE (VISITEURS & MEMBRES)
-            ======================================================= */}
-        
+        {/* ROUTES PUBLIQUES */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
-        
         <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
         <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
         <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
-
         <Route path="/livres" element={<PublicLayout><Books /></PublicLayout>} />
         <Route path="/blog" element={<PublicLayout><Blog /></PublicLayout>} />
         <Route path="/galerie" element={<PublicLayout><Gallery /></PublicLayout>} />
         <Route path="/podcast" element={<PublicLayout><Podcast /></PublicLayout>} />
-
         <Route path="/evenements" element={<PublicLayout><Events /></PublicLayout>} />
         <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
-        
         <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
         <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
 
         <Route path="/profil" element={
           <PublicProtectedRoute>
-             <PublicLayout>
-                <Profile />
-             </PublicLayout>
+             <PublicLayout><Profile /></PublicLayout>
           </PublicProtectedRoute>
         } />
         
         <Route path="/login" element={<Navigate to="/admin-login" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
-        
       </Routes>
     </Router>
   );

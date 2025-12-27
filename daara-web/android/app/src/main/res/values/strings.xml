@@ -4,4 +4,6 @@
     <string name="title_activity_main">Daara App</string>
     <string name="package_name">com.daara.app</string>
     <string name="custom_url_scheme">com.daara.app</string>
+    
+    <string name="common_google_play_services_unknown_issue">Problème avec Google Play Services</string>
 </resources>

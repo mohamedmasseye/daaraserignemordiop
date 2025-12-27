@@ -2,10 +2,14 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Mail, Lock, CheckCircle, Loader, ArrowLeft, Smartphone } from 'lucide-react';
+import { User, Mail, Lock, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
+
+// --- IMPORTS CAPACITOR & NATIF ---
+import { Capacitor } from '@capacitor/core';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // --- IMPORTS FIREBASE ---
-import { signInWithPopup } from "firebase/auth";
+import { signInWithPopup, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
 export default function Register() {
@@ -13,7 +17,7 @@ export default function Register() {
   
   const [formData, setFormData] = useState({
     fullName: '',
-    identifier: '', // Email ou Téléphone
+    identifier: '', 
     password: '',
     confirmPassword: ''
   });
@@ -26,18 +30,38 @@ export default function Register() {
     setError('');
   };
 
-  // --- 1. INSCRIPTION VIA GOOGLE ---
+  // --- 1. INSCRIPTION VIA GOOGLE (HYBRIDE) ---
   const handleGoogleRegister = async () => {
     setError('');
+    setLoading(true);
+    
     try {
-      const result = await signInWithPopup(auth, googleProvider);
-      const user = result.user;
-      const tokenGoogle = await user.getIdToken();
+      let idToken;
 
+      // A. DÉTECTION PLATEFORME
+      if (Capacitor.isNativePlatform()) {
+        // 📱 MOBILE
+        const nativeUser = await GoogleAuth.signIn();
+        idToken = nativeUser.authentication.idToken;
+      } else {
+        // 💻 WEB
+        const result = await signInWithPopup(auth, googleProvider);
+        idToken = await result.user.getIdToken();
+      }
+
+      // B. CONNEXION FIREBASE
+      const credential = GoogleAuthProvider.credential(idToken);
+      const firebaseUserCredential = await signInWithCredential(auth, credential);
+      
+      // C. RÉCUPÉRATION TOKEN POUR BACKEND
+      const tokenForBackend = await firebaseUserCredential.user.getIdToken();
+
+      // D. ENVOI AU SERVEUR (Utilise ton API IP configurée)
       const res = await axios.post('/api/auth/google', {
-        token: tokenGoogle
+        token: tokenForBackend
       });
 
+      // E. SAUVEGARDE SESSION
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user_info', JSON.stringify(res.data.user));
 
@@ -45,9 +69,14 @@ export default function Register() {
       navigate('/profil');
 
     } catch (err) {
-      console.error("Erreur Google:", err);
-      if (err.code === 'auth/popup-closed-by-user') return;
+      console.error("Erreur Google Register:", err);
+      if (err.code === 'auth/popup-closed-by-user' || err.message === 'User cancelled login') {
+          setLoading(false);
+          return;
+      }
       setError("Impossible de s'inscrire avec Google.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -102,10 +131,17 @@ export default function Register() {
           <button 
             type="button"
             onClick={handleGoogleRegister}
-            className="w-full mb-6 py-3 border border-gray-300 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700 shadow-sm"
+            disabled={loading}
+            className="w-full mb-6 py-3 border border-gray-300 rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 transition font-bold text-gray-700 shadow-sm disabled:opacity-50"
           >
-            <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5"/>
-            S'inscrire avec Google
+            {loading ? (
+                <Loader className="animate-spin text-primary-900" size={20} />
+            ) : (
+                <>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="w-5 h-5"/>
+                    S'inscrire avec Google
+                </>
+            )}
           </button>
 
           <div className="relative mb-6">
@@ -134,17 +170,15 @@ export default function Register() {
               </div>
             </div>
 
-            {/* EMAIL OU TÉLÉPHONE (Correction ICI) */}
+            {/* EMAIL OU TÉLÉPHONE */}
             <div>
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email ou Téléphone</label>
               <div className="relative mt-1">
-                {/* J'ai mis une icône Mail, mais le placeholder indique bien les deux */}
                 <Mail className="absolute left-4 top-3.5 text-gray-400" size={20} />
                 <input 
                   type="text" 
                   name="identifier" 
                   required
-                  // 👇 CHANGEMENT ICI : Placeholder clair
                   placeholder="exemple@mail.com ou 77 000 00 00"
                   className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-900 outline-none"
                   value={formData.identifier} 

@@ -1,16 +1,22 @@
 {
   "appId": "com.daara.app",
   "appName": "Daara App",
-  "webDir": "dist",  
+  "webDir": "dist",
   "server": {
-    "androidScheme": "http", 
+    "androidScheme": "http",
     "allowNavigation": [
-      "http://91.99.200.188"
+      "91.99.200.188",
+      "91.99.200.188:5000"
     ]
   },
   "plugins": {
     "CapacitorHttp": {
       "enabled": false
+    },
+    "GoogleAuth": {
+      "scopes": ["profile", "email"],
+      "serverClientId": "346377043338-28j5m2go073e547siu64448d4puhqu66.apps.googleusercontent.com",
+      "forceCodeForRefreshToken": true
     }
   }
 }
