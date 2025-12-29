@@ -9,7 +9,7 @@ import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // --- IMPORTS FIREBASE ---
-import { signInWithPopup, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
 export default function Register() {
@@ -36,24 +36,28 @@ export default function Register() {
   setLoading(true);
 
   try {
-    let firebaseUser;
-
+    // =========================
+    // 📱 MOBILE NATIF
+    // =========================
     if (Capacitor.isNativePlatform()) {
-      // 📱 MOBILE
       const nativeUser = await GoogleAuth.signIn();
 
-      const credential = GoogleAuthProvider.credential(
-        nativeUser.authentication.idToken
-      );
+      const res = await axios.post('/api/auth/google-mobile', {
+        idToken: nativeUser.authentication.idToken
+      });
 
-      const result = await signInWithCredential(auth, credential);
-      firebaseUser = result.user;
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user_info', JSON.stringify(res.data.user));
 
-    } else {
-      // 💻 WEB
-      const result = await signInWithPopup(auth, googleProvider);
-      firebaseUser = result.user;
+      navigate('/profil', { replace: true });
+      return;
     }
+
+    // =========================
+    // 💻 WEB
+    // =========================
+    const result = await signInWithPopup(auth, googleProvider);
+    const firebaseUser = result.user;
 
     const tokenForBackend = await firebaseUser.getIdToken();
 
@@ -64,7 +68,7 @@ export default function Register() {
     localStorage.setItem('token', res.data.token);
     localStorage.setItem('user_info', JSON.stringify(res.data.user));
 
-    navigate('/profil');
+    navigate('/profil', { replace: true });
 
   } catch (err) {
     console.error(err);
@@ -73,35 +77,6 @@ export default function Register() {
     setLoading(false);
   }
 };
-
-  // --- 2. INSCRIPTION CLASSIQUE ---
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setError('');
-
-    if (formData.password !== formData.confirmPassword) {
-      setError("Les mots de passe ne correspondent pas.");
-      setLoading(false);
-      return;
-    }
-
-    try {
-      await axios.post('/api/auth/register', {
-        fullName: formData.fullName,
-        identifier: formData.identifier,
-        password: formData.password
-      });
-
-      navigate('/login-public', { state: { message: "Compte créé ! Connectez-vous." } });
-
-    } catch (err) {
-      console.error(err);
-      setError(err.response?.data?.error || "Erreur lors de l'inscription.");
-    } finally {
-      setLoading(false);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans relative overflow-hidden">

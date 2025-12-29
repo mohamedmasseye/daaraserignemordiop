@@ -9,7 +9,7 @@ import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // --- IMPORTS FIREBASE ---
-import { signInWithPopup, GoogleAuthProvider, signInWithCredential } from "firebase/auth";
+import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
 export default function LoginPublic() {
@@ -32,26 +32,30 @@ export default function LoginPublic() {
   setLoading(true);
 
   try {
-    let firebaseUser;
-
+    // =========================
+    // 📱 MOBILE NATIF
+    // =========================
     if (Capacitor.isNativePlatform()) {
-      // 📱 MOBILE
       const nativeUser = await GoogleAuth.signIn();
 
-      const credential = GoogleAuthProvider.credential(
-        nativeUser.authentication.idToken
-      );
+      // 🔥 On envoie DIRECTEMENT le token Google au backend
+      const res = await axios.post('/api/auth/google-mobile', {
+        idToken: nativeUser.authentication.idToken
+      });
 
-      const result = await signInWithCredential(auth, credential);
-      firebaseUser = result.user;
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user_info', JSON.stringify(res.data.user));
 
-    } else {
-      // 💻 WEB (FINI ICI)
-      const result = await signInWithPopup(auth, googleProvider);
-      firebaseUser = result.user;
+      navigate('/profil', { replace: true });
+      return;
     }
 
-    // ✅ TOKEN FIREBASE POUR TON BACKEND
+    // =========================
+    // 💻 WEB
+    // =========================
+    const result = await signInWithPopup(auth, googleProvider);
+    const firebaseUser = result.user;
+
     const tokenForBackend = await firebaseUser.getIdToken();
 
     const res = await axios.post('/api/auth/google', {
@@ -74,6 +78,7 @@ export default function LoginPublic() {
     setLoading(false);
   }
 };
+
 
   // --- 2. CONNEXION CLASSIQUE (Email/Pass) ---
   const handleSubmit = async (e) => {
