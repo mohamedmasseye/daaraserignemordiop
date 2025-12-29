@@ -28,65 +28,52 @@ export default function LoginPublic() {
 
   // --- 1. CONNEXION VIA GOOGLE (HYBRIDE WEB/NATIF) ---
   const handleGoogleLogin = async () => {
-    setError('');
-    setLoading(true);
-    
-    try {
-      let idToken;
+  setError('');
+  setLoading(true);
 
-      // A. DÉTECTION DE LA PLATEFORME
-      if (Capacitor.isNativePlatform()) {
-        // 📱 MODE NATIF (Android/iOS) : Utilisation du plugin GoogleAuth
-        console.log("Utilisation du login natif Google...");
-        const nativeUser = await GoogleAuth.signIn();
-        idToken = nativeUser.authentication.idToken;
-      } else {
-        // 💻 MODE WEB : Utilisation du popup Firebase classique
-        console.log("Utilisation du popup web Google...");
-        const result = await signInWithPopup(auth, googleProvider);
-        idToken = await result.user.getIdToken();
-      }
+  try {
+    let firebaseUser;
 
-      // B. CONNEXION À FIREBASE AVEC LE TOKEN RÉCUPÉRÉ
-      // Cela permet de créer la session Firebase peu importe la plateforme
-      const credential = GoogleAuthProvider.credential(idToken);
-      const firebaseUserCredential = await signInWithCredential(auth, credential);
-      
-      // C. RÉCUPÉRATION DU TOKEN POUR VOTRE BACKEND NODE.JS
-      const tokenForBackend = await firebaseUserCredential.user.getIdToken();
-      console.log("Token prêt pour le backend");
+    if (Capacitor.isNativePlatform()) {
+      // 📱 MOBILE
+      const nativeUser = await GoogleAuth.signIn();
 
-      // D. ENVOI AU SERVEUR (Votre API sur 91.99.200.188:5000)
-      const res = await axios.post('/api/auth/google', {
-        token: tokenForBackend
-      });
+      const credential = GoogleAuthProvider.credential(
+        nativeUser.authentication.idToken
+      );
 
-      // E. SAUVEGARDE DE LA SESSION LOCALE
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user_info', JSON.stringify(res.data.user));
-      
-      console.log("✅ Connexion Google réussie !");
-      
-      // F. REDIRECTION
-      let origin = location.state?.from;
-      if (!origin || origin.includes('/login') || origin.includes('/register') || origin.includes('/auth')) {
-          origin = '/profil';
-      }
-      navigate(origin, { replace: true });
+      const result = await signInWithCredential(auth, credential);
+      firebaseUser = result.user;
 
-    } catch (err) {
-      console.error("Erreur Google détaillée:", err);
-      
-      // Gestion d'erreur spécifique
-      if (err.code === 'auth/popup-closed-by-user' || err.message === 'User cancelled login') {
-          setLoading(false);
-          return;
-      }
-      setError("Échec de la connexion Google. Vérifiez votre connexion.");
-    } finally {
-      setLoading(false);
+    } else {
+      // 💻 WEB (FINI ICI)
+      const result = await signInWithPopup(auth, googleProvider);
+      firebaseUser = result.user;
     }
-  };
+
+    // ✅ TOKEN FIREBASE POUR TON BACKEND
+    const tokenForBackend = await firebaseUser.getIdToken();
+
+    const res = await axios.post('/api/auth/google', {
+      token: tokenForBackend
+    });
+
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('user_info', JSON.stringify(res.data.user));
+
+    let origin = location.state?.from;
+    if (!origin || origin.includes('/login') || origin.includes('/register')) {
+      origin = '/profil';
+    }
+    navigate(origin, { replace: true });
+
+  } catch (err) {
+    console.error(err);
+    setError("Échec de la connexion Google.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // --- 2. CONNEXION CLASSIQUE (Email/Pass) ---
   const handleSubmit = async (e) => {

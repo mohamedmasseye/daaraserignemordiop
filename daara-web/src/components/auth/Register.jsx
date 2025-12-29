@@ -31,54 +31,48 @@ export default function Register() {
   };
 
   // --- 1. INSCRIPTION VIA GOOGLE (HYBRIDE) ---
-  const handleGoogleRegister = async () => {
-    setError('');
-    setLoading(true);
-    
-    try {
-      let idToken;
+ const handleGoogleRegister = async () => {
+  setError('');
+  setLoading(true);
 
-      // A. DÉTECTION PLATEFORME
-      if (Capacitor.isNativePlatform()) {
-        // 📱 MOBILE
-        const nativeUser = await GoogleAuth.signIn();
-        idToken = nativeUser.authentication.idToken;
-      } else {
-        // 💻 WEB
-        const result = await signInWithPopup(auth, googleProvider);
-        idToken = await result.user.getIdToken();
-      }
+  try {
+    let firebaseUser;
 
-      // B. CONNEXION FIREBASE
-      const credential = GoogleAuthProvider.credential(idToken);
-      const firebaseUserCredential = await signInWithCredential(auth, credential);
-      
-      // C. RÉCUPÉRATION TOKEN POUR BACKEND
-      const tokenForBackend = await firebaseUserCredential.user.getIdToken();
+    if (Capacitor.isNativePlatform()) {
+      // 📱 MOBILE
+      const nativeUser = await GoogleAuth.signIn();
 
-      // D. ENVOI AU SERVEUR (Utilise ton API IP configurée)
-      const res = await axios.post('/api/auth/google', {
-        token: tokenForBackend
-      });
+      const credential = GoogleAuthProvider.credential(
+        nativeUser.authentication.idToken
+      );
 
-      // E. SAUVEGARDE SESSION
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user_info', JSON.stringify(res.data.user));
+      const result = await signInWithCredential(auth, credential);
+      firebaseUser = result.user;
 
-      console.log("✅ Compte Google créé/connecté !");
-      navigate('/profil');
-
-    } catch (err) {
-      console.error("Erreur Google Register:", err);
-      if (err.code === 'auth/popup-closed-by-user' || err.message === 'User cancelled login') {
-          setLoading(false);
-          return;
-      }
-      setError("Impossible de s'inscrire avec Google.");
-    } finally {
-      setLoading(false);
+    } else {
+      // 💻 WEB
+      const result = await signInWithPopup(auth, googleProvider);
+      firebaseUser = result.user;
     }
-  };
+
+    const tokenForBackend = await firebaseUser.getIdToken();
+
+    const res = await axios.post('/api/auth/google', {
+      token: tokenForBackend
+    });
+
+    localStorage.setItem('token', res.data.token);
+    localStorage.setItem('user_info', JSON.stringify(res.data.user));
+
+    navigate('/profil');
+
+  } catch (err) {
+    console.error(err);
+    setError("Impossible de s'inscrire avec Google.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   // --- 2. INSCRIPTION CLASSIQUE ---
   const handleSubmit = async (e) => {
