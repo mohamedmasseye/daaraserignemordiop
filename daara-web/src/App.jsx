@@ -70,17 +70,19 @@ function App() {
 
   // --- 1. INITIALISATION GOOGLE & TEST RÉSEAU ---
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      // ✅ INITIALISATION GOOGLE AUTH
-      GoogleAuth.initialize();
+  if (Capacitor.isNativePlatform()) {
+    GoogleAuth.initialize({
+      clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com', // 🔑 WEB CLIENT
+      scopes: ['profile', 'email'],
+      grantOfflineAccess: true,
+    });
 
-      // TEST RÉSEAU (Mis à jour avec ton IP directe)
-      const testUrl = 'http://91.99.200.188:5000/api/home-content';
-      fetch(testUrl)
-        .then(res => console.log("Connexion API OK"))
-        .catch(err => console.log("Erreur test réseau au démarrage"));
-    }
-  }, []);
+    const testUrl = 'http://91.99.200.188:5000/api/home-content';
+    fetch(testUrl)
+      .then(() => console.log('Connexion API OK'))
+      .catch(() => console.log('Erreur test réseau au démarrage'));
+  }
+}, []);
 
   // --- 2. LOGIQUE DE NOTIFICATION PUSH ---
   useEffect(() => {

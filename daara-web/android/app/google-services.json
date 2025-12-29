@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "1060878832216-7gk7d46jnl71mtgp8t4rubvn9nd7bcr1.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.daara.app",
+            "certificate_hash": "35f012e77f4d30983e70ec8a5dde84a88e3a4636"
+          }
+        },
+        {
           "client_id": "1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com",
           "client_type": 3
         }
