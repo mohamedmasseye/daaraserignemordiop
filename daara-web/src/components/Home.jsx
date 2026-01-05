@@ -7,12 +7,15 @@ import {
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag, Image as ImageIcon
 } from 'lucide-react';
 
+// ✅ IMPORT DE L'OPTIMISATEUR
+import { getOptimizedImage } from '../utils/imageHelper';
+
 // --- VALEURS PAR DÉFAUT (Structure vide, sans images cassées) ---
 const DEFAULT_CONTENT = {
   slides: [
     {
       id: 1,
-      image: "", // Vide : sera remplacé par l'Admin ou le Placeholder
+      image: "", 
       badge: "Bienvenue au Daara",
       title: "La Science est une Lumière",
       subtitle: "Héritier d’une lumière spirituelle et bâtisseur d’un héritage intemporel.",
@@ -45,7 +48,7 @@ const DEFAULT_CONTENT = {
     highlight2: "savoir",
     text1: "Figure éminente de l’islam au Sénégal et pilier de la Tariqa Tidjaniyya, Serigne Mor Diop incarne l’excellence dans la transmission du savoir.",
     text2: "Fils cadet de Serigne Alioune Diop « Jubbal », il a su transformer chaque pas de sa vie en une leçon d'humilité.",
-    image: "" // Vide par défaut
+    image: "" 
   },
   pillars: {
     shopImage: "",
@@ -91,7 +94,8 @@ const ImagePlaceholder = ({ label }) => (
 // --- COMPOSANT POPUP ---
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
-  const imageUrl = getSecureUrl(event.image);
+  // ✅ OPTIMISATION IMAGE POPUP (500px suffisant)
+  const imageUrl = getOptimizedImage(getSecureUrl(event.image), 500);
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
@@ -104,6 +108,7 @@ const EventPopup = ({ event, onClose, onBook }) => {
               alt={event.title} 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
+              // Pas de lazy loading ici car c'est une popup qui doit s'afficher vite
             />
           ) : (
             <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-300">
@@ -142,7 +147,6 @@ export default function Home() {
       try {
         const res = await axios.get('/api/home-content');
         if (res.data && Object.keys(res.data).length > 0) {
-            // Fusion intelligente : On garde la structure par défaut, on écrase avec les données DB
             setContent(prev => ({ ...prev, ...res.data }));
         }
       } catch (err) { console.error("Erreur chargement contenu home", err); }
@@ -211,13 +215,14 @@ export default function Home() {
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
             
-            {/* ✅ LOGIQUE D'AFFICHAGE : Image Admin OU Placeholder neutre */}
+            {/* ✅ OPTIMISATION HERO : Qualité 1000px, decoding async, PAS de lazy loading (image critique) */}
             {getSecureUrl(content.slides[currentSlide]?.image) ? (
                 <img 
-                    src={getSecureUrl(content.slides[currentSlide]?.image)} 
+                    src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} 
                     alt="Hero" 
                     className="w-full h-full object-cover"
                     referrerPolicy="no-referrer"
+                    decoding="async"
                 />
             ) : (
                 <div className="w-full h-full bg-primary-900 flex items-center justify-center">
@@ -262,13 +267,15 @@ export default function Home() {
             <div className="absolute inset-0 bg-gold-500 rounded-[2rem] rotate-3 transform translate-x-2 translate-y-2 opacity-20"></div>
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group flex items-center justify-center">
               
-              {/* ✅ LOGIQUE D'AFFICHAGE ABOUT : Image Admin OU Placeholder */}
+              {/* ✅ OPTIMISATION ABOUT : Qualité 600px + Lazy Loading */}
               {getSecureUrl(content.about.image) ? (
                   <img 
-                    src={getSecureUrl(content.about.image)} 
+                    src={getOptimizedImage(getSecureUrl(content.about.image), 600)} 
                     alt="Serigne Mor Diop" 
                     className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700"
                     referrerPolicy="no-referrer"
+                    loading="lazy"
+                    decoding="async"
                   />
               ) : (
                   <ImagePlaceholder label="Photo Serigne Mor" />
@@ -306,9 +313,19 @@ export default function Home() {
             {/* Boutique */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/boutique')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  
+                  {/* ✅ OPTIMISATION BOUTIQUE : Qualité 400px + Lazy Loading */}
                   {getSecureUrl(content.pillars.shopImage) ? (
-                      <img src={getSecureUrl(content.pillars.shopImage)} alt="Boutique" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                      <img 
+                        src={getOptimizedImage(getSecureUrl(content.pillars.shopImage), 400)} 
+                        alt="Boutique" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                      />
                   ) : <ImagePlaceholder label="Boutique" />}
+
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-gold-500 text-primary-900 p-2 rounded-full shadow-lg"><ShoppingBag size={20} /></div>
               </div>
@@ -318,9 +335,19 @@ export default function Home() {
             {/* Bibliothèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/livres')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  
+                  {/* ✅ OPTIMISATION LIBRARY : Qualité 400px + Lazy Loading */}
                   {getSecureUrl(content.pillars.libraryImage) ? (
-                      <img src={getSecureUrl(content.pillars.libraryImage)} alt="Livres" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                      <img 
+                        src={getOptimizedImage(getSecureUrl(content.pillars.libraryImage), 400)} 
+                        alt="Livres" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                      />
                   ) : <ImagePlaceholder label="Bibliothèque" />}
+
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-white text-primary-900 p-2 rounded-full shadow-lg"><BookOpen size={20} /></div>
               </div>
@@ -330,9 +357,19 @@ export default function Home() {
             {/* Médiathèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/podcast')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
+                  
+                  {/* ✅ OPTIMISATION MEDIA : Qualité 400px + Lazy Loading */}
                   {getSecureUrl(content.pillars.mediaImage) ? (
-                      <img src={getSecureUrl(content.pillars.mediaImage)} alt="Media" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" referrerPolicy="no-referrer"/>
+                      <img 
+                        src={getOptimizedImage(getSecureUrl(content.pillars.mediaImage), 400)} 
+                        alt="Media" 
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" 
+                        referrerPolicy="no-referrer"
+                        loading="lazy"
+                        decoding="async"
+                      />
                   ) : <ImagePlaceholder label="Médiathèque" />}
+
                   <div className="absolute inset-0 bg-primary-900/40 group-hover:bg-primary-900/20 transition-colors"></div>
                   <div className="absolute top-4 right-4 bg-red-500 text-white p-2 rounded-full shadow-lg"><PlayCircle size={20} /></div>
               </div>
