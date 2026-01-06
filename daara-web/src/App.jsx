@@ -5,7 +5,24 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { PushNotifications } from '@capacitor/push-notifications';
 import { FCM } from '@capacitor-community/fcm';
 import { Capacitor } from '@capacitor/core';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth'; // ✅ NOUVEAU
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
+
+// --- NOUVEAUX IMPORTS POUR PWA (WEB) ---
+import { initializeApp } from "firebase/app";
+import { getMessaging, getToken } from "firebase/messaging";
+
+// --- CONFIGURATION FIREBASE WEB ---
+const firebaseConfig = {
+  apiKey: "AIzaSyDcBu_ebg9PHPW2Yzq4rdMymsEmcLdCAHA",
+  authDomain: "daara-app-5a679.firebaseapp.com",
+  projectId: "daara-app-5a679",
+  storageBucket: "daara-app-5a679.firebasestorage.app",
+  messagingSenderId: "1060878832216",
+  appId: "1:1060878832216:web:1e26ab2371dfff293d702d"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const messaging = getMessaging(firebaseApp);
 
 // --- IMPORTS COMPOSANTS PUBLICS ---
 import Navbar from './components/Navbar';
@@ -72,7 +89,7 @@ function App() {
   useEffect(() => {
   if (Capacitor.isNativePlatform()) {
     GoogleAuth.initialize({
-      clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com', // 🔑 WEB CLIENT
+      clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
       scopes: ['profile', 'email'],
       grantOfflineAccess: true,
     });
@@ -84,7 +101,7 @@ function App() {
   }
 }, []);
 
-  // --- 2. LOGIQUE DE NOTIFICATION PUSH ---
+  // --- 2. LOGIQUE DE NOTIFICATION PUSH (MOBILE NATIVE) ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const initPush = async () => {
@@ -113,6 +130,40 @@ function App() {
       return () => {
         listenerReceived.remove();
       };
+    }
+  }, []);
+
+  // --- 3. LOGIQUE DE NOTIFICATION PWA (WEB/IPHONE) ---
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) {
+      const initWebPush = async () => {
+        try {
+          // Demande de permission au navigateur
+          const permission = await Notification.requestPermission();
+          if (permission === 'granted') {
+            // Enregistrement du Service Worker
+            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+            
+            // Récupération du Token pour le Web
+            const token = await getToken(messaging, {
+              serviceWorkerRegistration: registration,
+              vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' // À générer dans Firebase Console
+            });
+
+            if (token) {
+              console.log('✅ Web : Token FCM récupéré :', token);
+              // Optionnel : Envoyer ce token à votre API pour l'abonner au topic "all_users"
+            }
+          }
+        } catch (err) {
+          console.error('❌ Erreur Web Push (iPhone/Web):', err);
+        }
+      };
+      
+      // On ne lance la demande que si l'utilisateur est sur l'écran d'accueil (iPhone)
+      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
+        initWebPush();
+      }
     }
   }, []);
 
