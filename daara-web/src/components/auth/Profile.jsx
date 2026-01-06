@@ -7,43 +7,7 @@ import {
   CheckCircle, Package, Truck, Clock, AlertCircle, Trash2 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-
 import { getMessaging, getToken } from "firebase/messaging";
-
-// ... à l'intérieur de votre composant Profile
-const showMyToken = async () => {
-  try {
-    const messaging = getMessaging();
-    // Demander la permission (obligatoire pour iOS)
-    const permission = await Notification.requestPermission();
-    
-    if (permission === 'granted') {
-      const token = await getToken(messaging, { 
-        vapidKey: 'VOTRE_CLE_VAPID_REELLE' // Remplacez par votre clé Firebase
-      });
-      
-      if (token) {
-        // Affiche le token sur l'écran de l'iPhone
-        alert("Voici votre Token :\n\n" + token);
-        console.log("Token FCM:", token);
-      } else {
-        alert("Aucun token généré. Vérifiez votre configuration.");
-      }
-    } else {
-      alert("Permission de notification refusée.");
-    }
-  } catch (error) {
-    alert("Erreur : " + error.message);
-  }
-};
-
-// Dans votre code HTML (JSX)
-<button 
-  onClick={showMyToken} 
-  className="bg-blue-600 text-white p-4 rounded-xl font-bold shadow-lg"
->
-  Générer mon Token iPhone
-</button>
 
 // --- COMPOSANTS AUXILIAIRES (Timeline, etc.) ---
 const SmartTimeline = ({ status }) => {
@@ -264,6 +228,32 @@ export default function Profile() {
   const [tickets, setTickets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
+
+  // --- NOUVELLE FONCTION POUR LE TOKEN (PLACÉE ICI) ---
+  const showMyToken = async () => {
+    try {
+      const messaging = getMessaging();
+      const permission = await Notification.requestPermission();
+      
+      if (permission === 'granted') {
+        const token = await getToken(messaging, { 
+          // REMPLACE BIEN CETTE CLÉ PAR TA VRAIE CLÉ VAPID FIREBASE
+          vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY'
+        });
+        
+        if (token) {
+          alert("Voici votre Token iPhone :\n\n" + token);
+          console.log("Token FCM:", token);
+        } else {
+          alert("Aucun token généré. Vérifiez votre config Firebase.");
+        }
+      } else {
+        alert("Permission de notification refusée sur cet iPhone.");
+      }
+    } catch (error) {
+      alert("Erreur : " + error.message);
+    }
+  };
 
   // --- 1. CHARGEMENT PROFIL (SÉCURISÉ) ---
   useEffect(() => {
