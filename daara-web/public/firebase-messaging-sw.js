@@ -28,20 +28,30 @@ messaging.onBackgroundMessage((payload) => {
 });
 
 // ✅ GESTION DU CLIC POUR REDIRIGER VERS /evenements
+// public/firebase-messaging-sw.js
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || '/';
+
+  // 1. Récupérer l'URL envoyée par l'admin
+  const relativeUrl = event.notification.data?.url || '/evenements';
+  
+  // 2. Construire l'URL complète (obligatoire pour iOS)
+  // Cela transformera "/evenements?id=..." en "https://app.daaraserignemordiop.com/evenements?id=..."
+  const targetUrl = new URL(relativeUrl, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Si l'app est déjà ouverte, focus l'onglet et navigue
+      // Si une fenêtre est déjà ouverte, on la focus et on change son adresse
       for (let client of windowClients) {
-        if (client.url.includes(location.origin) && 'focus' in client) {
+        if ('focus' in client && 'navigate' in client) {
           return client.focus().then(() => client.navigate(targetUrl));
         }
       }
-      // Sinon, ouvre une nouvelle fenêtre
-      if (clients.openWindow) return clients.openWindow(targetUrl);
+      // Sinon, on ouvre une nouvelle fenêtre sur la bonne page
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });
