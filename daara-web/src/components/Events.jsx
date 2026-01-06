@@ -47,20 +47,34 @@ export default function Events() {
   }, []);
 
   // ✅ LOGIQUE D'INNOVATION : AUTO-OUVERTURE DEPUIS NOTIFICATION
-  useEffect(() => {
-    if (events.length > 0) {
-      const eventId = searchParams.get('id'); // Lit ?id=... dans l'URL
-      if (eventId) {
-        const eventFound = events.find(e => e._id === eventId);
-        if (eventFound) {
-          // On ouvre automatiquement le modal
-          setSelectedEvent(eventFound);
-          setModalType('details');
-          setIsModalOpen(true);
-        }
+ useEffect(() => {
+  // 1. On récupère l'ID depuis l'URL
+  const eventId = searchParams.get('id');
+
+  // 2. CONDITION CRITIQUE : On attend que le chargement soit fini (!loading) 
+  // et que la liste des événements soit peuplée (events.length > 0)
+  if (!loading && events.length > 0 && eventId) {
+    
+    // 3. Recherche de l'événement précis
+    const eventFound = events.find(e => String(e._id) === String(eventId));
+
+    if (eventFound) {
+      // 4. On ouvre le modal avec les bonnes données
+      setSelectedEvent(eventFound);
+      setModalType('details');
+      setIsModalOpen(true);
+
+      // OPTIONNEL : Si c'est un ticket, on bascule sur l'onglet billetterie pour l'utilisateur
+      if (eventFound.hasTicket) {
+        setActiveTab('tickets');
       }
+
+      console.log("✅ Redirection réussie vers l'événement :", eventFound.title);
+    } else {
+      console.warn("⚠️ Événement non trouvé pour l'ID :", eventId);
     }
-  }, [events, searchParams]);
+  }
+}, [events, loading, searchParams]); // ✅ 'loading' est maintenant une dépendance clé
 
   // --- LOGIQUE CALENDRIER ---
   const getHijriDate = (date) => new Intl.DateTimeFormat('fr-FR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
