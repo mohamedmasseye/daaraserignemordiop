@@ -30,27 +30,32 @@ messaging.onBackgroundMessage((payload) => {
 // ✅ GESTION DU CLIC POUR REDIRIGER VERS /evenements
 // public/firebase-messaging-sw.js
 
+// public/firebase-messaging-sw.js
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  // 1. Récupérer l'URL envoyée par l'admin
-  const relativeUrl = event.notification.data?.url || '/evenements';
+  // 1. On récupère l'URL envoyée (ex: /evenements?id=695d...)
+  const urlPath = event.notification.data?.url || '/evenements';
   
-  // 2. Construire l'URL complète (obligatoire pour iOS)
-  // Cela transformera "/evenements?id=..." en "https://app.daaraserignemordiop.com/evenements?id=..."
-  const targetUrl = new URL(relativeUrl, self.location.origin).href;
+  // 2. On crée une URL absolue (Obligatoire pour iOS)
+  const fullTargetUrl = new URL(urlPath, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Si une fenêtre est déjà ouverte, on la focus et on change son adresse
+      // Si une fenêtre est déjà ouverte (même sur l'accueil)
       for (let client of windowClients) {
-        if ('focus' in client && 'navigate' in client) {
-          return client.focus().then(() => client.navigate(targetUrl));
+        if ('focus' in client) {
+          client.focus();
+          // On force la navigation vers la page précise avec l'ID
+          if ('navigate' in client) {
+            return client.navigate(fullTargetUrl);
+          }
         }
       }
-      // Sinon, on ouvre une nouvelle fenêtre sur la bonne page
+      // Si l'application était fermée
       if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
+        return clients.openWindow(fullTargetUrl);
       }
     })
   );

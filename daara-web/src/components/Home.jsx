@@ -166,6 +166,16 @@ export default function Home() {
   }, [content.slides]);
 
   useEffect(() => {
+  const params = new URLSearchParams(window.location.search);
+  const eventId = params.get('id');
+  
+  if (eventId) {
+    console.log("🚀 Redirection forcée depuis l'Accueil vers l'événement:", eventId);
+    navigate(`/evenements?id=${eventId}`, { replace: true });
+  }
+}, [navigate]);
+
+  useEffect(() => {
     const checkEvents = async () => {
       try {
         const res = await axios.get('/api/events');
