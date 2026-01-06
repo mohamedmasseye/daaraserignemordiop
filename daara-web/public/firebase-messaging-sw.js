@@ -16,21 +16,22 @@ firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
 // Gestion des messages en arrière-plan
+// Gestion des messages en arrière-plan
 messaging.onBackgroundMessage((payload) => {
-  console.log('[firebase-messaging-sw.js] Message reçu en arrière-plan :', payload);
+  console.log('Message reçu :', payload);
 
-  // N'affiche la notification que si elle n'est pas déjà gérée par FCM (évite les doublons)
-  if (payload.notification) {
-    const notificationTitle = payload.notification.title;
-    const notificationOptions = {
-      body: payload.notification.body,
-      icon: '/icons/icon-192.png',
-      badge: '/icons/icon-192.png',
-      data: {
-        url: payload.data?.url || '/'
-      }
-    };
-
-    return self.registration.showNotification(notificationTitle, notificationOptions);
+  // Si le message contient déjà une notification gérée par le système, 
+  // on ne force pas l'affichage manuel pour éviter les doublons.
+  if (payload.notification && !payload.data?.manual) {
+    return; 
   }
+
+  const notificationTitle = payload.notification?.title || "Nouveau message";
+  const notificationOptions = {
+    body: payload.notification?.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-192.png',
+  };
+
+  return self.registration.showNotification(notificationTitle, notificationOptions);
 });
