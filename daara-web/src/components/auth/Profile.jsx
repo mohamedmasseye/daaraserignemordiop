@@ -145,28 +145,25 @@ export default function Profile() {
 
   // --- FONCTION DE DIAGNOSTIC NOTIFICATIONS ---
   const showMyToken = async () => {
-    try {
-      const messaging = getMessaging();
-      const permission = await Notification.requestPermission();
+  try {
+    const messaging = getMessaging();
+    const permission = await Notification.requestPermission();
+    
+    if (permission === 'granted') {
+      const token = await getToken(messaging, { 
+        vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
+      });
       
-      if (permission === 'granted') {
-        const token = await getToken(messaging, { 
-          vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY'
-        });
-        
-        if (token) {
-          alert("Voici votre Token iPhone :\n\n" + token);
-          console.log("Token FCM:", token);
-        } else {
-          alert("Aucun token généré. Vérifiez votre configuration Firebase.");
-        }
-      } else {
-        alert("Permission de notification refusée sur cet iPhone.");
+      if (token) {
+        // --- ENVOI AUTOMATIQUE AU BACKEND ---
+        await axios.post('/api/notifications/subscribe', { token });
+        alert("Félicitations ! Votre iPhone est maintenant abonné aux annonces du Daara.");
       }
-    } catch (error) {
-      alert("Erreur : " + error.message);
     }
-  };
+  } catch (error) {
+    alert("Erreur lors de l'abonnement : " + error.message);
+  }
+};
 
   useEffect(() => {
     const fetchUserData = async () => {
