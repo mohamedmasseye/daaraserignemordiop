@@ -109,20 +109,27 @@ export default function AdminEvents() {
 
   useEffect(() => { fetchData(); }, []);
 
-  const handleBroadcastEvent = async (event) => {
-    const confirmBroadcast = window.confirm(`Diffuser une alerte push pour : ${event.title} ?`);
-    if (!confirmBroadcast) return;
-    try {
-        const token = localStorage.getItem('token');
-        await axios.post('/api/notifications', {
-            title: "📅 Nouvel Événement !",
-            body: `${event.title} prévu le ${new Date(event.date).toLocaleDateString()}. Réservez votre place !`,
-            type: 'info',
-            url: `/evenements?id=${event._id}`
-        }, { headers: { Authorization: `Bearer ${token}` } });
-        alert("🚀 Notification envoyée avec succès !");
-    } catch (err) { alert("Erreur diffusion."); }
-  };
+  // Dans AdminEvents.jsx
+const handleBroadcastEvent = async (event) => {
+  const confirmBroadcast = window.confirm(`Diffuser une notification pour : ${event.title} ?`);
+  if (!confirmBroadcast) return;
+
+  try {
+    const token = localStorage.getItem('token');
+    await axios.post('/api/notifications', {
+      title: "📅 Nouvel Événement !",
+      body: `${event.title}. Cliquez pour voir les détails et réserver.`,
+      type: 'info',
+      // ✅ C'EST CETTE LIGNE QUI FAIT LA MAGIE QUE VOUS VENEZ DE TESTER
+      url: `/evenements?id=${event._id}` 
+    }, {
+      headers: { Authorization: `Bearer ${token}` }
+    });
+    alert("🚀 Notification diffusée avec succès !");
+  } catch (err) {
+    alert("Erreur lors de la diffusion.");
+  }
+};
 
   const getEventStats = (eventId) => {
     const eventTickets = allTickets.filter(t => String(t.eventId) === String(eventId));
