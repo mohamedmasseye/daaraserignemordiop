@@ -4,9 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
-  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag, Image as ImageIcon
+  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag, Image as ImageIcon, Bell
 } from 'lucide-react';
-
+import NotificationBanner from './NotificationBanner';
 // ✅ IMPORT DE L'OPTIMISATEUR
 import { getOptimizedImage } from '../utils/imageHelper';
 
@@ -108,7 +108,6 @@ const EventPopup = ({ event, onClose, onBook }) => {
               alt={event.title} 
               className="w-full h-full object-cover"
               referrerPolicy="no-referrer"
-              // Pas de lazy loading ici car c'est une popup qui doit s'afficher vite
             />
           ) : (
             <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-300">
@@ -204,6 +203,10 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
+      
+      {/* ================= BANNIÈRE DE NOTIFICATIONS ================= */}
+      <NotificationBanner />
+
       <AnimatePresence>
         {showPopup && featuredEvent && (
             <EventPopup event={featuredEvent} onClose={handleClosePopup} onBook={() => { handleClosePopup(); navigate('/evenements'); }} />
@@ -215,7 +218,7 @@ export default function Home() {
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
             
-            {/* ✅ OPTIMISATION HERO : Qualité 1000px, decoding async, PAS de lazy loading (image critique) */}
+            {/* ✅ OPTIMISATION HERO : Qualité 1000px */}
             {getSecureUrl(content.slides[currentSlide]?.image) ? (
                 <img 
                     src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} 

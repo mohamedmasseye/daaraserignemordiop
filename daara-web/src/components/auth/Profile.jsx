@@ -4,10 +4,9 @@ import axios from 'axios';
 import { 
   User, LogOut, MapPin, Phone, Camera, Save, X, 
   Ticket, Download, Calendar, QrCode, Mail, ShoppingBag, 
-  CheckCircle, Package, Truck, Clock, AlertCircle, Trash2, Bell 
+  CheckCircle, Package, Truck, Clock, AlertCircle, Trash2 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { getMessaging, getToken } from "firebase/messaging";
 
 // --- COMPOSANTS AUXILIAIRES (Timeline, etc.) ---
 const SmartTimeline = ({ status }) => {
@@ -33,7 +32,6 @@ const SmartTimeline = ({ status }) => {
                     </div>
                 ))}
             </div>
-            {/* Version Mobile Simple */}
             <div className="md:hidden flex flex-col gap-2 pl-2">
                 <span className="font-bold text-gold-600">Statut : {status}</span>
             </div>
@@ -52,7 +50,6 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
 
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
-      
       <style type="text/css" media="print">
         {`
           @page { size: landscape; margin: 0; }
@@ -142,28 +139,6 @@ export default function Profile() {
   const [tickets, setTickets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
-
-  // --- FONCTION DE DIAGNOSTIC NOTIFICATIONS ---
-  const showMyToken = async () => {
-  try {
-    const messaging = getMessaging();
-    const permission = await Notification.requestPermission();
-    
-    if (permission === 'granted') {
-      const token = await getToken(messaging, { 
-        vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
-      });
-      
-      if (token) {
-        // --- ENVOI AUTOMATIQUE AU BACKEND ---
-        await axios.post('/api/notifications/subscribe', { token });
-        alert("Félicitations ! Votre iPhone est maintenant abonné aux annonces du Daara.");
-      }
-    }
-  } catch (error) {
-    alert("Erreur lors de l'abonnement : " + error.message);
-  }
-};
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -362,15 +337,6 @@ export default function Profile() {
             </div>
         </div>
       )}
-
-      {/* ================= DIAGNOSTIC PWA (AJOUTÉ) ================= */}
-      <div className="mb-12 p-6 bg-blue-50 border border-blue-100 rounded-3xl">
-        <h3 className="text-blue-900 font-bold mb-2 flex items-center gap-2"><AlertCircle size={20}/> Notifications iPhone</h3>
-        <p className="text-blue-600 text-sm mb-4">Si vous ne recevez pas les alertes, cliquez ci-dessous pour activer les notifications et générer votre code de diagnostic.</p>
-        <button onClick={showMyToken} className="w-full md:w-auto px-8 py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition active:scale-95 flex items-center gap-2 justify-center">
-            <Bell size={18}/> Générer mon Token iPhone
-        </button>
-      </div>
 
       <div className="pt-6 border-t border-gray-200"><button onClick={handleLogout} className="text-red-600 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition flex items-center gap-2"><LogOut size={20} /> Se déconnecter</button></div>
       <AnimatePresence>{selectedTicket && <ClassyTicket ticket={selectedTicket} userName={user.fullName} onClose={() => setSelectedTicket(null)} />}</AnimatePresence>
