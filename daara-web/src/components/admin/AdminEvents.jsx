@@ -63,33 +63,48 @@ export default function AdminEvents() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [eventsRes, ordersRes] = await Promise.all([
-        axios.get('/api/events'),
-        axios.get('/api/orders')
-      ]);
+      const token = localStorage.getItem('token');
+      const config = { headers: { Authorization: `Bearer ${token}` } };
+
+      // 1. Charger d'abord les événements (Route souvent publique ou protégée)
+      const eventsRes = await axios.get('/api/events');
       setEvents(eventsRes.data);
-      const extractedTickets = [];
-      ordersRes.data.forEach(order => {
+
+      // 2. Charger les tickets vendus (Route obligatoirement protégée)
+      try {
+        const ordersRes = await axios.get('/api/orders', config); // ✅ Ajout du token ici
+        const extractedTickets = [];
+        ordersRes.data.forEach(order => {
           if (order.status !== 'Cancelled') {
-              order.items.forEach(item => {
-                  if (item.type === 'ticket') {
-                      extractedTickets.push({
-                          _id: order._id,
-                          eventId: item.ticketEvent || item.product,
-                          eventTitle: item.name.replace('Ticket - ', ''),
-                          userName: order.user?.fullName || 'Anonyme',
-                          userEmail: order.user?.email || 'N/A',
-                          quantity: item.quantity,
-                          price: item.price,
-                          totalPrice: item.price * item.quantity,
-                          purchaseDate: order.createdAt
-                      });
-                  }
-              });
+            order.items.forEach(item => {
+              if (item.type === 'ticket') {
+                extractedTickets.push({
+                  _id: order._id,
+                  eventId: item.ticketEvent || item.product,
+                  eventTitle: item.name.replace('Ticket - ', ''),
+                  userName: order.user?.fullName || 'Anonyme',
+                  userEmail: order.user?.email || 'N/A',
+                  quantity: item.quantity,
+                  price: item.price,
+                  totalPrice: item.price * item.quantity,
+                  purchaseDate: order.createdAt
+                });
+              }
+            });
           }
-      });
-      setAllTickets(extractedTickets);
-    } catch (e) { console.error(e); } finally { setLoading(false); }
+        });
+        setAllTickets(extractedTickets);
+      } catch (orderErr) {
+        console.error("Erreur lors du chargement des tickets (Orders) :", orderErr);
+        // On ne bloque pas l'affichage des événements si seules les stats échouent
+      }
+
+    } catch (e) {
+      console.error("Erreur générale fetchData :", e);
+      alert("Erreur de connexion au serveur.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   useEffect(() => { fetchData(); }, []);
