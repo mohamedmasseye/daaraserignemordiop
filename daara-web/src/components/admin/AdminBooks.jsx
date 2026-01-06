@@ -12,10 +12,11 @@ export default function AdminBooks() {
   const [pdfFile, setPdfFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   
-  // NOUVEAUX ÉTATS POUR LA PROGRESSION
+  // States pour la progression
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [uploadStep, setUploadStep] = useState(''); // "Envoi...", "Traitement Cloudinary..."
+  // On initialise avec un texte simple
+  const [uploadStep, setUploadStep] = useState('Préparation...');
 
   const fetchBooks = async () => {
     try {
@@ -35,7 +36,8 @@ export default function AdminBooks() {
 
     setIsUploading(true);
     setUploadProgress(0);
-    setUploadStep('Préparation des fichiers...');
+    // ✅ TEXTE SIMPLIFIÉ AU DÉBUT
+    setUploadStep('Démarrage de l\'ajout...');
 
     try {
       const data = new FormData();
@@ -46,20 +48,22 @@ export default function AdminBooks() {
       if (pdfFile) data.append('pdfFile', pdfFile);
       if (coverFile) data.append('coverImage', coverFile);
 
-      // AXIOS AVEC SUIVI DE PROGRESSION
       await axios.post('/api/books', data, {
           headers: { 
               'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${localStorage.getItem('token')}` // Sécurité
+              Authorization: `Bearer ${localStorage.getItem('token')}`
           },
+          // ✅ GESTION DE LA PROGRESSION CORRIGÉE
           onUploadProgress: (progressEvent) => {
               const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
               setUploadProgress(percentCompleted);
               
+              // On change le texte selon l'étape, SANS remettre le % dans le texte
               if (percentCompleted < 100) {
-                  setUploadStep(`Envoi vers le serveur (${percentCompleted}%)...`);
+                  setUploadStep('Ajout du livre en cours...');
               } else {
-                  setUploadStep('Traitement Cloudinary en cours (Ne fermez pas)...');
+                  // Quand c'est à 100%, c'est que le serveur traite le fichier
+                  setUploadStep('Finalisation du traitement (Ne quittez pas)...');
               }
           }
       });
@@ -68,7 +72,6 @@ export default function AdminBooks() {
       setTimeout(() => {
           setIsUploading(false);
           alert('✅ Livre ajouté avec succès !');
-          // Reset
           setFormData({ title: '', author: 'Serigne Mor Diop', description: '', category: '' });
           setPdfFile(null);
           setCoverFile(null);
@@ -80,7 +83,7 @@ export default function AdminBooks() {
     } catch (error) {
       console.error(error);
       setIsUploading(false);
-      alert(error.response?.data?.error || "Erreur lors de l'ajout (Fichier trop lourd ?)");
+      alert(error.response?.data?.error || "Erreur lors de l'ajout.");
     }
   };
 
@@ -103,25 +106,39 @@ export default function AdminBooks() {
         {/* --- ZONE D'AJOUT --- */}
         <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mb-10 relative overflow-hidden">
           
-          {/* Overlay de chargement (Superposition) */}
+          {/* ✅ OVERLAY DE CHARGEMENT CORRIGÉ */}
           {isUploading && (
-              <div className="absolute inset-0 bg-white/90 z-50 flex flex-col items-center justify-center backdrop-blur-sm">
-                  <div className="w-64">
-                      <div className="flex justify-between mb-2 text-sm font-bold text-primary-900">
-                          <span>{uploadStep}</span>
+              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center backdrop-blur-md transition-all">
+                  <div className="w-72 p-6 bg-white rounded-2xl shadow-xl border border-gray-100 text-center">
+                      {/* Icône animée */}
+                      <div className="mb-4 flex justify-center text-primary-600">
+                        {uploadProgress < 100 ? (
+                           <Loader className="animate-spin h-10 w-10"/>
+                        ) : (
+                           <CheckCircle className="h-10 w-10 text-green-500 animate-bounce"/>
+                        )}
+                      </div>
+
+                      {/* Titre de l'étape */}
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">{uploadStep}</h3>
+                      
+                      {/* Barre et Pourcentage unique */}
+                      <div className="flex items-center justify-between text-sm font-bold text-primary-700 mb-2">
+                          <span>Progression</span>
+                          {/* ✅ LE SEUL ENDROIT OÙ LE % S'AFFICHE */}
                           <span>{uploadProgress}%</span>
                       </div>
-                      <div className="h-3 w-full bg-gray-200 rounded-full overflow-hidden">
+                      <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-200 relative">
                           <div 
-                              className="h-full bg-primary-600 transition-all duration-300 ease-out"
+                              className={`h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden ${uploadProgress < 100 ? 'bg-primary-600' : 'bg-green-500'}`}
                               style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                      </div>
-                      {uploadProgress === 100 && (
-                          <div className="mt-4 flex items-center justify-center text-green-600 animate-pulse">
-                              <Loader className="animate-spin mr-2 h-5 w-5"/> Finalisation...
+                          >
+                              {/* Petit effet brillant sur la barre */}
+                              <div className="absolute inset-0 bg-white/30 w-full h-full animate-pulse"></div>
                           </div>
-                      )}
+                      </div>
+                      
+                      <p className="text-xs text-gray-400 mt-4 italic">Cela peut prendre quelques secondes selon la taille du PDF.</p>
                   </div>
               </div>
           )}
@@ -162,33 +179,35 @@ export default function AdminBooks() {
             </div>
 
             <div className="space-y-4">
-                <div className="p-4 border-2 border-dashed border-primary-200 rounded-xl bg-primary-50/50 hover:bg-primary-50 transition-colors cursor-pointer relative">
-                    <label className="block text-sm font-bold text-primary-900 mb-2">📄 Fichier PDF (Livre)</label>
+                <div className="p-4 border-2 border-dashed border-primary-200 rounded-xl bg-primary-50/50 hover:bg-primary-50 transition-colors cursor-pointer relative group">
+                    <label className="block text-sm font-bold text-primary-900 mb-2 group-hover:text-primary-700 transition-colors">📄 Fichier PDF (Livre) *</label>
                     <input 
                         id="fileInputPdf" type="file" accept="application/pdf" required
                         className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200 cursor-pointer"
                         onChange={(e) => setPdfFile(e.target.files[0])}
                     />
-                    {pdfFile && <div className="mt-2 text-xs text-green-600 flex items-center"><CheckCircle size={12} className="mr-1"/> {pdfFile.name} ({(pdfFile.size/1024/1024).toFixed(2)} MB)</div>}
+                    {pdfFile && <div className="mt-2 text-xs text-green-600 flex items-center font-medium"><CheckCircle size={14} className="mr-1"/> {pdfFile.name} ({(pdfFile.size/1024/1024).toFixed(2)} MB)</div>}
                 </div>
 
                 <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors relative">
                     <label className="block text-sm font-bold text-gray-700 mb-2">🖼️ Couverture (Optionnel)</label>
                     <input 
                         id="fileInputCover" type="file" accept="image/*"
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-200 file:text-gray-700 hover:file:bg-gray-300 cursor-pointer"
+                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
                         onChange={(e) => setCoverFile(e.target.files[0])}
                     />
+                    {coverFile && <div className="mt-2 text-xs text-green-600 flex items-center font-medium"><CheckCircle size={14} className="mr-1"/> Image sélectionnée</div>}
                 </div>
 
                 <button 
                     type="submit" 
                     disabled={isUploading}
-                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transform transition hover:-translate-y-1 ${
+                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transform transition hover:-translate-y-1 flex items-center justify-center ${
                         isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary-900 text-white hover:bg-primary-800 shadow-primary-900/30'
                     }`}
                 >
-                    {isUploading ? 'Enregistrement...' : 'Enregistrer le Livre'}
+                    {isUploading ? <Loader className="animate-spin mr-2"/> : <Plus className="mr-2"/>}
+                    {isUploading ? 'Patientez...' : 'Enregistrer le Livre'}
                 </button>
             </div>
           </form>
@@ -205,22 +224,22 @@ export default function AdminBooks() {
                 <tr key={book._id} className="hover:bg-gray-50 transition-colors group">
                   <td className="px-6 py-4">
                     <div className="flex items-center">
-                      <div className="h-12 w-10 flex-shrink-0 bg-gray-200 rounded overflow-hidden mr-4 shadow-sm">
+                      <div className="h-12 w-10 flex-shrink-0 bg-gray-200 rounded overflow-hidden mr-4 shadow-sm border border-gray-100">
                           {book.coverUrl ? (
                               <img src={book.coverUrl} alt="" className="h-full w-full object-cover"/>
                           ) : (
-                              <div className="h-full w-full flex items-center justify-center text-gray-400"><Book size={16}/></div>
+                              <div className="h-full w-full flex items-center justify-center text-gray-400 bg-gray-100"><Book size={20}/></div>
                           )}
                       </div>
                       <div>
                           <div className="font-bold text-gray-900">{book.title}</div>
-                          <div className="text-sm text-gray-500">{book.category} • {(new Date(book.createdAt)).toLocaleDateString()}</div>
+                          <div className="text-sm text-gray-500">{book.category || 'Général'} • {(new Date(book.createdAt)).toLocaleDateString()}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <a href={book.pdfUrl} target="_blank" rel="noreferrer" className="text-primary-600 hover:text-primary-800 text-sm font-medium mr-4 hover:underline">
-                      Voir PDF
+                    <a href={book.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg text-sm font-medium mr-4 transition-colors">
+                      <Book size={16} className="mr-1"/> Voir PDF
                     </a>
                     <button onClick={() => handleDelete(book._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
                       <Trash2 size={18} />
@@ -231,7 +250,10 @@ export default function AdminBooks() {
             </tbody>
           </table>
           {books.length === 0 && (
-              <div className="p-12 text-center text-gray-400">Aucun livre pour le moment.</div>
+              <div className="p-12 flex flex-col items-center justify-center text-gray-400">
+                  <Book size={48} className="mb-4 opacity-20"/>
+                  <p>Aucun livre pour le moment.</p>
+              </div>
           )}
         </div>
       </div>
