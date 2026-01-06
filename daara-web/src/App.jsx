@@ -9,7 +9,7 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 
 // --- NOUVEAUX IMPORTS POUR PWA (WEB) ---
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken } from "firebase/messaging";
+import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
 // --- CONFIGURATION FIREBASE WEB ---
 const firebaseConfig = {
@@ -87,19 +87,19 @@ function App() {
 
   // --- 1. INITIALISATION GOOGLE & TEST RÉSEAU ---
   useEffect(() => {
-  if (Capacitor.isNativePlatform()) {
-    GoogleAuth.initialize({
-      clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
-      scopes: ['profile', 'email'],
-      grantOfflineAccess: true,
-    });
+    if (Capacitor.isNativePlatform()) {
+      GoogleAuth.initialize({
+        clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
 
-    const testUrl = 'https://api.daaraserignemordiop.com/api/home-content';
-    fetch(testUrl)
-      .then(() => console.log('Connexion API OK'))
-      .catch(() => console.log('Erreur test réseau au démarrage'));
-  }
-}, []);
+      const testUrl = 'https://api.daaraserignemordiop.com/api/home-content';
+      fetch(testUrl)
+        .then(() => console.log('Connexion API OK'))
+        .catch(() => console.log('Erreur test réseau au démarrage'));
+    }
+  }, []);
 
   // --- 2. LOGIQUE DE NOTIFICATION PUSH (MOBILE NATIVE) ---
   useEffect(() => {
@@ -138,32 +138,35 @@ function App() {
     if (!Capacitor.isNativePlatform()) {
       const initWebPush = async () => {
         try {
-          // Demande de permission au navigateur
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
-            // Enregistrement du Service Worker
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
             
-            // Récupération du Token pour le Web
             const token = await getToken(messaging, {
               serviceWorkerRegistration: registration,
-              vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' // À générer dans Firebase Console
+              vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
             });
 
             if (token) {
               console.log('✅ Web : Token FCM récupéré :', token);
-              // Optionnel : Envoyer ce token à votre API pour l'abonner au topic "all_users"
             }
           }
         } catch (err) {
           console.error('❌ Erreur Web Push (iPhone/Web):', err);
         }
       };
+
+      // Gestion du premier plan pour PWA : Évite les doublons avec le Service Worker
+      const unsubscribeOnMessage = onMessage(messaging, (payload) => {
+        console.log('Message reçu au premier plan (Web) :', payload);
+        alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`);
+      });
       
-      // On ne lance la demande que si l'utilisateur est sur l'écran d'accueil (iPhone)
       if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
         initWebPush();
       }
+
+      return () => unsubscribeOnMessage();
     }
   }, []);
 
