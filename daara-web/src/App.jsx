@@ -77,7 +77,7 @@ function App() {
       grantOfflineAccess: true,
     });
 
-    const testUrl = 'http://91.99.200.188:5000/api/home-content';
+    const testUrl = 'https://api.daaraserignemordiop.com/api/home-content';
     fetch(testUrl)
       .then(() => console.log('Connexion API OK'))
       .catch(() => console.log('Erreur test réseau au démarrage'));
