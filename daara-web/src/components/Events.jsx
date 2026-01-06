@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom'; // ✅ Importation de useSearchParams
 import { 
   Calendar as CalIcon, MapPin, Clock, ArrowRight, ChevronLeft, ChevronRight, 
   Moon, ChevronDown, X, Ticket, Star, CheckCircle, Minus, Plus, Loader, FileText, Download, Eye
@@ -12,6 +12,7 @@ const omLogoImg = "/om.png";
 
 export default function Events() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams(); // ✅ Récupération des paramètres de l'URL
   const [activeTab, setActiveTab] = useState('calendar');
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,6 +31,7 @@ export default function Events() {
   const [purchaseStep, setPurchaseStep] = useState('selection');
   const [paymentMethod, setPaymentMethod] = useState('Wave'); 
 
+  // --- CHARGEMENT INITIAL ---
   useEffect(() => {
     const fetchEvents = async () => {
       try {
@@ -43,6 +45,22 @@ export default function Events() {
     };
     fetchEvents();
   }, []);
+
+  // ✅ LOGIQUE D'INNOVATION : AUTO-OUVERTURE DEPUIS NOTIFICATION
+  useEffect(() => {
+    if (events.length > 0) {
+      const eventId = searchParams.get('id'); // Lit ?id=... dans l'URL
+      if (eventId) {
+        const eventFound = events.find(e => e._id === eventId);
+        if (eventFound) {
+          // On ouvre automatiquement le modal
+          setSelectedEvent(eventFound);
+          setModalType('details');
+          setIsModalOpen(true);
+        }
+      }
+    }
+  }, [events, searchParams]);
 
   // --- LOGIQUE CALENDRIER ---
   const getHijriDate = (date) => new Intl.DateTimeFormat('fr-FR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
@@ -130,7 +148,13 @@ export default function Events() {
     }, 2000);
   };
 
-  const closeModal = () => { setIsModalOpen(false); setSelectedEvent(null); };
+  // ✅ MISE À JOUR : Nettoie l'URL à la fermeture
+  const closeModal = () => { 
+    setIsModalOpen(false); 
+    setSelectedEvent(null); 
+    // Supprime l'ID de l'URL pour ne pas ré-ouvrir au refresh
+    navigate('/evenements', { replace: true });
+  };
 
   if (loading) return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-gold-500"></div></div>;
 
@@ -157,7 +181,6 @@ export default function Events() {
                   )}
                   <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 border border-white/30 rounded-full font-bold text-white hover:bg-white/10 transition-all backdrop-blur-md">Plus d'infos</button>
                   
-                  {/* Badge PDF Hero */}
                   {nextEvent.documentUrl && (
                       <div className="flex items-center gap-2 text-gold-400 text-sm font-bold border-l border-white/20 pl-4 ml-2">
                           <FileText size={18}/> PDF Disponible
@@ -245,7 +268,7 @@ export default function Events() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : LISTE (MÊME STRUCTURE POUR LES 2 ONGLETS) */}
+          {/* COLONNE DROITE : LISTE */}
           <div className="lg:col-span-8">
              <div className="mb-6 flex items-center justify-between">
                 <h2 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
@@ -257,7 +280,6 @@ export default function Events() {
              <div className="space-y-6">
                 {(activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0) : events).map((event, index) => {
                    const eventDate = new Date(event.date);
-                   const hasTicket = event.hasTicket || event.price > 0;
                    const isTicketTab = activeTab === 'tickets';
 
                    return (
@@ -266,7 +288,6 @@ export default function Events() {
                         initial={{ opacity: 0, y: 20 }} 
                         animate={{ opacity: 1, y: 0 }} 
                         transition={{ delay: index * 0.1 }} 
-                        // Style commun mais bordure dorée pour la billetterie
                         className={`group bg-white rounded-3xl overflow-hidden hover:shadow-xl transition-all duration-500 flex flex-col md:flex-row border ${isTicketTab ? 'border-gold-200 shadow-md' : 'border-gray-100 shadow-sm'}`}
                      >
                         <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden bg-gray-200">
@@ -275,23 +296,10 @@ export default function Events() {
                            ) : (
                              <div className="w-full h-full flex flex-col items-center justify-center text-gray-400 bg-gray-100"><Moon size={40} className="mb-2 opacity-20"/><span className="text-xs font-bold uppercase opacity-40">Pas d'image</span></div>
                            )}
-                           
-                           {/* Date Badge */}
                            <div className="absolute top-4 left-4 bg-white/90 backdrop-blur-md px-3 py-1.5 rounded-xl shadow-lg text-center min-w-[60px]">
                              <span className="block text-xl font-bold text-primary-900 font-serif leading-none">{eventDate.getDate()}</span>
                              <span className="block text-[10px] font-bold text-gold-600 uppercase mt-0.5">{eventDate.toLocaleDateString('fr-FR', {month:'short'})}</span>
                            </div>
-
-                           {/* PDF Badge */}
-                           {event.documentUrl && (
-                             <div className="absolute top-4 right-4 z-20">
-                                <div className="bg-white/90 backdrop-blur-md p-2 rounded-xl shadow-lg text-primary-900 group-hover:bg-gold-500 group-hover:text-white transition-colors cursor-help" title="PDF disponible">
-                                  <FileText size={18} />
-                                </div>
-                             </div>
-                           )}
-
-                           {/* PRIX (Uniquement si payant) */}
                            {(event.price > 0 || event.ticketPrice > 0) && (
                              <div className="absolute bottom-4 right-4 bg-primary-900 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
                                {(event.price || event.ticketPrice).toLocaleString('fr-FR')} FCFA
@@ -306,41 +314,23 @@ export default function Events() {
                                 <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
                              </div>
                            </div>
-                           
                            <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
-                           
                            <div className="flex items-center gap-6 text-sm font-medium text-gray-600 mb-6">
                              <span className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
                              <span className="flex items-center gap-2"><MapPin size={16} className="text-gold-500"/> {event.location}</span>
                            </div>
-                           
                            <div className="pt-6 border-t border-gray-100 flex items-center justify-between">
                              <span className="text-xs font-bold text-primary-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
-                             
-                             {/* --- LOGIQUE BOUTONS --- */}
                              {isTicketTab ? (
-                               // Onglet BILLETTERIE -> Bouton "ACHETER"
-                               <button 
-                                 onClick={() => handleBookClick(event)} 
-                                 className="bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-primary-900 transition-all shadow-lg flex items-center gap-2"
-                               >
-                                 <Ticket size={16}/> Acheter un billet
-                               </button>
+                               <button onClick={() => handleBookClick(event)} className="bg-gold-500 text-white px-6 py-3 rounded-xl font-bold text-sm hover:bg-primary-900 transition-all shadow-lg flex items-center gap-2"><Ticket size={16}/> Acheter</button>
                              ) : (
-                               // Onglet CALENDRIER -> Bouton "VOIR PLUS"
-                               <button 
-                                 onClick={() => handleDetailsClick(event)} 
-                                 className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-primary-900 hover:text-white transition-all flex items-center gap-2"
-                               >
-                                 <Eye size={16}/> Voir plus
-                               </button>
+                               <button onClick={() => handleDetailsClick(event)} className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold text-sm hover:bg-primary-900 hover:text-white transition-all flex items-center gap-2"><Eye size={16}/> Voir plus</button>
                              )}
                            </div>
                         </div>
                      </motion.div>
                    );
                 })}
-                {events.length === 0 && <div className="text-center py-20 bg-white rounded-3xl border-2 border-dashed border-gray-200"><CalIcon size={48} className="text-gray-300 mx-auto mb-4" /><p className="text-gray-500 text-lg">Aucun événement.</p></div>}
              </div>
           </div>
         </div>
@@ -354,8 +344,8 @@ export default function Events() {
               <button onClick={closeModal} className="absolute top-4 right-4 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10"><X size={20}/></button>
               
               <div className="text-center mb-6">
-                 {modalType === 'booking' && <h3 className="text-2xl font-serif font-bold text-primary-900">Réserver votre billet</h3>}
-                 {modalType === 'details' && <h3 className="text-2xl font-serif font-bold text-primary-900">{selectedEvent.title}</h3>}
+                  {modalType === 'booking' && <h3 className="text-2xl font-serif font-bold text-primary-900">Réserver votre billet</h3>}
+                  {modalType === 'details' && <h3 className="text-2xl font-serif font-bold text-primary-900">{selectedEvent.title}</h3>}
               </div>
 
               <div className="w-full h-40 bg-gray-100 rounded-2xl overflow-hidden mb-6 relative">
@@ -365,66 +355,61 @@ export default function Events() {
                  </div>
               </div>
 
-              {/* CONTENU DETAILS */}
               {modalType === 'details' && (
                   <div className="space-y-6">
                       <div className="bg-gray-50 p-4 rounded-2xl border border-gray-100 text-sm text-gray-600 leading-relaxed">
                           {selectedEvent.description || "Aucune description disponible."}
                       </div>
                       
-                      {/* BLOC PDF */}
                       {selectedEvent.documentUrl && (
                           <div className="bg-gradient-to-r from-gold-50 to-white border border-gold-200 rounded-2xl p-4 flex items-center justify-between">
                               <div className="flex items-center gap-3">
-                                  <div className="bg-gold-100 p-3 rounded-full text-gold-600">
-                                      <FileText size={24}/>
-                                  </div>
+                                  <div className="bg-gold-100 p-3 rounded-full text-gold-600"><FileText size={24}/></div>
                                   <div>
                                       <p className="text-sm font-bold text-primary-900">Programme / Document</p>
                                       <p className="text-xs text-gray-500">Format PDF disponible</p>
                                   </div>
                               </div>
-                              <a 
-                                href={selectedEvent.documentUrl} 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
-                                className="bg-primary-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 hover:bg-gold-500 transition-colors shadow-sm"
-                              >
+                              <a href={selectedEvent.documentUrl} target="_blank" rel="noopener noreferrer" className="bg-primary-900 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 shadow-sm">
                                   <Download size={16}/> Télécharger
                               </a>
                           </div>
                       )}
+                      
+                      {/* BOUTON RÉSERVATION DANS DÉTAILS */}
+                      {(selectedEvent.hasTicket || selectedEvent.price > 0) && (
+                        <button onClick={() => setModalType('booking')} className="w-full py-4 bg-gold-500 text-white font-bold rounded-xl shadow-lg mt-4">Réserver mon billet</button>
+                      )}
                   </div>
               )}
 
-              {/* CONTENU RESERVATION */}
               {modalType === 'booking' && purchaseStep === 'selection' && (
                 <>
                   <div className="flex items-center justify-between mb-8 px-4">
                       <span className="font-bold text-gray-700">Quantité</span>
                       <div className="flex items-center gap-4">
-                         <button onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))} className="w-10 h-10 rounded-full bg-white border shadow-sm flex items-center justify-center hover:bg-gray-50"><Minus size={16}/></button>
+                         <button onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))} className="w-10 h-10 rounded-full bg-white border shadow-sm flex items-center justify-center"><Minus size={16}/></button>
                          <span className="font-bold text-xl w-8 text-center">{ticketQuantity}</span>
-                         <button onClick={() => setTicketQuantity(Math.min(10, ticketQuantity + 1))} className="w-10 h-10 rounded-full bg-white border shadow-sm flex items-center justify-center hover:bg-gray-50"><Plus size={16}/></button>
+                         <button onClick={() => setTicketQuantity(Math.min(10, ticketQuantity + 1))} className="w-10 h-10 rounded-full bg-white border shadow-sm flex items-center justify-center"><Plus size={16}/></button>
                       </div>
                   </div>
                   <div className="mb-8 px-4">
-                    <span className="block font-bold text-gray-700 mb-3">Moyen de paiement</span>
+                    <span className="block font-bold text-gray-700 mb-3">Paiement</span>
                     <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => setPaymentMethod('Wave')} className={`h-16 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all overflow-hidden ${paymentMethod === 'Wave' ? 'border-[#1dc4ff] bg-[#1dc4ff]/10 text-[#00a3e0]' : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'}`}><img src={waveLogoImg} alt="Wave" className="h-8 object-contain" /><span className="text-sm">Wave</span></button>
-                      <button onClick={() => setPaymentMethod('Orange Money')} className={`h-16 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all overflow-hidden ${paymentMethod === 'Orange Money' ? 'border-[#ff7900] bg-[#ff7900]/10 text-[#ff7900]' : 'border-gray-100 bg-gray-50 text-gray-600 hover:border-gray-200'}`}><img src={omLogoImg} alt="Orange Money" className="h-8 object-contain" /><span className="text-sm">Orange Money</span></button>
+                      <button onClick={() => setPaymentMethod('Wave')} className={`h-16 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all ${paymentMethod === 'Wave' ? 'border-[#1dc4ff] bg-[#1dc4ff]/10 text-[#00a3e0]' : 'border-gray-100 bg-gray-50'}`}><img src={waveLogoImg} alt="Wave" className="h-8 object-contain" /><span className="text-sm">Wave</span></button>
+                      <button onClick={() => setPaymentMethod('Orange Money')} className={`h-16 rounded-xl border-2 font-bold flex items-center justify-center gap-2 transition-all ${paymentMethod === 'Orange Money' ? 'border-[#ff7900] bg-[#ff7900]/10 text-[#ff7900]' : 'border-gray-100 bg-gray-50'}`}><img src={omLogoImg} alt="OM" className="h-8 object-contain" /><span className="text-sm">Orange Money</span></button>
                     </div>
                   </div>
-                  <div className="bg-primary-50 p-4 rounded-xl flex justify-between items-center mb-8 border border-primary-100">
-                      <span className="text-primary-800 font-medium">Total à payer</span>
-                      <span className="text-2xl font-bold text-primary-900">{((selectedEvent.price || selectedEvent.ticketPrice || 0) * ticketQuantity).toLocaleString('fr-FR')} FCFA</span>
+                  <div className="bg-primary-50 p-4 rounded-xl flex justify-between items-center mb-8">
+                      <span className="text-primary-800 font-medium">Total</span>
+                      <span className="text-2xl font-bold text-primary-900">{((selectedEvent.price || selectedEvent.ticketPrice || 0) * ticketQuantity).toLocaleString('fr-FR')} F</span>
                   </div>
-                  <button onClick={handleConfirmPurchase} className="w-full bg-primary-900 text-white py-4 rounded-xl font-bold text-lg hover:bg-gold-500 transition-colors shadow-lg">Confirmer la commande</button>
+                  <button onClick={handleConfirmPurchase} className="w-full bg-primary-900 text-white py-4 rounded-xl font-bold text-lg shadow-lg">Confirmer l'achat</button>
                 </>
               )}
 
-              {modalType === 'booking' && purchaseStep === 'processing' && (<div className="py-12 text-center"><Loader className="w-16 h-16 text-gold-500 animate-spin mx-auto mb-6" /><h3 className="text-xl font-bold text-gray-900">Traitement en cours...</h3></div>)}
-              {modalType === 'booking' && purchaseStep === 'success' && (<div className="py-8 text-center"><div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle className="w-10 h-10 text-green-600" /></div><h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">Félicitations !</h3><button onClick={() => navigate('/profil')} className="w-full py-4 bg-primary-900 text-white font-bold rounded-xl hover:bg-primary-800 transition-colors">Voir mes billets</button></div>)}
+              {modalType === 'booking' && purchaseStep === 'processing' && (<div className="py-12 text-center"><Loader className="w-16 h-16 text-gold-500 animate-spin mx-auto mb-6" /><h3 className="text-xl font-bold text-gray-900">Veuillez patienter...</h3></div>)}
+              {modalType === 'booking' && purchaseStep === 'success' && (<div className="py-8 text-center"><div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6"><CheckCircle className="w-10 h-10 text-green-600" /></div><h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">Félicitations !</h3><button onClick={() => { closeModal(); navigate('/profil'); }} className="w-full py-4 bg-primary-900 text-white font-bold rounded-xl shadow-lg transition-all">Voir mes billets</button></div>)}
             </motion.div>
           </div>
         )}

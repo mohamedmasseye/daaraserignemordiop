@@ -3,7 +3,7 @@ import axios from 'axios';
 import { 
   Trash2, Plus, Calendar, Edit, Ticket, DollarSign, Users, 
   Image as ImageIcon, X, Download, QrCode, Loader, Paperclip, 
-  FileText, MapPin, Clock
+  FileText, MapPin, Clock, Bell 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout';
@@ -48,7 +48,6 @@ export default function AdminEvents() {
   const [selectedEventForStats, setSelectedEventForStats] = useState(null);
   const [ticketToPrint, setTicketToPrint] = useState(null);
   
-  // États Modification
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
@@ -59,14 +58,11 @@ export default function AdminEvents() {
   const [imageFile, setImageFile] = useState(null);
   const [documentFile, setDocumentFile] = useState(null);
 
-  // --- 1. CHARGEMENT DES DONNÉES ---
   const fetchData = async () => {
     try {
       setLoading(true);
       const eventsRes = await axios.get('/api/events');
       setEvents(eventsRes.data);
-
-      // Récupération des tickets vendus depuis les commandes
       const ordersRes = await axios.get('/api/orders');
       const extractedTickets = [];
       ordersRes.data.forEach(order => {
@@ -94,6 +90,29 @@ export default function AdminEvents() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // --- NOUVELLE FONCTION : DIFFUSION DE L'ÉVÉNEMENT ---
+  const handleBroadcastEvent = async (event) => {
+    const confirmBroadcast = window.confirm(`Voulez-vous annoncer cet événement à TOUS les abonnés ?\n\nÉvénement : ${event.title}`);
+    if (!confirmBroadcast) return;
+
+    try {
+        const token = localStorage.getItem('token');
+        const payload = {
+    title: "📅 Nouvel Événement",
+    body: `${event.title} prévu le ${new Date(event.date).toLocaleDateString()}. Cliquez pour voir !`,
+    type: 'info',
+    url: `/evenements?id=${event._id}` // ✅ On ajoute l'ID ici
+}
+
+        await axios.post('/api/notifications', payload, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        alert("🚀 Notification envoyée avec succès à la communauté !");
+    } catch (err) {
+        alert("Erreur lors de la diffusion : " + (err.response?.data?.error || err.message));
+    }
+  };
+
   const getEventStats = (eventId) => {
     const eventTickets = allTickets.filter(t => String(t.eventId) === String(eventId));
     const totalSold = eventTickets.reduce((acc, t) => acc + (t.quantity || 0), 0);
@@ -101,7 +120,6 @@ export default function AdminEvents() {
     return { totalSold, totalRevenue, eventTickets };
   };
 
-  // --- 2. GESTION FORMULAIRE ---
   const handleEditClick = (event) => {
       setIsEditing(true);
       setEditId(event._id);
@@ -128,29 +146,20 @@ export default function AdminEvents() {
     try {
         const data = new FormData();
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
-        
         if (imageFile) data.append('eventImage', imageFile);
         if (documentFile) data.append('eventDocument', documentFile);
-
-        const token = localStorage.getItem('token'); // Token de sécurité
+        const token = localStorage.getItem('token');
         const config = { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } };
-
         if (isEditing) {
             await axios.put(`/api/events/${editId}`, data, config);
-            alert("Événement modifié avec succès !");
+            alert("Événement modifié !");
         } else {
             await axios.post('/api/events', data, config);
-            alert("Événement créé avec succès !");
+            alert("Événement créé !");
         }
-        
         closeForm();
         fetchData(); 
-    } catch (err) { 
-        console.error(err); 
-        alert("Erreur lors de l'enregistrement. Vérifiez votre connexion."); 
-    } finally {
-        setUploading(false);
-    }
+    } catch (err) { alert("Erreur enregistrement."); } finally { setUploading(false); }
   };
 
   const closeForm = () => {
@@ -163,14 +172,12 @@ export default function AdminEvents() {
   };
 
   const handleDelete = async (id) => {
-    if(window.confirm("Voulez-vous vraiment supprimer cet événement ?")) {
+    if(window.confirm("Supprimer cet événement ?")) {
       try {
           const token = localStorage.getItem('token');
-          await axios.delete(`/api/events/${id}`, {
-              headers: { Authorization: `Bearer ${token}` }
-          });
+          await axios.delete(`/api/events/${id}`, { headers: { Authorization: `Bearer ${token}` } });
           setEvents(events.filter(e => e._id !== id));
-      } catch (err) { alert("Erreur suppression (Token invalide ?)"); }
+      } catch (err) { alert("Erreur suppression."); }
     }
   };
 
@@ -186,79 +193,43 @@ export default function AdminEvents() {
           </button>
         </div>
 
-        {/* --- FORMULAIRE --- */}
         <AnimatePresence>
         {isFormVisible && (
           <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white rounded-3xl shadow-xl border border-gray-100 overflow-hidden mb-10">
               <div className="bg-primary-900 p-6 text-white flex justify-between items-center">
-                  <h2 className="font-bold text-xl flex gap-2">
-                      {isEditing ? <><Edit/> Modifier l'événement</> : <><Plus/> Ajouter un événement</>}
-                  </h2>
+                  <h2 className="font-bold text-xl flex gap-2">{isEditing ? <><Edit/> Modifier</> : <><Plus/> Ajouter</>}</h2>
                   <button onClick={closeForm} className="p-2 bg-white/10 rounded-full hover:bg-white/20"><X size={20}/></button>
               </div>
-              
               <form onSubmit={handleSubmit} className="p-8 grid grid-cols-1 md:grid-cols-3 gap-8">
-                
-                {/* COLONNE GAUCHE */}
                 <div className="md:col-span-2 space-y-5 border-r md:pr-8 border-gray-100">
-                    <h3 className="text-lg font-bold text-primary-900 border-b pb-2 mb-4">Informations Générales</h3>
-                    
-                    <div><label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Titre</label><input className="w-full p-3 border rounded-xl" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required/></div>
-                    
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Titre</label><input className="w-full p-3 border rounded-xl" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required/></div>
                     <div className="grid grid-cols-2 gap-4">
-                        <div><label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1"><Clock size={14}/> Date & Heure</label><input type="datetime-local" className="w-full p-3 border rounded-xl" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} required/></div>
-                        <div><label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1"><MapPin size={14}/> Lieu</label><input className="w-full p-3 border rounded-xl" value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})}/></div>
+                        <div><label className="text-xs font-bold text-gray-500 uppercase block"><Clock size={14}/> Date</label><input type="datetime-local" className="w-full p-3 border rounded-xl" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} required/></div>
+                        <div><label className="text-xs font-bold text-gray-500 uppercase block"><MapPin size={14}/> Lieu</label><input className="w-full p-3 border rounded-xl" value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})}/></div>
                     </div>
-
-                    <div><label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Lien (URL)</label><input className="w-full p-3 border rounded-xl" value={formData.locationLink} onChange={e=>setFormData({...formData, locationLink:e.target.value})}/></div>
-
-                    <div><label className="text-xs font-bold text-gray-500 uppercase mb-2 block">Description</label><textarea className="w-full p-3 border rounded-xl h-32 resize-none" value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})}/></div>
-
-                    <label className="flex items-center gap-2 font-bold cursor-pointer text-gray-700">
-                      <input type="checkbox" checked={formData.isOnline} onChange={e=>setFormData({...formData, isOnline:e.target.checked})} className="w-5 h-5 accent-gold-500"/> Événement en Ligne
-                    </label>
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Lien URL</label><input className="w-full p-3 border rounded-xl" value={formData.locationLink} onChange={e=>setFormData({...formData, locationLink:e.target.value})}/></div>
+                    <div><label className="text-xs font-bold text-gray-500 uppercase">Description</label><textarea className="w-full p-3 border rounded-xl h-32 resize-none" value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})}/></div>
+                    <label className="flex items-center gap-2 font-bold cursor-pointer text-gray-700"><input type="checkbox" checked={formData.isOnline} onChange={e=>setFormData({...formData, isOnline:e.target.checked})} className="w-5 h-5 accent-gold-500"/> En Ligne</label>
                 </div>
-
-                {/* COLONNE DROITE */}
                 <div className="space-y-6">
-                    <h3 className="text-lg font-bold text-primary-900 border-b pb-2 mb-4">Médias & Billets</h3>
-                    
                     <div className="p-4 bg-gray-50 rounded-xl space-y-4 border border-gray-100">
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1"><ImageIcon size={14}/> Affiche</label>
-                            <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="w-full p-2 bg-white border rounded-lg text-sm"/>
-                        </div>
-                        <div>
-                            <label className="text-xs font-bold text-gray-500 uppercase mb-2 block flex items-center gap-1"><FileText size={14}/> Programme PDF</label>
-                            <input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="w-full p-2 bg-white border rounded-lg text-sm"/>
-                        </div>
+                        <div><label className="text-xs font-bold text-gray-500 block"><ImageIcon size={14}/> Affiche</label><input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="w-full p-2 bg-white border rounded-lg text-sm"/></div>
+                        <div><label className="text-xs font-bold text-gray-500 block"><FileText size={14}/> PDF</label><input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="w-full p-2 bg-white border rounded-lg text-sm"/></div>
                     </div>
-
                     <div className={`p-4 rounded-xl border ${formData.hasTicket ? 'bg-gold-50 border-gold-300' : 'bg-gray-50 border-gray-100'}`}>
-                      <label className="flex items-center gap-2 font-bold cursor-pointer text-primary-900 mb-2">
-                        <input type="checkbox" checked={formData.hasTicket} onChange={e=>setFormData({...formData, hasTicket:e.target.checked})} className="w-5 h-5 accent-gold-500"/> Activer Billetterie
-                      </label>
-                      {formData.hasTicket && (
-                        <div className="flex gap-4 mt-3">
-                           <div className="flex-1"><span className="text-xs font-bold uppercase text-gray-500">Prix (F)</span><input type="number" min="0" className="w-full p-2 border rounded-lg" value={formData.ticketPrice} onChange={e=>setFormData({...formData, ticketPrice:e.target.value})}/></div>
-                           <div className="flex-1"><span className="text-xs font-bold uppercase text-gray-500">Stock</span><input type="number" min="0" className="w-full p-2 border rounded-lg" value={formData.ticketStock} onChange={e=>setFormData({...formData, ticketStock:e.target.value})}/></div>
-                        </div>
-                      )}
+                      <label className="flex items-center gap-2 font-bold cursor-pointer text-primary-900 mb-2"><input type="checkbox" checked={formData.hasTicket} onChange={e=>setFormData({...formData, hasTicket:e.target.checked})} className="w-5 h-5 accent-gold-500"/> Billetterie</label>
+                      {formData.hasTicket && (<div className="flex gap-4 mt-3"><div><span className="text-xs uppercase text-gray-500">Prix</span><input type="number" className="w-full p-2 border rounded-lg" value={formData.ticketPrice} onChange={e=>setFormData({...formData, ticketPrice:e.target.value})}/></div><div><span className="text-xs uppercase text-gray-500">Stock</span><input type="number" className="w-full p-2 border rounded-lg" value={formData.ticketStock} onChange={e=>setFormData({...formData, ticketStock:e.target.value})}/></div></div>)}
                     </div>
-                    
-                    <button disabled={uploading} type="submit" className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-lg mt-4 flex justify-center">
-                        {uploading ? <Loader className="animate-spin"/> : (isEditing ? "Enregistrer" : "Publier")}
-                    </button>
+                    <button disabled={uploading} type="submit" className="w-full bg-green-600 text-white py-3 rounded-xl font-bold hover:bg-green-700 transition-colors shadow-lg mt-4 flex justify-center">{uploading ? <Loader className="animate-spin"/> : "Enregistrer"}</button>
                 </div>
               </form>
           </motion.div>
         )}
         </AnimatePresence>
 
-        {/* LISTE DES EVENEMENTS */}
         <div className="space-y-4">
           {loading ? <div className="text-center py-20"><Loader className="animate-spin mx-auto text-primary-900"/></div> : events.length === 0 ? (
-             <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border-2 border-dashed">Aucun événement programmé.</div>
+             <div className="text-center py-20 text-gray-400 bg-white rounded-3xl border-2 border-dashed">Aucun événement.</div>
           ) : (
             events.map((event) => {
               const stats = getEventStats(event._id);
@@ -278,6 +249,15 @@ export default function AdminEvents() {
                       </div>
                    </div>
                    <div className="flex gap-2 w-full md:w-auto justify-end">
+                      {/* ✅ BOUTON INNOVANT : DIFFUSION PUSH */}
+                      <button 
+                        onClick={() => handleBroadcastEvent(event)} 
+                        className="p-2 bg-gold-500 text-primary-900 rounded-xl hover:bg-primary-900 hover:text-white transition-all shadow-md group" 
+                        title="Annoncer aux fidèles"
+                      >
+                        <Bell size={20} className="group-hover:animate-bounce" />
+                      </button>
+
                       {event.hasTicket && <button onClick={() => setSelectedEventForStats({ ...event, ...stats })} className="p-2 bg-primary-900 text-white rounded-xl hover:bg-gold-500 transition-colors" title="Participants"><Users size={20}/></button>}
                       <button onClick={() => handleEditClick(event)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-xl border border-gray-200"><Edit size={20} /></button>
                       <button onClick={() => handleDelete(event._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-xl border border-gray-200"><Trash2 size={20} /></button>
@@ -288,13 +268,12 @@ export default function AdminEvents() {
           )}
         </div>
 
-        {/* MODAL STATS */}
         <AnimatePresence>
           {selectedEventForStats && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 20 }} className="bg-white w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden max-h-[85vh] flex flex-col">
                   <div className="bg-primary-900 p-6 text-white flex justify-between items-start shrink-0">
-                     <div><h2 className="font-bold text-2xl font-serif mb-1">{selectedEventForStats.title}</h2><p className="text-gold-400 text-sm flex items-center gap-2">Liste des participants</p></div>
+                     <div><h2 className="font-bold text-2xl font-serif mb-1">{selectedEventForStats.title}</h2><p className="text-gold-400 text-sm">Liste des participants</p></div>
                      <button onClick={() => setSelectedEventForStats(null)} className="p-2 bg-white/10 rounded-full hover:bg-white/20"><X size={20}/></button>
                   </div>
                   <div className="p-6 overflow-y-auto bg-gray-50 flex-1">
@@ -312,7 +291,6 @@ export default function AdminEvents() {
                                   <td className="py-4 px-6 text-right"><button onClick={() => setTicketToPrint(t)} className="text-primary-600 hover:text-primary-800 text-sm font-bold flex items-center justify-end gap-1 ml-auto"><Ticket size={16}/> Voir</button></td>
                                </tr>
                              ))}
-                             {selectedEventForStats.eventTickets.length === 0 && <tr><td colSpan="4" className="py-12 text-center text-gray-400 italic">Aucune vente pour le moment.</td></tr>}
                           </tbody>
                        </table>
                      </div>
@@ -321,8 +299,6 @@ export default function AdminEvents() {
             </div>
           )}
         </AnimatePresence>
-        
-        {/* MODAL IMPRESSION BILLET */}
         {ticketToPrint && <AdminTicketView ticket={ticketToPrint} onClose={() => setTicketToPrint(null)} />}
     </AdminLayout>
   );

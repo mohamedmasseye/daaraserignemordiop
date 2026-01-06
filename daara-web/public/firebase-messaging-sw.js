@@ -1,8 +1,6 @@
-// Importation des scripts Firebase (Version Compat pour Service Worker)
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/9.0.0/firebase-messaging-compat.js');
 
-// Configuration Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyDcBu_ebg9PHPW2Yzq4rdMymsEmcLdCAHA",
   authDomain: "daara-app-5a679.firebaseapp.com",
@@ -15,23 +13,35 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const messaging = firebase.messaging();
 
-// Gestion des messages en arrière-plan
-// Gestion des messages en arrière-plan
+// Réception en arrière-plan
 messaging.onBackgroundMessage((payload) => {
-  console.log('Message reçu :', payload);
+  if (payload.notification) return; 
 
-  // Si le message contient déjà une notification gérée par le système, 
-  // on ne force pas l'affichage manuel pour éviter les doublons.
-  if (payload.notification && !payload.data?.manual) {
-    return; 
-  }
-
-  const notificationTitle = payload.notification?.title || "Nouveau message";
+  const notificationTitle = payload.data?.title || "Annonce Daara";
   const notificationOptions = {
-    body: payload.notification?.body,
+    body: payload.data?.body,
     icon: '/icons/icon-192.png',
     badge: '/icons/icon-192.png',
+    data: { url: payload.data?.url || '/' } // ✅ Stocke l'URL de redirection
   };
-
   return self.registration.showNotification(notificationTitle, notificationOptions);
+});
+
+// ✅ GESTION DU CLIC POUR REDIRIGER VERS /evenements
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = event.notification.data?.url || '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      // Si l'app est déjà ouverte, focus l'onglet et navigue
+      for (let client of windowClients) {
+        if (client.url.includes(location.origin) && 'focus' in client) {
+          return client.focus().then(() => client.navigate(targetUrl));
+        }
+      }
+      // Sinon, ouvre une nouvelle fenêtre
+      if (clients.openWindow) return clients.openWindow(targetUrl);
+    })
+  );
 });
