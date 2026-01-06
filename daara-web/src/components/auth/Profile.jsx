@@ -4,7 +4,7 @@ import axios from 'axios';
 import { 
   User, LogOut, MapPin, Phone, Camera, Save, X, 
   Ticket, Download, Calendar, QrCode, Mail, ShoppingBag, 
-  CheckCircle, Package, Truck, Clock, AlertCircle, Trash2 
+  CheckCircle, Package, Truck, Clock, AlertCircle, Trash2, Bell 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getMessaging, getToken } from "firebase/messaging";
@@ -43,8 +43,6 @@ const SmartTimeline = ({ status }) => {
 
 const DeliveredBanner = () => (<div className="bg-green-50 p-4 rounded text-center text-green-700 font-bold">Commande Livrée !</div>);
 
-// ===== NOUVEAU COMPOSANT TICKET HORIZONTAL (Optimisé Impression) =====
-// ===== NOUVEAU COMPOSANT TICKET (Corrigé : Nom entier, Impression 1 page centrée) =====
 const ClassyTicket = ({ ticket, onClose, userName }) => {
   if (!ticket) return null;
 
@@ -55,52 +53,17 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
   return (
     <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 overflow-y-auto">
       
-      {/* --- CSS SPÉCIFIQUE IMPRESSION --- */}
       <style type="text/css" media="print">
         {`
-          @page { 
-            size: landscape; 
-            margin: 0; 
-          }
-          body { 
-            margin: 0; 
-            padding: 0; 
-            height: 100vh; 
-            width: 100vw;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            overflow: hidden; /* Empêche le défilement et les pages extra */
-          }
-          /* Tout cacher par défaut */
-          body * { 
-            visibility: hidden; 
-            height: 0; 
-            overflow: hidden;
-          }
-          /* Afficher uniquement le billet et ses enfants */
-          #printable-ticket-container, #printable-ticket-container * { 
-            visibility: visible; 
-            height: auto;
-            overflow: visible;
-          }
-          #printable-ticket-container {
-            position: fixed; /* Fixe au centre de la feuille */
-            left: 50% !important;
-            top: 50% !important;
-            transform: translate(-50%, -50%) scale(0.9) !important; /* Zoom arrière pour marge de sécurité */
-            width: 100%;
-            max-width: 900px !important;
-            border: 1px solid #ddd;
-            display: flex !important;
-            flex-direction: row !important; /* Force l'horizontal à l'impression */
-            z-index: 99999;
-          }
+          @page { size: landscape; margin: 0; }
+          body { margin: 0; padding: 0; height: 100vh; width: 100vw; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+          body * { visibility: hidden; height: 0; overflow: hidden; }
+          #printable-ticket-container, #printable-ticket-container * { visibility: visible; height: auto; overflow: visible; }
+          #printable-ticket-container { position: fixed; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) scale(0.9) !important; width: 100%; max-width: 900px !important; border: 1px solid #ddd; display: flex !important; flex-direction: row !important; z-index: 99999; }
           .no-print { display: none !important; }
         `}
       </style>
 
-      {/* Conteneur Billet */}
       <motion.div 
         id="printable-ticket-container"
         initial={{ scale: 0.95, opacity: 0 }}
@@ -108,23 +71,14 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
         exit={{ scale: 0.95, opacity: 0 }}
         className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden relative flex flex-col md:flex-row print:shadow-none print:rounded-none"
       >
-        {/* Bouton Fermer (Caché à l'impression) */}
-        <button 
-            onClick={onClose}
-            className="absolute top-4 right-4 z-50 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition no-print md:text-gray-800 md:bg-gray-100 md:hover:bg-gray-200"
-        >
+        <button onClick={onClose} className="absolute top-4 right-4 z-50 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition no-print md:text-gray-800 md:bg-gray-100 md:hover:bg-gray-200">
             <X size={20} />
         </button>
 
-        {/* ================= GAUCHE : DÉTAILS ================= */}
         <div className="relative bg-primary-900 text-white p-8 flex-1 overflow-hidden print:bg-primary-900 print:text-white">
-            {/* Fond décoratif */}
             <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')] pointer-events-none"></div>
-            
-            {/* Encoche cercle (déco) */}
             <div className="absolute -right-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-gray-50 rounded-full z-10 hidden md:block print:block"></div>
             
-            {/* En-tête */}
             <div className="flex items-center gap-4 mb-10 relative z-10">
                 <div className="w-14 h-14 bg-gold-500/20 rounded-2xl flex items-center justify-center backdrop-blur-md border border-gold-500/30">
                     <Ticket className="text-gold-400" size={28} />
@@ -135,101 +89,61 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
                 </div>
             </div>
 
-            {/* Titre Événement */}
             <div className="mb-10 relative z-10">
                 <span className="text-gold-300/60 text-[10px] font-bold uppercase tracking-widest block mb-3">Événement</span>
-                <h3 className="text-3xl md:text-4xl font-bold leading-tight text-white">
-                    {ticket.event?.title || "Événement Spécial"}
-                </h3>
+                <h3 className="text-3xl md:text-4xl font-bold leading-tight text-white">{ticket.event?.title || "Événement Spécial"}</h3>
             </div>
 
-            {/* Infos Grille */}
             <div className="grid grid-cols-3 gap-8 relative z-10">
                 <div>
                     <span className="text-gold-300/60 text-[10px] font-bold block mb-2 uppercase tracking-widest">Date</span>
-                    <div className="flex items-center gap-2 font-bold text-xl">
-                        <Calendar size={20} className="text-gold-500"/> 
-                        {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}
-                    </div>
+                    <div className="flex items-center gap-2 font-bold text-xl"><Calendar size={20} className="text-gold-500"/> {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}</div>
                 </div>
                 <div>
                     <span className="text-gold-300/60 text-[10px] font-bold block mb-2 uppercase tracking-widest">Heure</span>
-                    <div className="flex items-center gap-2 font-bold text-xl">
-                        <Clock size={20} className="text-gold-500"/> 
-                        {ticket.event?.date ? new Date(ticket.event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--"}
-                    </div>
+                    <div className="flex items-center gap-2 font-bold text-xl"><Clock size={20} className="text-gold-500"/> {ticket.event?.date ? new Date(ticket.event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "--:--"}</div>
                 </div>
-                {/* CORRECTION NOM : break-words pour éviter la coupure */}
                 <div className="col-span-3 md:col-span-1">
                     <span className="text-gold-300/60 text-[10px] font-bold block mb-2 uppercase tracking-widest">Détenteur</span>
-                    <p className="font-bold text-lg text-white leading-tight break-words">
-                        {userName || "Client Invité"}
-                    </p>
+                    <p className="font-bold text-lg text-white leading-tight break-words">{userName || "Client Invité"}</p>
                 </div>
             </div>
         </div>
 
-        {/* ================= SÉPARATEUR ================= */}
         <div className="hidden md:flex flex-col items-center justify-center relative bg-gray-50 w-8 print:flex">
             <div className="h-full border-l-2 border-dashed border-gray-300"></div>
             <div className="absolute -left-6 top-1/2 -translate-y-1/2 w-12 h-12 bg-primary-900 rounded-full z-10"></div>
         </div>
 
-        {/* ================= DROITE : QR CODE ================= */}
         <div className="bg-gray-50 p-8 md:w-80 flex flex-col justify-between relative print:bg-gray-50 print:w-auto">
-             {/* Encoches Mobile */}
-            <div className="absolute -left-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-primary-900 rounded-full z-10 md:hidden"></div>
-            <div className="absolute -right-4 top-1/2 -translate-y-1/2 w-8 h-8 bg-black/80 rounded-full z-10 md:hidden no-print"></div>
-
             <div className="text-center mt-4 relative z-10">
-                <div className="inline-block mb-2 px-3 py-1 bg-gray-200 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">
-                    Scan Entry
-                </div>
-                <div className="bg-white border-2 border-gray-200 p-4 rounded-3xl inline-block shadow-sm mb-4">
-                   <QrCode size={140} className="text-gray-900" />
-                </div>
-                <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest break-all">
-                    ID: {ticket.qrCode || ticket._id}
-                </p>
+                <div className="inline-block mb-2 px-3 py-1 bg-gray-200 rounded-full text-[10px] font-bold text-gray-500 uppercase tracking-widest">Scan Entry</div>
+                <div className="bg-white border-2 border-gray-200 p-4 rounded-3xl inline-block shadow-sm mb-4"><QrCode size={140} className="text-gray-900" /></div>
+                <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest break-all">ID: {ticket.qrCode || ticket._id}</p>
             </div>
-
-            {/* Bouton Télécharger (Caché impression) */}
             <div className="mt-6 no-print relative z-10">
-                <button 
-                    className="w-full py-4 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2 active:scale-95"
-                    onClick={handlePrint}
-                >
-                    <Download size={20}/> Imprimer le Billet
-                </button>
+                <button className="w-full py-4 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2 active:scale-95" onClick={handlePrint}><Download size={20}/> Imprimer le Billet</button>
             </div>
         </div>
-
       </motion.div>
     </div>
   );
 };
 
-
 export default function Profile() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
   
-  // États
-  // Note: On initialise avec des valeurs vides pour éviter les erreurs "null"
   const [user, setUser] = useState({ fullName: '', email: '', avatar: '', bio: '', city: '', phone: '' });
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
-  
-  // Formulaire d'édition
   const [formData, setFormData] = useState({ bio: '', city: '', phone: '', avatar: '' });
   const [selectedFile, setSelectedFile] = useState(null);
-
-  // Données dynamiques
   const [tickets, setTickets] = useState([]);
   const [orders, setOrders] = useState([]);
   const [selectedTicket, setSelectedTicket] = useState(null);
 
-  // --- NOUVELLE FONCTION POUR LE TOKEN (PLACÉE ICI) ---
+  // --- FONCTION DE DIAGNOSTIC NOTIFICATIONS ---
   const showMyToken = async () => {
     try {
       const messaging = getMessaging();
@@ -237,7 +151,6 @@ export default function Profile() {
       
       if (permission === 'granted') {
         const token = await getToken(messaging, { 
-          // REMPLACE BIEN CETTE CLÉ PAR TA VRAIE CLÉ VAPID FIREBASE
           vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY'
         });
         
@@ -245,7 +158,7 @@ export default function Profile() {
           alert("Voici votre Token iPhone :\n\n" + token);
           console.log("Token FCM:", token);
         } else {
-          alert("Aucun token généré. Vérifiez votre config Firebase.");
+          alert("Aucun token généré. Vérifiez votre configuration Firebase.");
         }
       } else {
         alert("Permission de notification refusée sur cet iPhone.");
@@ -255,50 +168,32 @@ export default function Profile() {
     }
   };
 
-  // --- 1. CHARGEMENT PROFIL (SÉCURISÉ) ---
   useEffect(() => {
     const fetchUserData = async () => {
       const token = localStorage.getItem('token');
       if (!token) { navigate('/login-public'); return; }
-
       try {
         setLoading(true);
         const resUser = await axios.get('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } });
-        
-        // Sécurité supplémentaire : on vérifie que les données existent
         if (resUser.data) {
             setUser(resUser.data);
-            setFormData({ 
-                bio: resUser.data.bio || '', 
-                city: resUser.data.city || '', 
-                phone: resUser.data.phone || '',
-                avatar: resUser.data.avatar || ''
-            });
+            setFormData({ bio: resUser.data.bio || '', city: resUser.data.city || '', phone: resUser.data.phone || '', avatar: resUser.data.avatar || '' });
         }
       } catch (err) {
-        console.error("Erreur chargement profil:", err);
-        
-        // 🚨 LA CORRECTION EST ICI : 
-        // Si Erreur 404 (Utilisateur introuvable/supprimé) OU 401 (Non autorisé)
         if (err.response && (err.response.status === 404 || err.response.status === 401)) {
-            // On nettoie tout et on redirige
             localStorage.removeItem('token');
             localStorage.removeItem('user_info');
             navigate('/login-public');
         }
-      } finally {
-        setLoading(false);
-      }
+      } finally { setLoading(false); }
     };
     fetchUserData();
   }, [navigate]);
 
-  // --- 2. CHARGEMENT COMMANDES (EN BOUCLE) ---
   useEffect(() => {
     const fetchLiveUpdates = async () => {
         const token = localStorage.getItem('token');
         if (!token) return;
-
         try {
             const [resOrders, resTickets] = await Promise.all([
                 axios.get('/api/my-orders', { headers: { Authorization: `Bearer ${token}` } }),
@@ -306,20 +201,13 @@ export default function Profile() {
             ]);
             setOrders(resOrders.data);
             setTickets(resTickets.data);
-        } catch (e) { 
-            // On ignore les erreurs silencieuses ici pour ne pas bloquer l'interface
-            console.error("Erreur update background", e); 
-        }
+        } catch (e) { console.error("Erreur update background", e); }
     };
-
     fetchLiveUpdates();
     const interval = setInterval(fetchLiveUpdates, 5000);
-    
     return () => clearInterval(interval);
   }, []);
 
-
-  // --- GESTION ÉDITION ---
   const handleLogout = () => { 
       localStorage.removeItem('token'); 
       localStorage.removeItem('user_info');
@@ -338,34 +226,20 @@ export default function Profile() {
       try {
           const token = localStorage.getItem('token');
           const dataToSend = new FormData();
-          
           dataToSend.append('fullName', user.fullName);
           dataToSend.append('bio', formData.bio);
           dataToSend.append('city', formData.city);
           dataToSend.append('phone', formData.phone);
-          
-          if (selectedFile) {
-              dataToSend.append('avatar', selectedFile);
-          }
-
-          const res = await axios.put('/api/auth/me', dataToSend, {
-              headers: { 
-                  Authorization: `Bearer ${token}`,
-                  'Content-Type': 'multipart/form-data'
-              }
-          });
-
+          if (selectedFile) dataToSend.append('avatar', selectedFile);
+          const res = await axios.put('/api/auth/me', dataToSend, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'multipart/form-data' } });
           setUser(res.data);
           localStorage.setItem('user_info', JSON.stringify(res.data));
           setIsEditing(false); 
           setSelectedFile(null);
           alert("Profil mis à jour !");
-      } catch (err) { 
-          alert("Erreur lors de la sauvegarde."); 
-      }
+      } catch (err) { alert("Erreur lors de la sauvegarde."); }
   };
 
-  // --- ACTIONS COMMANDES ---
   const handleDeleteOrder = async (orderId) => {
       if(!window.confirm("Supprimer de l'historique ?")) return;
       try {
@@ -382,15 +256,7 @@ export default function Profile() {
       } catch (err) { alert("Erreur."); }
   };
 
-  // --- RENDU ---
-  
-  if (loading) return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary-600"></div>
-    </div>
-  );
-
-  // Sécurité ultime : Si le chargement est fini mais que user est null (cas rare), on n'affiche rien pour éviter le crash
+  if (loading) return (<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-primary-600"></div></div>);
   if (!user) return null;
 
   const shopOrders = orders.filter(order => order.items.some(item => item.type !== 'ticket'));
@@ -406,7 +272,7 @@ export default function Profile() {
             <div className="relative group">
               <div className="h-32 w-32 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden flex items-center justify-center">
                 {(isEditing ? formData.avatar : user.avatar) ? (
-                    <img src={isEditing ? formData.avatar : user.avatar} alt="Profile" className="h-full w-full object-cover" onError={(e) => {e.target.style.display='none'}} />
+                    <img src={isEditing ? formData.avatar : user.avatar} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
                     <span className="text-4xl font-bold text-primary-300">{user.fullName ? user.fullName.charAt(0) : <User/>}</span>
                 )}
@@ -431,47 +297,25 @@ export default function Profile() {
             <h1 className="text-3xl font-bold text-gray-900 font-serif">{user.fullName || "Utilisateur"}</h1>
             <p className="text-primary-600 font-medium flex items-center gap-2 mb-4">
               {user.email ? <><Mail size={16}/> {user.email}</> : <><Phone size={16}/> {user.phone}</>}
-              {user.googleId && <span className="bg-blue-50 text-blue-600 text-xs px-2 py-0.5 rounded-full font-bold ml-2">Google</span>}
             </p>
-            
             {isEditing ? (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-xl border border-gray-200 animate-fadeIn">
+              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
                 <div className="col-span-2">
                     <label className="text-sm font-bold text-gray-700 mb-1 block">Bio</label>
-                    <textarea 
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" 
-                        rows="3"
-                        value={formData.bio} 
-                        onChange={e => setFormData({...formData, bio: e.target.value})} 
-                        placeholder="Parlez-nous de vous..."
-                    />
+                    <textarea className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} placeholder="Parlez-nous de vous..." />
                 </div>
                 <div>
                     <label className="text-sm font-bold text-gray-700 mb-1 block">Ville</label>
-                    <input 
-                        type="text" 
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" 
-                        value={formData.city} 
-                        onChange={e => setFormData({...formData, city: e.target.value})} 
-                        placeholder="Dakar, Sénégal..."
-                    />
+                    <input type="text" className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
                 </div>
                 <div>
                     <label className="text-sm font-bold text-gray-700 mb-1 block">Téléphone</label>
-                    <input 
-                        type="text" 
-                        className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" 
-                        value={formData.phone} 
-                        onChange={e => setFormData({...formData, phone: e.target.value})} 
-                        placeholder="77 000 00 00"
-                    />
+                    <input type="text" className="w-full p-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
                 </div>
               </div>
             ) : (
               <div className="mt-6 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                    <p className="text-gray-600 italic">{user.bio || "Aucune description ajoutée."}</p>
-                </div>
+                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-gray-600 italic">{user.bio || "Aucune description ajoutée."}</p></div>
                 <div className="flex gap-6 text-gray-600 text-sm font-medium">
                   <div className="flex items-center"><MapPin className="h-5 w-5 mr-2 text-gold-500" />{user.city || "Ville non renseignée"}</div>
                   <div className="flex items-center"><Phone className="h-5 w-5 mr-2 text-gold-500" />{user.phone || "Non renseigné"}</div>
@@ -494,20 +338,12 @@ export default function Profile() {
                             <div className="flex items-center gap-3 mb-1"><span className="bg-primary-50 text-primary-700 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider">Commande</span><span className="font-mono font-bold text-gray-900">#{order._id.slice(-6).toUpperCase()}</span></div>
                             <p className="text-xs text-gray-500">{new Date(order.createdAt).toLocaleDateString()}</p>
                         </div>
-                        <div className="mt-4 md:mt-0 text-right pr-12"><span className="block text-2xl font-bold text-primary-900">{order.totalAmount.toLocaleString()} FCFA</span><span className="text-xs text-gray-400">{order.items.length} Article(s)</span></div>
+                        <div className="mt-4 md:mt-0 text-right pr-12"><span className="block text-2xl font-bold text-primary-900">{order.totalAmount.toLocaleString()} FCFA</span></div>
                     </div>
                     <div className="mb-8"><SmartTimeline status={order.status} /></div>
                     {order.status === 'Delivered' && <DeliveredBanner />}
-                    <div className="bg-gray-50 rounded-xl p-4 mt-6 border border-gray-100">
-                        {order.items.map((item, i) => (
-                            <div key={i} className="flex justify-between text-sm text-gray-700 border-b last:border-0 border-gray-200 py-2">
-                                <span>{item.quantity}x {item.name}</span>
-                                <span className="font-bold">{item.price?.toLocaleString()} F</span>
-                            </div>
-                        ))}
-                    </div>
                 </div>
-            )) : <p className="text-gray-400 italic bg-white p-12 rounded-3xl text-center border-2 border-dashed">Aucune commande récente.</p>}
+            )) : <p className="text-center py-12 text-gray-400">Aucune commande.</p>}
         </div>
       </div>
 
@@ -519,12 +355,9 @@ export default function Profile() {
                 {tickets.map((ticket, idx) => (
                 <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all group flex flex-col relative">
                     <button onClick={() => handleDeleteTicket(ticket._id)} className="absolute top-2 right-2 p-2 bg-black/20 text-white hover:bg-red-500 rounded-full transition opacity-0 group-hover:opacity-100 z-20"><Trash2 size={16}/></button>
-                    <div className="h-32 bg-primary-900 flex items-center justify-center text-white relative">
-                        <Ticket size={40} className="relative z-10"/>
-                    </div>
+                    <div className="h-32 bg-primary-900 flex items-center justify-center text-white"><Ticket size={40}/></div>
                     <div className="p-6 flex-1 flex flex-col">
                         <p className="font-bold text-lg mb-2">{ticket.event?.title || "Événement"}</p>
-                        <p className="text-sm text-gray-500 mb-4 flex items-center gap-2"><Calendar size={14}/> {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "Date à venir"}</p>
                         <button onClick={() => setSelectedTicket(ticket)} className="mt-auto w-full py-3 rounded-xl border-2 border-primary-900 text-primary-900 font-bold hover:bg-primary-900 hover:text-white transition-all flex items-center justify-center gap-2"><Download size={18} /> Voir le Billet</button>
                     </div>
                 </div>
@@ -532,6 +365,15 @@ export default function Profile() {
             </div>
         </div>
       )}
+
+      {/* ================= DIAGNOSTIC PWA (AJOUTÉ) ================= */}
+      <div className="mb-12 p-6 bg-blue-50 border border-blue-100 rounded-3xl">
+        <h3 className="text-blue-900 font-bold mb-2 flex items-center gap-2"><AlertCircle size={20}/> Notifications iPhone</h3>
+        <p className="text-blue-600 text-sm mb-4">Si vous ne recevez pas les alertes, cliquez ci-dessous pour activer les notifications et générer votre code de diagnostic.</p>
+        <button onClick={showMyToken} className="w-full md:w-auto px-8 py-4 bg-blue-600 text-white font-bold rounded-xl shadow-lg hover:bg-blue-700 transition active:scale-95 flex items-center gap-2 justify-center">
+            <Bell size={18}/> Générer mon Token iPhone
+        </button>
+      </div>
 
       <div className="pt-6 border-t border-gray-200"><button onClick={handleLogout} className="text-red-600 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition flex items-center gap-2"><LogOut size={20} /> Se déconnecter</button></div>
       <AnimatePresence>{selectedTicket && <ClassyTicket ticket={selectedTicket} userName={user.fullName} onClose={() => setSelectedTicket(null)} />}</AnimatePresence>
