@@ -2,16 +2,18 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import AdminLayout from './AdminLayout';
 import CategoryManager from './CategoryManager';
-import { Trash2, Plus, Mic, Music, PlayCircle, Loader, User, Clock } from 'lucide-react';
+import { Trash2, Plus, Mic, Music, PlayCircle, Loader, User, Clock, CheckCircle } from 'lucide-react';
 
 export default function AdminPodcast() {
   const [podcasts, setPodcasts] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   
+  // NOUVEAUX ÉTATS POUR LA PROGRESSION
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadStep, setUploadStep] = useState('');
+
   const [formData, setFormData] = useState({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
-  
-  // Gestion de fichiers multiples pour l'audio
   const [audioFiles, setAudioFiles] = useState([]); 
   const [coverFile, setCoverFile] = useState(null); 
 
@@ -30,18 +32,24 @@ export default function AdminPodcast() {
     if (audioFiles.length === 0) return alert("Veuillez sélectionner au moins un fichier audio");
 
     setIsUploading(true);
+    setUploadProgress(0);
 
     try {
-      const token = localStorage.getItem('token'); // Récupération du token
+      const token = localStorage.getItem('token'); 
 
       for (let i = 0; i < audioFiles.length; i++) {
         const currentAudio = audioFiles[i];
+        
+        // Mise à jour de l'état pour l'utilisateur
+        setUploadStep(`Envoi de l'audio ${i + 1}/${audioFiles.length}...`);
+        
         const data = new FormData();
         
-        // Nom du fichier sans extension si le titre est vide, sinon Titre + Index
+        // LOGIQUE DU TITRE : Priorité au nom du fichier si le titre n'est pas saisi manuellement
+        const filenameClean = currentAudio.name.replace(/\.[^/.]+$/, ""); // Enlève l'extension (.mp3)
         const podcastTitle = formData.title 
             ? (audioFiles.length > 1 ? `${formData.title} ${i+1}` : formData.title)
-            : currentAudio.name.replace(/\.[^/.]+$/, "");
+            : filenameClean;
 
         data.append('title', podcastTitle);
         data.append('speaker', formData.speaker);
@@ -51,27 +59,34 @@ export default function AdminPodcast() {
         
         if (coverFile) data.append('coverImageFile', coverFile);
 
-        // ✅ CORRECTION : Ajout du token & Suppression du Content-Type manuel
         await axios.post('/api/podcasts', data, {
-            headers: { Authorization: `Bearer ${token}` }
+            headers: { Authorization: `Bearer ${token}` },
+            // BARRE DE PROGRESSION AXIOS
+            onUploadProgress: (progressEvent) => {
+                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+                setUploadProgress(percentCompleted);
+                if (percentCompleted === 100) {
+                    setUploadStep(`Traitement final de l'audio ${i + 1}...`);
+                }
+            }
         });
       }
       
-      alert(`${audioFiles.length} podcast(s) ajouté(s) avec succès !`);
-      
-      setFormData({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
-      setAudioFiles([]);
-      setCoverFile(null);
-      if(document.getElementById('audioInput')) document.getElementById('audioInput').value = "";
-      if(document.getElementById('coverInput')) document.getElementById('coverInput').value = "";
-      
-      setIsFormVisible(false);
-      fetchPodcasts();
+      setUploadStep('Terminé !');
+      setTimeout(() => {
+          setIsUploading(false);
+          alert(`${audioFiles.length} podcast(s) ajouté(s) avec succès !`);
+          setFormData({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
+          setAudioFiles([]);
+          setCoverFile(null);
+          setIsFormVisible(false);
+          fetchPodcasts();
+      }, 500);
+
     } catch (error) { 
       console.error(error);
-      alert("Erreur lors de l'upload : " + (error.response?.data?.error || error.message)); 
-    } finally {
       setIsUploading(false);
+      alert("Erreur lors de l'upload : " + (error.response?.data?.error || error.message)); 
     }
   };
 
@@ -79,12 +94,9 @@ export default function AdminPodcast() {
       if(window.confirm("Voulez-vous vraiment supprimer cet audio ?")) {
           try {
              const token = localStorage.getItem('token');
-             
-             // ✅ CORRECTION ICI : Ajout du Header Authorization pour éviter l'erreur 401
              await axios.delete(`/api/podcasts/${id}`, {
                 headers: { Authorization: `Bearer ${token}` }
              });
-
              setPodcasts(podcasts.filter(p => p._id !== id));
           } catch (error) {
              console.error(error);
@@ -109,7 +121,31 @@ export default function AdminPodcast() {
       </div>
 
       {isFormVisible && (
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mb-8 animate-fade-in-down">
+        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mb-8 animate-fade-in-down relative overflow-hidden">
+          
+          {/* OVERLAY DE CHARGEMENT ÉLÉGANT */}
+          {isUploading && (
+              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
+                  <div className="w-full max-w-xs">
+                      <div className="mb-4 flex justify-center text-rose-600">
+                        <Loader className="animate-spin h-12 w-12"/>
+                      </div>
+                      <h3 className="text-lg font-bold text-gray-800 mb-2">{uploadStep}</h3>
+                      <div className="flex justify-between text-sm font-bold text-rose-700 mb-2">
+                          <span>Progression</span>
+                          <span>{uploadProgress}%</span>
+                      </div>
+                      <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200">
+                          <div 
+                              className="h-full bg-rose-600 transition-all duration-300 ease-out"
+                              style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                      </div>
+                      <p className="text-xs text-gray-400 mt-4 italic">Le traitement peut prendre du temps selon la taille de l'audio.</p>
+                  </div>
+              </div>
+          )}
+
           <h2 className="text-xl font-bold mb-6 text-rose-800 flex items-center gap-2">
             <div className="p-2 bg-rose-100 rounded-lg"><Mic size={24}/></div>
             Ajouter des fichiers audio
@@ -118,7 +154,7 @@ export default function AdminPodcast() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block">Titre (Base)</label>
+                <label className="text-sm font-bold text-gray-700 mb-1 block">Titre (Optionnel)</label>
                 <input 
                   type="text" 
                   placeholder="Laisser vide pour utiliser le nom du fichier" 
@@ -171,15 +207,15 @@ export default function AdminPodcast() {
                    required 
                  />
                  {audioFiles.length > 0 && (
-                    <div className="mt-2 text-center text-xs text-rose-600 font-medium">
-                        {Array.from(audioFiles).slice(0, 3).map(f => f.name).join(', ')}
-                        {audioFiles.length > 3 && ` + ${audioFiles.length - 3} autres`}
+                    <div className="mt-2 text-center text-xs text-rose-600 font-medium italic">
+                        {Array.from(audioFiles).slice(0, 2).map(f => f.name).join(', ')}
+                        {audioFiles.length > 2 && ` + ${audioFiles.length - 2} autres`}
                     </div>
                  )}
                </div>
 
                <div className="p-4 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl">
-                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block text-center">Image de couverture (Pour tous)</label>
+                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block text-center">Couverture (Optionnel)</label>
                  <input 
                    id="coverInput"
                    type="file" 
@@ -194,19 +230,20 @@ export default function AdminPodcast() {
                  disabled={isUploading}
                  className={`w-full text-white py-4 rounded-xl font-bold transition shadow-md flex items-center justify-center gap-2 ${isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 hover:shadow-lg'}`}
                >
-                 {isUploading ? <><Loader size={20} className="animate-spin"/> Envoi ({audioFiles.length})...</> : `Uploader ${audioFiles.length > 0 ? `(${audioFiles.length})` : ''}`}
+                 {isUploading ? <Loader size={20} className="animate-spin"/> : <Music size={20}/>}
+                 {isUploading ? 'Traitement...' : 'Démarrer l\'ajout'}
                </button>
             </div>
           </form>
         </div>
       )}
 
-      {/* LISTE */}
+      {/* LISTE DES AUDIOS */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
         <table className="min-w-full divide-y divide-gray-100">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Titre</th>
+              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Titre de l'audio</th>
               <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Catégorie</th>
               <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Auteur</th>
               <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase">Action</th>
@@ -214,7 +251,7 @@ export default function AdminPodcast() {
           </thead>
           <tbody className="bg-white divide-y divide-gray-100">
             {podcasts.map((pod) => (
-              <tr key={pod._id} className="hover:bg-gray-50 transition">
+              <tr key={pod._id} className="hover:bg-gray-50 transition group">
                 <td className="px-6 py-4">
                   <div className="flex items-center">
                     <div className="h-10 w-10 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600 mr-3 overflow-hidden shadow-sm border border-rose-200">
@@ -238,6 +275,9 @@ export default function AdminPodcast() {
             ))}
           </tbody>
         </table>
+        {podcasts.length === 0 && (
+          <div className="p-12 text-center text-gray-400">Aucun fichier audio trouvé.</div>
+        )}
       </div>
     </AdminLayout>
   );
