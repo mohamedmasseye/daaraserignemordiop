@@ -32,9 +32,11 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     secureStorage.removeItem('_d_usr_vault');
     secureStorage.removeItem('_d_usr_info');
+    secureStorage.removeItem('_d_adm_vault');
     setToken(null);
     setUser(null);
-    window.location.href = '/login-public';
+    setAdminToken(null);
+    window.location.href = isAdmin ? '/portal-daara-admin-77' : '/login-public';
   };
 
   return (

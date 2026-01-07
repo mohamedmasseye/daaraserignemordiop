@@ -1,33 +1,20 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext'; // ✅ IMPORT DU CONTEXTE
 import { 
-  LayoutDashboard, 
-  BookOpen, 
-  Calendar, 
-  MessageSquare, 
-  Bell, 
-  LogOut, 
-  Users, 
-  ChevronRight, 
-  Mic, 
-  Image, 
-  Newspaper, 
-  Menu, 
-  X, 
-  Package, 
-  ShoppingBag,
-  Layout // <--- C'EST L'IMPORT QUI MANQUAIT !
+  LayoutDashboard, BookOpen, Calendar, MessageSquare, 
+  Bell, LogOut, Users, ChevronRight, Mic, Image, 
+  Newspaper, Menu, X, Package, ShoppingBag, Layout
 } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
   const location = useLocation();
-  const navigate = useNavigate();
+  const { logout } = useAuth(); // ✅ RÉCUPÉRATION DE LOGOUT
   const [isSidebarOpen, setSidebarOpen] = useState(false); 
 
   const handleLogout = () => {
-    if(confirm("Voulez-vous vraiment vous déconnecter ?")) {
-      localStorage.removeItem('daara_token');
-      navigate('/login');
+    if(confirm("Voulez-vous vraiment vous déconnecter de l'administration ?")) {
+      logout(true); // ✅ UTILISE LA LOGIQUE SÉCURISÉE (Redirige vers portal-admin)
     }
   };
 

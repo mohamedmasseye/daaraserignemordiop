@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { Link } from 'react-router-dom';
 import { 
-  Users, BookOpen, Bell, ShoppingBag, 
-  TrendingUp, Calendar, ArrowRight, Activity, 
-  DollarSign, Package, CheckCircle, Clock 
+  Users, BookOpen, ShoppingBag, DollarSign, Calendar, 
+  ArrowRight, Activity, Package
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdminLayout from './AdminLayout';
@@ -20,24 +19,19 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const token = localStorage.getItem('token');
-        const config = { headers: { Authorization: `Bearer ${token}` } };
+        // ✅ PLUS BESOIN de localStorage.getItem ni de config headers ici !
+        // L'intercepteur de API.js s'en occupe automatiquement.
 
-        // Appels API simultanés
         const [usersRes, booksRes, ordersRes] = await Promise.all([
-            axios.get('/api/users', config),
-            axios.get('/api/books'),
-            axios.get('/api/orders', config)
+            API.get('/api/users'),
+            API.get('/api/books'),
+            API.get('/api/orders')
         ]);
 
-        // --- FILTRAGE CORRECT ---
-        
-        // 1. Commandes "Boutique" (Produits physiques uniquement)
         const shopOrders = ordersRes.data.filter(order => 
             order.items.some(item => item.type !== 'ticket')
         );
 
-        // 2. Revenu Total (Inclut TOUT : Boutique + Billetterie, car c'est de l'argent réel)
         const totalRevenue = ordersRes.data
             .filter(o => o.status !== 'Cancelled')
             .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
@@ -46,14 +40,14 @@ export default function AdminDashboard() {
             counts: {
                 users: usersRes.data.length,
                 books: booksRes.data.length,
-                orders: shopOrders.length, // Affiche seulement le nombre de commandes boutique
+                orders: shopOrders.length,
                 revenue: totalRevenue
             },
             recentUsers: usersRes.data.slice(0, 5),
-            recentOrders: shopOrders.slice(0, 5) // Affiche seulement les dernières commandes boutique
+            recentOrders: shopOrders.slice(0, 5)
         });
       } catch (error) {
-        console.error("Erreur chargement dashboard", error);
+        console.error("Erreur dashboard", error);
       } finally {
         setLoading(false);
       }
