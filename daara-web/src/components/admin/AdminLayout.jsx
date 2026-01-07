@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext'; // ✅ IMPORT DU CONTEXTE
+import { useAuth } from '../../context/AuthContext'; // ✅ IMPORT DU CONTEXTE
 import { 
   LayoutDashboard, BookOpen, Calendar, MessageSquare, 
   Bell, LogOut, Users, ChevronRight, Mic, Image, 
