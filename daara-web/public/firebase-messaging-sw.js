@@ -32,27 +32,25 @@ messaging.onBackgroundMessage((payload) => {
 
 // public/firebase-messaging-sw.js
 
+// public/firebase-messaging-sw.js
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-
-  // On récupère l'URL (ex: /evenements?id=695d...)
-  const targetPath = event.notification.data?.url || '/evenements';
-  const targetUrl = new URL(targetPath, self.location.origin).href;
+  const targetUrl = event.notification.data?.url || 'https://app.daaraserignemordiop.com/evenements';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // 1. On cherche si l'app est déjà ouverte
+      // 1. Si l'app est déjà ouverte
       for (let client of windowClients) {
         if ('focus' in client) {
           client.focus();
-          // Force la navigation même si l'app est déjà sur le Home
+          // On envoie un message interne à React au cas où la navigation échouerait
+          client.postMessage({ type: 'FORCE_REDIRECT', url: targetUrl });
           return client.navigate(targetUrl);
         }
       }
-      // 2. Si l'app est fermée, on l'ouvre directement sur l'URL de l'événement
-      if (clients.openWindow) {
-        return clients.openWindow(targetUrl);
-      }
+      // 2. Si l'app est fermée
+      if (clients.openWindow) return clients.openWindow(targetUrl);
     })
   );
 });

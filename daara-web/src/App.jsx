@@ -156,7 +156,6 @@ function App() {
         }
       };
 
-      // Gestion du premier plan pour PWA : Évite les doublons avec le Service Worker
       const unsubscribeOnMessage = onMessage(messaging, (payload) => {
         console.log('Message reçu au premier plan (Web) :', payload);
         alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`);
@@ -170,14 +169,23 @@ function App() {
     }
   }, []);
 
+  // ✅ LOGIQUE DE REDIRECTION FORCEE (SÉCURITÉ IPHONE)
   useEffect(() => {
-  if ('serviceWorker' in navigator) {
-    navigator.serviceWorker.addEventListener('message', (event) => {
-      if (event.data && event.data.type === 'REDIRECT' && event.data.url) {
-        window.location.href = event.data.url;
-      }
-    });
-  }
+    // A. Écoute les messages directs du Service Worker
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.addEventListener('message', (event) => {
+        if (event.data && event.data.url) {
+          window.location.href = event.data.url;
+        }
+      });
+    }
+
+    // B. Vérifie l'URL au démarrage (Si iOS force l'ouverture sur Home avec un ?id=)
+    const params = new URLSearchParams(window.location.search);
+    const eventId = params.get('id');
+    if (eventId && !window.location.pathname.includes('/evenements')) {
+      window.location.href = `/evenements?id=${eventId}`;
+    }
   }, []);
 
   return (
