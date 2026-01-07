@@ -1,8 +1,8 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { secureStorage } from './utils/security'; // ✅ IMPORT SÉCURITÉ
+import { secureStorage } from './utils/security';
 
-// --- IMPORTS CAPACITOR, FIREBASE & COMPOSANTS (Inchangés) ---
+// --- IMPORTS CAPACITOR / FIREBASE ---
 import { PushNotifications } from '@capacitor/push-notifications';
 import { FCM } from '@capacitor-community/fcm';
 import { Capacitor } from '@capacitor/core';
@@ -10,6 +10,7 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { initializeApp } from "firebase/app";
 import { getMessaging, getToken, onMessage } from "firebase/messaging";
 
+// --- FIREBASE CONFIG ---
 const firebaseConfig = {
   apiKey: "AIzaSyDcBu_ebg9PHPW2Yzq4rdMymsEmcLdCAHA",
   authDomain: "daara-app-5a679.firebaseapp.com",
@@ -22,6 +23,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
 
+// --- IMPORT COMPOSANTS ---
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -38,37 +40,45 @@ import Podcast from './components/Podcast';
 import Register from './components/auth/Register';
 import LoginPublic from './components/auth/LoginPublic';
 import Profile from './components/auth/Profile';
+
 import LoginAdmin from './components/admin/Login';
 import AdminDashboard from './components/admin/AdminDashboard';
-import AdminBooks from './components/admin/AdminBooks';
-import AdminEvents from './components/admin/AdminEvents';
 import AdminUsers from './components/admin/AdminUsers';
-import AdminNotifications from './components/admin/AdminNotifications';
-import AdminMessages from './components/admin/AdminMessages';
-import AdminBlog from './components/admin/AdminBlog';
-import AdminGallery from './components/admin/AdminGallery';
-import AdminPodcast from './components/admin/AdminPodcast';
-import AdminProducts from './components/admin/AdminProducts';
-import AdminOrders from './components/admin/AdminOrders';
-import AdminHome from './components/admin/AdminHome';
 
-// --- PROTECTION DES ROUTES SÉCURISÉES ---
+// =================================================
+// 🔐 ROUTES PROTÉGÉES (CORRIGÉES)
+// =================================================
 
 const PublicProtectedRoute = ({ children }) => {
-  // ✅ Vérifie le coffre public crypté
-  const token = secureStorage.getItem('_d_usr_vault'); 
+  const [ready, setReady] = useState(false);
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setToken(secureStorage.getItem('_d_usr_vault'));
+    setReady(true);
+  }, []);
+
+  if (!ready) return null;
   return token ? children : <Navigate to="/login-public" replace />;
 };
 
 const AdminProtectedRoute = ({ children }) => {
-  // ✅ Vérifie le coffre admin crypté
-  const token = secureStorage.getItem('_d_adm_vault');
-  // Si pas de token admin, redirection vers l'URL secrète
+  const [ready, setReady] = useState(false);
+  const [token, setToken] = useState(null);
+
+  useEffect(() => {
+    setToken(secureStorage.getItem('_d_adm_vault'));
+    setReady(true);
+  }, []);
+
+  if (!ready) return null;
   return token ? children : <Navigate to="/portal-daara-admin-77" replace />;
 };
 
+// =================================================
+
 const PublicLayout = ({ children }) => (
-  <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
+  <div className="min-h-screen bg-gray-50 flex flex-col">
     <Navbar />
     <div className="pt-16 flex-1">{children}</div>
     <Footer />
@@ -77,7 +87,7 @@ const PublicLayout = ({ children }) => (
 
 function App() {
 
-  // ✅ SILENCE LES CONSOLES EN PRODUCTION
+  // 🔇 Silence console en prod
   useEffect(() => {
     if (import.meta.env.PROD) {
       console.log = () => {};
@@ -86,6 +96,7 @@ function App() {
     }
   }, []);
 
+  // 🔐 Google Auth MOBILE uniquement
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
@@ -96,109 +107,72 @@ function App() {
     }
   }, []);
 
-  // --- LOGIQUE NOTIFICATIONS (Inchangée pour garantir la stabilité) ---
+  // 🔔 PUSH MOBILE
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      const initPushLogic = async () => {
-        let permStatus = await PushNotifications.checkPermissions();
-        if (permStatus.receive === 'prompt') { permStatus = await PushNotifications.requestPermissions(); }
-        if (permStatus.receive !== 'granted') return;
+    if (!Capacitor.isNativePlatform()) return;
 
-        await PushNotifications.removeAllListeners();
-        await PushNotifications.addListener('registration', (token) => {
-          FCM.subscribeTo({ topic: 'all_users' });
-        });
-        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
-          alert(`🔔 ${notification.title}\n${notification.body}`);
-        });
-        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-          const url = action.notification.data?.url;
-          if (url) window.location.href = url;
-        });
-        await PushNotifications.register();
-      };
-      initPushLogic();
-    }
-  }, []);
+    const initPush = async () => {
+      const perm = await PushNotifications.requestPermissions();
+      if (perm.receive !== 'granted') return;
 
-  useEffect(() => {
-    if (!Capacitor.isNativePlatform()) {
-      const initWebPush = async () => {
-        try {
-          const permission = await Notification.requestPermission();
-          if (permission === 'granted') {
-            const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            await getToken(messaging, { serviceWorkerRegistration: registration, vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' });
-          }
-        } catch (err) {}
-      };
-      onMessage(messaging, (payload) => { alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); });
-      if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) { initWebPush(); }
-    }
-  }, []);
+      await PushNotifications.register();
 
-  useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
-        if (event.data && event.data.url) window.location.href = event.data.url;
+      PushNotifications.addListener('registration', () => {
+        FCM.subscribeTo({ topic: 'all_users' });
       });
-    }
-    const handleCheckRouting = () => {
-      const params = new URLSearchParams(window.location.search);
-      const eventId = params.get('id');
-      if (eventId && !window.location.pathname.includes('/evenements')) {
-        window.location.href = `/evenements?id=${eventId}`;
-      }
     };
-    handleCheckRouting();
-    window.addEventListener('focus', handleCheckRouting);
-    return () => window.removeEventListener('focus', handleCheckRouting);
+
+    initPush();
+  }, []);
+
+  // 🔔 PUSH WEB
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) return;
+
+    onMessage(messaging, payload => {
+      alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`);
+    });
   }, []);
 
   return (
     <Router>
       <Routes>
-        {/* ✅ URL ADMIN OBFUSQUÉE (SECURE) */}
-        <Route path="/portal-daara-admin-77" element={<LoginAdmin />} /> 
-        
-        <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-        <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
-        <Route path="/admin/books" element={<AdminProtectedRoute><AdminBooks /></AdminProtectedRoute>} />
-        <Route path="/admin/blog" element={<AdminProtectedRoute><AdminBlog /></AdminProtectedRoute>} />
-        <Route path="/admin/galerie" element={<AdminProtectedRoute><AdminGallery /></AdminProtectedRoute>} />
-        <Route path="/admin/podcast" element={<AdminProtectedRoute><AdminPodcast /></AdminProtectedRoute>} />
-        <Route path="/admin/products" element={<AdminProtectedRoute><AdminProducts /></AdminProtectedRoute>} />
-        <Route path="/admin/orders" element={<AdminProtectedRoute><AdminOrders /></AdminProtectedRoute>} />
-        <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
-        <Route path="/admin/events" element={<AdminProtectedRoute><AdminEvents /></AdminProtectedRoute>} />
-        <Route path="/admin/notifications" element={<AdminProtectedRoute><AdminNotifications /></AdminProtectedRoute>} />
-        <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
-        <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />
 
+        {/* 🔐 ADMIN */}
+        <Route path="/portal-daara-admin-77" element={<LoginAdmin />} />
+        <Route path="/admin/users" element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
+
+        {/* 🌍 PUBLIC */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
         <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
         <Route path="/checkout" element={<PublicLayout><Checkout /></PublicLayout>} />
         <Route path="/livres" element={<PublicLayout><Books /></PublicLayout>} />
-        <Route path="/blog" element={<PublicLayout><Blog /></PublicLayout>} />
-        <Route path="/galerie" element={<PublicLayout><Gallery /></PublicLayout>} />
-        <Route path="/podcast" element={<PublicLayout><Podcast /></PublicLayout>} />
         <Route path="/evenements" element={<PublicLayout><Events /></PublicLayout>} />
         <Route path="/contact" element={<PublicLayout><Contact /></PublicLayout>} />
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
-        <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
-        <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
+        <Route path="/blog" element={<PublicLayout><Blog /></PublicLayout>} />
+        <Route path="/galerie" element={<PublicLayout><Gallery /></PublicLayout>} />
+        <Route path="/podcast" element={<PublicLayout><Podcast /></PublicLayout>} />
 
+        <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
+        <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
+
+        {/* 👤 PROFIL */}
         <Route path="/profil" element={
           <PublicProtectedRoute>
-             <PublicLayout><Profile /></PublicLayout>
+            <PublicLayout><Profile /></PublicLayout>
           </PublicProtectedRoute>
         } />
-        
-        {/* ✅ REDIRECTION DE SÉCURITÉ */}
-        <Route path="/admin-login" element={<Navigate to="/portal-daara-admin-77" replace />} />
+
+        {/* 🔁 REDIRECTS */}
         <Route path="/login" element={<Navigate to="/login-public" replace />} />
         <Route path="*" element={<Navigate to="/" replace />} />
+
       </Routes>
     </Router>
   );
