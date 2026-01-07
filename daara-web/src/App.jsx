@@ -25,6 +25,7 @@ const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
 
 // --- IMPORTS COMPOSANTS ---
+import ScrollToTop from './components/ScrollToTop'; // ✅ AJOUT DE L'IMPORT
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -56,10 +57,8 @@ import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
 
 // --- PROTECTION DES ROUTES SÉCURISÉES ---
-
 const PublicProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
-  // On attend que le chargement du contexte soit fini pour décider
   if (loading) return null; 
   return token ? children : <Navigate to="/login-public" replace />;
 };
@@ -177,10 +176,7 @@ function AppContent() {
 
   return (
     <Routes>
-      {/* URL ADMIN SÉCURISÉE */}
       <Route path="/portal-daara-admin-77" element={<LoginAdmin />} /> 
-      
-      {/* ROUTES ADMIN PROTÉGÉES */}
       <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
       <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
       <Route path="/admin/books" element={<AdminProtectedRoute><AdminBooks /></AdminProtectedRoute>} />
@@ -195,7 +191,6 @@ function AppContent() {
       <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
       <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />
 
-      {/* ROUTES PUBLIQUES */}
       <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
       <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
       <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
@@ -210,14 +205,12 @@ function AppContent() {
       <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
       <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
 
-      {/* PROFIL PROTÉGÉ */}
       <Route path="/profil" element={
         <PublicProtectedRoute>
             <PublicLayout><Profile /></PublicLayout>
         </PublicProtectedRoute>
       } />
       
-      {/* REDIRECTIONS DE SÉCURITÉ */}
       <Route path="/admin-login" element={<Navigate to="/portal-daara-admin-77" replace />} />
       <Route path="/login" element={<Navigate to="/login-public" replace />} />
       <Route path="*" element={<Navigate to="/" replace />} />
@@ -230,6 +223,7 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <ScrollToTop /> {/* ✅ PLACÉ ICI, IL AGIRA SUR TOUTES LES PAGES */}
         <AppContent />
       </Router>
     </AuthProvider>
