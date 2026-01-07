@@ -1,258 +1,189 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../services/api'; // ✅ Utilise l'instance sécurisée
 import AdminLayout from './AdminLayout';
 import CategoryManager from './CategoryManager';
-import { Trash2, Plus, Image, Film, Upload, Loader, X, CheckSquare, Square } from 'lucide-react';
+import { Trash2, Plus, Image, Film, Upload, Loader, X, CheckSquare, Square, Edit3, Save, Tag, Type } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminGallery() {
   const [mediaList, setMediaList] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
-  const [isProcessing, setIsProcessing] = useState(false); // État global de chargement (ajout ou suppression)
-  
+  const [isProcessing, setIsProcessing] = useState(false);
   const [formData, setFormData] = useState({ title: '', category: '', type: 'photo' });
   const [files, setFiles] = useState([]);
-
-  // --- NOUVEAU : GESTION DE LA SÉLECTION ---
   const [selectedIds, setSelectedIds] = useState([]);
+  
+  // État pour la modification
+  const [editingItem, setEditingItem] = useState(null);
+
+  const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none font-bold transition-all placeholder:text-gray-300";
 
   const fetchMedia = async () => {
     try {
-      const res = await axios.get('/api/media');
-      setMediaList(res.data);
-    } catch (err) { console.error(err); }
+      const res = await API.get('/api/media');
+      setMediaList(res.data || []);
+    } catch (err) { console.error("Erreur galerie:", err); }
   };
 
   useEffect(() => { fetchMedia(); }, []);
 
-  // --- FONCTIONS DE SÉLECTION ---
   const toggleSelect = (id) => {
-    if (selectedIds.includes(id)) {
-      setSelectedIds(selectedIds.filter(item => item !== id));
-    } else {
-      setSelectedIds([...selectedIds, id]);
-    }
+    if (selectedIds.includes(id)) setSelectedIds(selectedIds.filter(item => item !== id));
+    else setSelectedIds([...selectedIds, id]);
   };
 
   const toggleSelectAll = () => {
-    if (selectedIds.length === mediaList.length) {
-      setSelectedIds([]); // Tout désélectionner
-    } else {
-      setSelectedIds(mediaList.map(m => m._id)); // Tout sélectionner
-    }
+    if (selectedIds.length === mediaList.length) setSelectedIds([]);
+    else setSelectedIds(mediaList.map(m => m._id));
   };
 
-  // --- SUPPRESSION DE MASSE ---
   const handleBulkDelete = async () => {
     if (selectedIds.length === 0) return;
-    
-    if (window.confirm(`⚠️ Voulez-vous vraiment supprimer ces ${selectedIds.length} éléments définitivement ?`)) {
+    if (window.confirm(`⚠️ Supprimer définitivement ces ${selectedIds.length} éléments ?`)) {
       setIsProcessing(true);
       try {
-        // On boucle sur chaque ID sélectionné et on envoie une requête DELETE
-        for (const id of selectedIds) {
-          await axios.delete(`/api/media/${id}`);
-        }
-        
-        // Mise à jour locale (plus rapide que de refetch tout)
+        for (const id of selectedIds) { await API.delete(`/api/media/${id}`); }
         setMediaList(mediaList.filter(m => !selectedIds.includes(m._id)));
-        setSelectedIds([]); // On vide la sélection
-        alert("Suppression terminée avec succès !");
-        
-      } catch (error) {
-        console.error(error);
-        alert("Une erreur est survenue lors de la suppression de certains éléments.");
-      } finally {
-        setIsProcessing(false);
-      }
+        setSelectedIds([]);
+        alert("Suppression terminée !");
+      } catch (error) { alert("Erreur lors de la suppression."); } 
+      finally { setIsProcessing(false); }
     }
   };
 
-  // --- AJOUT MULTIPLE (Identique à avant) ---
+  const handleEdit = (item) => {
+    setEditingItem(item);
+    setFormData({ title: item.title, category: item.category, type: item.type });
+    setIsFormVisible(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.category) return alert("Sélectionnez une catégorie");
-    if (files.length === 0) return alert("Veuillez sélectionner au moins un fichier");
-
     setIsProcessing(true);
 
     try {
-      for (let i = 0; i < files.length; i++) {
-        const currentFile = files[i];
-        const data = new FormData();
-        const itemTitle = files.length > 1 ? `${formData.title} ${i + 1}` : formData.title;
-
-        data.append('title', itemTitle);
-        data.append('category', formData.category);
-        data.append('type', formData.type);
-        data.append('mediaFile', currentFile);
-
-        await axios.post('/api/media', data, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
+      if (editingItem) {
+        // MODIFICATION
+        await API.put(`/api/media/${editingItem._id}`, formData);
+        alert("Média mis à jour !");
+      } else {
+        // AJOUT MULTIPLE
+        if (files.length === 0) return alert("Veuillez sélectionner au moins un fichier");
+        for (let i = 0; i < files.length; i++) {
+          const data = new FormData();
+          data.append('title', files.length > 1 ? `${formData.title} ${i + 1}` : formData.title);
+          data.append('category', formData.category);
+          data.append('type', formData.type);
+          data.append('mediaFile', files[i]);
+          await API.post('/api/media', data);
+        }
+        alert(`${files.length} média(s) ajouté(s) !`);
       }
       
-      alert(`${files.length} média(s) ajouté(s) !`);
       setFormData({ title: '', category: '', type: 'photo' });
       setFiles([]);
-      document.getElementById('fileInput').value = ""; 
+      setEditingItem(null);
       setIsFormVisible(false);
       fetchMedia(); 
-    } catch (error) { 
-      console.error(error);
-      alert("Erreur lors de l'upload."); 
-    } finally {
-      setIsProcessing(false);
-    }
+    } catch (error) { alert("Erreur lors de l'opération."); } 
+    finally { setIsProcessing(false); }
   };
 
   return (
     <AdminLayout>
-      {/* EN-TÊTE AVEC ACTIONS DE MASSE */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 font-serif">Galerie Photo & Vidéo</h1>
-          <p className="text-gray-500 text-sm mt-1">
-            {mediaList.length} éléments • {selectedIds.length} sélectionné(s)
-          </p>
+          <h1 className="text-4xl font-serif font-bold text-gray-900">Médiathèque</h1>
+          <p className="text-gray-500 mt-2 font-medium">{mediaList.length} éléments • {selectedIds.length} sélectionné(s)</p>
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Boutons d'action conditionnels */}
           {selectedIds.length > 0 ? (
             <>
-              <button 
-                onClick={handleBulkDelete}
-                disabled={isProcessing}
-                className="bg-red-600 text-white px-4 py-3 rounded-xl font-bold shadow-lg hover:bg-red-700 transition flex items-center gap-2 animate-pulse"
-              >
-                {isProcessing ? <Loader size={20} className="animate-spin"/> : <Trash2 size={20}/>}
-                Supprimer ({selectedIds.length})
+              <button onClick={handleBulkDelete} disabled={isProcessing} className="bg-red-600 text-white px-6 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-red-700 transition flex items-center gap-2 animate-pulse">
+                {isProcessing ? <Loader size={18} className="animate-spin"/> : <Trash2 size={18}/>} Supprimer ({selectedIds.length})
               </button>
-              
-              <button 
-                onClick={() => setSelectedIds([])}
-                className="bg-gray-200 text-gray-700 px-4 py-3 rounded-xl font-bold hover:bg-gray-300 transition"
-              >
-                Annuler
-              </button>
+              <button onClick={() => setSelectedIds([])} className="bg-gray-200 text-gray-700 px-6 py-3.5 rounded-2xl font-bold text-xs uppercase transition">Annuler</button>
             </>
           ) : (
-            <button 
-              onClick={() => setIsFormVisible(!isFormVisible)} 
-              className={`${isFormVisible ? 'bg-gray-500' : 'bg-purple-600 hover:bg-purple-700'} text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center gap-2`}
-            >
-              {isFormVisible ? 'Fermer' : <><Plus size={20}/> Ajouter Média</>}
+            <button onClick={() => { setIsFormVisible(!isFormVisible); if(editingItem) setEditingItem(null); }} className={`${isFormVisible ? 'bg-white text-gray-600 border border-gray-200' : 'bg-primary-900 text-white hover:bg-primary-800'} px-8 py-4 rounded-2xl font-bold shadow-xl transition flex items-center gap-2`}>
+              {isFormVisible ? <><X size={20}/> Fermer</> : <><Plus size={20}/> Ajouter Média</>}
             </button>
           )}
         </div>
       </div>
 
-      {/* BARRE DE SÉLECTION RAPIDE */}
-      {mediaList.length > 0 && (
-        <div className="mb-4 flex items-center gap-2">
-          <button 
-            onClick={toggleSelectAll}
-            className="text-sm font-bold text-purple-700 hover:bg-purple-50 px-3 py-2 rounded-lg transition flex items-center gap-2"
-          >
-            {selectedIds.length === mediaList.length ? <CheckSquare size={18}/> : <Square size={18}/>}
-            {selectedIds.length === mediaList.length ? "Tout désélectionner" : "Tout sélectionner"}
-          </button>
-        </div>
-      )}
-
-      {/* FORMULAIRE D'AJOUT (Inchangé ou presque) */}
+      <AnimatePresence>
       {isFormVisible && (
-        <div className="bg-white p-6 rounded-2xl shadow-lg border border-gray-100 mb-8 animate-fade-in-down">
-          <h2 className="text-lg font-bold mb-4 text-purple-800 flex items-center gap-2">
-            <div className="p-2 bg-purple-100 rounded-lg"><Upload size={20}/></div>
-            Ajout Multiple
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 mb-12 relative overflow-hidden">
+          <h2 className="text-xl font-bold mb-8 text-primary-900 flex items-center gap-3">
+            <div className="p-2 bg-primary-100 rounded-xl text-primary-600">{editingItem ? <Edit3 size={24}/> : <Upload size={24}/>}</div>
+            {editingItem ? `Modifier : ${editingItem.title}` : 'Nouvel Ajout'}
           </h2>
-          <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-             {/* ... (Le contenu du formulaire reste identique à ton code précédent) ... */}
-             {/* Pour gagner de la place ici, je remets le bloc formulaire standard */}
-             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              <div className="space-y-6">
                 <div>
-                  <label className="text-sm font-bold text-gray-700 mb-1 block">Titre (base)</label>
-                  <input type="text" placeholder="Ex: Ziarra 2024" className="w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Type size={12}/> Titre du média</label>
+                  <input type="text" placeholder="Ziarra, Gamou..." className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} required />
                 </div>
                 <div>
-                  <label className="text-sm font-bold text-gray-700 mb-1 block">Type</label>
-                  <select className="w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-purple-500 outline-none" value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
-                    <option value="photo">Photo</option>
-                    <option value="video">Vidéo</option>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Type de contenu</label>
+                  <select className={inputStyle} value={formData.type} onChange={e => setFormData({...formData, type: e.target.value})}>
+                    <option value="photo">📷 Photographie</option>
+                    <option value="video">🎥 Vidéo</option>
                   </select>
                 </div>
               </div>
-              <div className="space-y-4">
+              <div className="space-y-6">
                 <CategoryManager type="media" selectedCategory={formData.category} onSelectCategory={(cat) => setFormData({...formData, category: cat})} />
-                <div className={`p-4 border-2 border-dashed rounded-xl transition relative ${files.length > 0 ? 'border-purple-500 bg-purple-50' : 'border-gray-300 bg-gray-50 hover:bg-white'}`}>
-                  <label className="text-xs font-bold text-gray-500 uppercase mb-2 block text-center cursor-pointer">{files.length > 0 ? `${files.length} fichier(s)` : "Sélectionner fichiers"}</label>
-                  <input id="fileInput" type="file" multiple accept={formData.type === 'photo' ? "image/*" : "video/*"} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setFiles(e.target.files)} required />
-                </div>
+                {!editingItem && (
+                   <div className="p-6 border-2 border-dashed border-primary-100 rounded-2xl bg-primary-50/30 hover:border-primary-400 transition-colors relative group">
+                      <label className="text-xs font-bold text-primary-900 mb-2 block text-center">{files.length > 0 ? `${files.length} fichier(s) prêt(s)` : "Cliquez pour sélectionner vos fichiers"}</label>
+                      <input id="fileInput" type="file" multiple accept={formData.type === 'photo' ? "image/*" : "video/*"} className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setFiles(e.target.files)} required />
+                   </div>
+                )}
+                <button type="submit" disabled={isProcessing} className="w-full py-5 bg-primary-900 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-gold-500 hover:text-primary-900 transition-all shadow-xl">
+                   {isProcessing ? <Loader size={20} className="animate-spin mx-auto" /> : editingItem ? 'Mettre à jour' : `Enregistrer les médias`}
+                </button>
               </div>
-            </div>
-            <div className="flex justify-end">
-              <button type="submit" disabled={isProcessing} className={`text-white px-8 py-3 rounded-xl font-bold transition shadow-md flex items-center gap-2 ${isProcessing ? 'bg-gray-400 cursor-not-allowed' : 'bg-purple-600 hover:bg-purple-700'}`}>
-                {isProcessing ? <Loader size={20} className="animate-spin" /> : `Enregistrer`}
-              </button>
-            </div>
           </form>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
-      {/* GRILLE DES MÉDIAS */}
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 pb-20">
         {mediaList.map((item) => {
           const isSelected = selectedIds.includes(item._id);
           return (
-            <div 
-              key={item._id} 
-              // Au clic sur la carte, on sélectionne (sauf si on clique sur des boutons spécifiques)
-              onClick={() => toggleSelect(item._id)}
-              className={`group relative bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border cursor-pointer ${isSelected ? 'border-purple-600 ring-2 ring-purple-600 ring-offset-2' : 'border-gray-100'}`}
-            >
-              
-              {/* CHECKBOX DE SÉLECTION (Visible tout le temps ou si sélectionné) */}
-              <div className="absolute top-2 left-2 z-30">
-                <div className={`w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-purple-600 border-purple-600' : 'bg-white/80 border-gray-400 group-hover:border-purple-400'}`}>
-                  {isSelected && <CheckSquare size={14} className="text-white" />}
+            <div key={item._id} className={`group relative bg-white rounded-3xl overflow-hidden shadow-sm hover:shadow-2xl transition-all duration-500 border-2 cursor-pointer ${isSelected ? 'border-primary-600 ring-4 ring-primary-500/10' : 'border-gray-100'}`}>
+              <div className="absolute top-3 left-3 z-30" onClick={(e) => { e.stopPropagation(); toggleSelect(item._id); }}>
+                <div className={`w-8 h-8 rounded-xl border-2 flex items-center justify-center transition-all ${isSelected ? 'bg-primary-900 border-primary-900' : 'bg-white/80 border-gray-300 group-hover:border-primary-400'}`}>
+                  {isSelected && <CheckSquare size={16} className="text-white" />}
                 </div>
               </div>
 
-              {/* IMAGE / VIDEO */}
-              <div className="aspect-square relative">
+              <div className="aspect-square relative" onClick={() => toggleSelect(item._id)}>
                 {item.type === 'photo' ? (
-                  <img src={item.url} alt={item.title} className={`w-full h-full object-cover transition duration-700 ${isSelected ? 'scale-95' : 'group-hover:scale-110'}`} />
+                  <img src={item.url} alt={item.title} className="w-full h-full object-cover transition duration-700 group-hover:scale-110" />
                 ) : (
-                  <div className="w-full h-full bg-gray-900 flex items-center justify-center group-hover:bg-gray-800 transition">
-                     <Film className="text-white w-12 h-12 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  </div>
+                  <div className="w-full h-full bg-gray-900 flex items-center justify-center group-hover:bg-gray-800 transition"><Film className="text-white w-12 h-12 opacity-30 group-hover:opacity-100 transition-opacity" /></div>
                 )}
                 
-                {/* Overlay au survol (Info + Suppression unique) */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 p-4 flex flex-col justify-end">
-                  <span className="text-[10px] text-purple-300 font-bold uppercase tracking-wider mb-1">{item.category}</span>
-                  <h3 className="text-white font-bold text-sm truncate leading-tight">{item.title}</h3>
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity p-5 flex flex-col justify-end">
+                   <div className="flex justify-between items-end">
+                      <div className="min-w-0">
+                        <span className="text-[8px] text-gold-400 font-black uppercase tracking-widest block mb-1">{item.category}</span>
+                        <h3 className="text-white font-bold text-sm truncate">{item.title}</h3>
+                      </div>
+                      <button onClick={(e) => { e.stopPropagation(); handleEdit(item); }} className="p-2 bg-white/20 hover:bg-white text-white hover:text-primary-900 rounded-lg backdrop-blur-md transition-all"><Edit3 size={16}/></button>
+                   </div>
                 </div>
               </div>
-
-              {/* BADGE TYPE (Déplacé en bas à gauche pour laisser la place à la checkbox) */}
-              <div className="absolute top-2 right-2 bg-white/90 backdrop-blur-md px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 text-gray-800 shadow-sm z-20">
-                {item.type === 'photo' ? <Image size={10} className="text-purple-600"/> : <Film size={10} className="text-red-600"/>} 
-                <span className="uppercase">{item.type}</span>
-              </div>
-
             </div>
           );
         })}
-        
-        {mediaList.length === 0 && (
-          <div className="col-span-full py-20 text-center text-gray-400 bg-white rounded-2xl border border-dashed border-gray-200">
-            <Image size={48} className="mx-auto mb-4 opacity-20" />
-            <p>Aucun média pour le moment.</p>
-          </div>
-        )}
       </div>
     </AdminLayout>
   );

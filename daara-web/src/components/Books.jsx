@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { Book, Download, Search, Eye, BookOpen, Filter, Image as ImageIcon } from 'lucide-react';
 import BookReader from '../components/BookReader'; 
 
@@ -10,37 +10,23 @@ export default function Books() {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Tout');
 
-  // --- FONCTION DE SÉCURISATION D'URL (ROBUSTE) ---
+  // --- SÉCURISATION D'URL ---
   const getSecureUrl = (url) => {
     if (!url) return null;
-    
-    // Si l'URL contient localhost, on la remplace par l'URL de production
-    if (url.includes('localhost:5000')) {
-      return url.replace('http://localhost:5000', '');
-    }
-    
-    // Force HTTPS pour éviter "Mixed Content"
-    if (url.startsWith('http://')) {
-        return url.replace('http://', 'https://');
-    }
-
-    // Gestion des chemins relatifs
-    if (url.startsWith('/uploads')) {
-        return `${url}`;
-    }
-
+    if (url.includes('localhost:5000')) return url.replace('http://localhost:5000', '');
+    if (url.startsWith('http://')) return url.replace('http://', 'https://');
     return url;
   };
 
-  // Charger les livres
+  // Charger les livres via l'API centralisée
   useEffect(() => {
     const fetchBooks = async () => {
       try {
-        const response = await axios.get('/api/books');
-        setBooks(response.data);
-        setLoading(false);
+        const response = await API.get('/api/books'); // ✅ Token auto
+        setBooks(response.data || []); // ✅ Sécurité données
       } catch (error) {
-        console.error("Erreur:", error);
+        console.error("Erreur bibliothèque:", error);
+      } finally {
         setLoading(false);
       }
     };
@@ -50,10 +36,9 @@ export default function Books() {
   const categories = ['Tout', ...new Set(books.map(b => b.category).filter(Boolean))];
 
   const filteredBooks = books.filter(b => {
-    const matchesSearch = b.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                          b.author.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesSearch = b.title?.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          b.author?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesCategory = selectedCategory === 'Tout' || b.category === selectedCategory;
-    
     return matchesSearch && matchesCategory;
   });
 
@@ -66,8 +51,6 @@ export default function Books() {
 
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
-      
-      {/* --- LE LECTEUR (MODAL) --- */}
       {selectedBook && (
         <BookReader 
           pdfUrl={getSecureUrl(selectedBook.pdfUrl)} 
@@ -80,11 +63,9 @@ export default function Books() {
       <div className="bg-gradient-to-r from-primary-900 to-primary-800 text-white py-16 px-4 mb-10 shadow-lg">
         <div className="max-w-4xl mx-auto text-center">
           <BookOpen className="h-16 w-16 mx-auto text-gold-500 mb-4 opacity-90" />
-          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">
-            Bibliothèque Numérique
-          </h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold mb-4 tracking-tight">Bibliothèque Numérique</h1>
           <p className="text-primary-100 text-lg max-w-2xl mx-auto">
-            Accédez à une collection riche d'ouvrages islamiques, lisez en ligne ou téléchargez pour étudier où que vous soyez.
+            Accédez à une collection riche d'ouvrages islamiques, lisez en ligne ou téléchargez.
           </p>
           
           <div className="max-w-xl mx-auto mt-8 relative group">
@@ -100,8 +81,6 @@ export default function Books() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4">
-        
-        {/* --- FILTRES --- */}
         <div className="flex flex-wrap justify-center gap-2 mb-10">
           {categories.map(cat => (
             <button
@@ -118,85 +97,41 @@ export default function Books() {
           ))}
         </div>
 
-        {/* --- GRILLE DE LIVRES --- */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {filteredBooks.length === 0 ? (
              <div className="col-span-full flex flex-col items-center justify-center py-20 text-gray-400 bg-white rounded-xl border border-dashed border-gray-300">
                <Filter className="h-12 w-12 mb-2 opacity-50"/>
-               <p>Aucun livre ne correspond à votre recherche.</p>
+               <p>Aucun livre trouvé.</p>
              </div>
           ) : (
             filteredBooks.map((book) => {
-              // Sécurité : on cherche l'image peu importe le nom de la propriété
               const coverUrl = getSecureUrl(book.coverUrl || book.coverImage);
-
               return (
               <div key={book._id} className="bg-white rounded-xl shadow-sm hover:shadow-xl transition duration-300 border border-gray-100 flex flex-col h-full group overflow-hidden">
-                
-                {/* ZONE DE COUVERTURE */}
                 <div className="h-48 bg-primary-50 relative overflow-hidden flex items-center justify-center">
-                   
                    {coverUrl ? (
                       <img 
-                        src={coverUrl} 
-                        alt={book.title} 
+                        src={coverUrl} alt={book.title} 
                         className="w-full h-full object-cover transition duration-500 group-hover:scale-110"
-                        referrerPolicy="no-referrer" // ✅ CORRECTION CLÉ (Évite l'erreur ORB)
+                        referrerPolicy="no-referrer"
                         onError={(e) => { e.target.style.display = 'none'; }} 
                       />
                    ) : (
-                      <>
-                        <div className="absolute inset-0 bg-primary-900/5 group-hover:bg-primary-900/10 transition duration-500"></div>
-                        <Book className="h-20 w-20 text-primary-200 group-hover:text-primary-300 group-hover:scale-110 transition duration-500" />
-                      </>
+                      <Book className="h-20 w-20 text-primary-200" />
                    )}
-                   
-                   <span className="absolute top-3 right-3 text-[10px] font-bold text-primary-900 bg-gold-400 px-2 py-1 rounded shadow-sm z-10">
-                     {book.category || 'Général'}
-                   </span>
-
+                   <span className="absolute top-3 right-3 text-[10px] font-bold text-primary-900 bg-gold-400 px-2 py-1 rounded shadow-sm z-10">{book.category || 'Général'}</span>
                    <div className="absolute inset-0 bg-black/40 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition duration-300 flex items-center justify-center gap-3 z-20">
-                     <button 
-                       onClick={() => setSelectedBook(book)}
-                       className="bg-white text-primary-900 p-3 rounded-full hover:bg-gold-400 transition transform translate-y-4 group-hover:translate-y-0 duration-300"
-                       title="Lire le livre"
-                     >
-                       <Eye className="h-5 w-5"/>
-                     </button>
+                     <button onClick={() => setSelectedBook(book)} className="bg-white text-primary-900 p-3 rounded-full hover:bg-gold-400 transition transform translate-y-4 group-hover:translate-y-0 shadow-lg"><Eye className="h-5 w-5"/></button>
                    </div>
                 </div>
 
-                {/* Contenu Carte */}
                 <div className="p-5 flex-1 flex flex-col">
-                  <h3 className="text-lg font-bold text-gray-800 leading-snug mb-1 line-clamp-2" title={book.title}>
-                    {book.title}
-                  </h3>
-                  <p className="text-xs text-primary-600 font-semibold mb-3 uppercase tracking-wide">
-                    {book.author}
-                  </p>
-                  
-                  <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">
-                    {book.description || "Aucune description disponible pour cet ouvrage."}
-                  </p>
-                  
+                  <h3 className="text-lg font-bold text-gray-800 leading-snug mb-1 line-clamp-2">{book.title}</h3>
+                  <p className="text-xs text-primary-600 font-semibold mb-3 uppercase tracking-wide">{book.author}</p>
+                  <p className="text-sm text-gray-500 line-clamp-3 mb-4 flex-1">{book.description || "Ouvrage spirituel."}</p>
                   <div className="flex gap-2 pt-4 border-t border-gray-50 mt-auto">
-                    <button 
-                      onClick={() => setSelectedBook(book)}
-                      className="flex-1 bg-primary-50 text-primary-900 py-2 rounded-lg text-sm font-bold hover:bg-primary-900 hover:text-white transition flex items-center justify-center gap-2"
-                    >
-                      <BookOpen className="h-4 w-4" /> Lire
-                    </button>
-                    
-                    <a 
-                      href={getSecureUrl(book.pdfUrl)} 
-                      download 
-                      target="_blank"
-                      rel="noreferrer"
-                      className="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 hover:text-primary-600 hover:border-primary-200 hover:bg-primary-50 transition"
-                      title="Télécharger"
-                    >
-                      <Download className="h-4 w-4"/>
-                    </a>
+                    <button onClick={() => setSelectedBook(book)} className="flex-1 bg-primary-50 text-primary-900 py-2 rounded-lg text-sm font-bold hover:bg-primary-900 hover:text-white transition flex items-center justify-center gap-2"><BookOpen className="h-4 w-4" /> Lire</button>
+                    <a href={getSecureUrl(book.pdfUrl)} download target="_blank" rel="noreferrer" className="px-3 py-2 border border-gray-200 rounded-lg text-gray-400 hover:text-primary-600 transition"><Download className="h-4 w-4"/></a>
                   </div>
                 </div>
               </div>

@@ -1,283 +1,206 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../services/api'; // ✅ Instance sécurisée
 import AdminLayout from './AdminLayout';
 import CategoryManager from './CategoryManager';
-import { Trash2, Plus, Mic, Music, PlayCircle, Loader, User, Clock, CheckCircle } from 'lucide-react';
+import { Trash2, Plus, Mic, Music, PlayCircle, Loader, User, Clock, CheckCircle, Edit3, X, Save, Type } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function AdminPodcast() {
   const [podcasts, setPodcasts] = useState([]);
   const [isFormVisible, setIsFormVisible] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-  
-  // NOUVEAUX ÉTATS POUR LA PROGRESSION
   const [uploadProgress, setUploadProgress] = useState(0);
   const [uploadStep, setUploadStep] = useState('');
-
+  
   const [formData, setFormData] = useState({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
   const [audioFiles, setAudioFiles] = useState([]); 
   const [coverFile, setCoverFile] = useState(null); 
+  
+  // Modification
+  const [editingPod, setEditingPod] = useState(null);
+
+  const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-rose-500 focus:ring-4 focus:ring-rose-500/10 outline-none font-bold transition-all placeholder:text-gray-300";
 
   const fetchPodcasts = async () => {
     try {
-      const res = await axios.get('/api/podcasts');
-      setPodcasts(res.data);
-    } catch (err) { console.error(err); }
+      const res = await API.get('/api/podcasts');
+      setPodcasts(res.data || []);
+    } catch (err) { console.error("Erreur podcasts:", err); }
   };
 
   useEffect(() => { fetchPodcasts(); }, []);
 
+  const handleEdit = (pod) => {
+    setEditingPod(pod);
+    setFormData({ title: pod.title, speaker: pod.speaker, category: pod.category, duration: pod.duration || '' });
+    setIsFormVisible(true);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setEditingPod(null);
+    setFormData({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
+    setAudioFiles([]);
+    setCoverFile(null);
+    setIsFormVisible(false);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!formData.category) return alert("Sélectionnez une catégorie");
-    if (audioFiles.length === 0) return alert("Veuillez sélectionner au moins un fichier audio");
-
     setIsUploading(true);
-    setUploadProgress(0);
 
     try {
-      const token = localStorage.getItem('token'); 
+      if (editingPod) {
+        // MODIFICATION
+        await API.put(`/api/podcasts/${editingPod._id}`, formData);
+        alert("Audio mis à jour !");
+      } else {
+        // AJOUT MULTIPLE
+        if (audioFiles.length === 0) return alert("Sélectionnez au moins un fichier");
+        for (let i = 0; i < audioFiles.length; i++) {
+          setUploadStep(`Envoi ${i + 1}/${audioFiles.length}...`);
+          const data = new FormData();
+          data.append('title', formData.title || audioFiles[i].name.replace(/\.[^/.]+$/, ""));
+          data.append('speaker', formData.speaker);
+          data.append('category', formData.category);
+          data.append('duration', formData.duration);
+          data.append('audioFile', audioFiles[i]);
+          if (coverFile) data.append('coverImageFile', coverFile);
 
-      for (let i = 0; i < audioFiles.length; i++) {
-        const currentAudio = audioFiles[i];
-        
-        // Mise à jour de l'état pour l'utilisateur
-        setUploadStep(`Envoi de l'audio ${i + 1}/${audioFiles.length}...`);
-        
-        const data = new FormData();
-        
-        // LOGIQUE DU TITRE : Priorité au nom du fichier si le titre n'est pas saisi manuellement
-        const filenameClean = currentAudio.name.replace(/\.[^/.]+$/, ""); // Enlève l'extension (.mp3)
-        const podcastTitle = formData.title 
-            ? (audioFiles.length > 1 ? `${formData.title} ${i+1}` : formData.title)
-            : filenameClean;
-
-        data.append('title', podcastTitle);
-        data.append('speaker', formData.speaker);
-        data.append('category', formData.category);
-        data.append('duration', formData.duration);
-        data.append('audioFile', currentAudio); 
-        
-        if (coverFile) data.append('coverImageFile', coverFile);
-
-        await axios.post('/api/podcasts', data, {
-            headers: { Authorization: `Bearer ${token}` },
-            // BARRE DE PROGRESSION AXIOS
-            onUploadProgress: (progressEvent) => {
-                const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-                setUploadProgress(percentCompleted);
-                if (percentCompleted === 100) {
-                    setUploadStep(`Traitement final de l'audio ${i + 1}...`);
-                }
-            }
-        });
+          await API.post('/api/podcasts', data, {
+            onUploadProgress: (p) => setUploadProgress(Math.round((p.loaded * 100) / p.total))
+          });
+        }
+        alert("Enregistrement réussi !");
       }
-      
-      setUploadStep('Terminé !');
-      setTimeout(() => {
-          setIsUploading(false);
-          alert(`${audioFiles.length} podcast(s) ajouté(s) avec succès !`);
-          setFormData({ title: '', speaker: 'Serigne Mor Diop', category: '', duration: '' });
-          setAudioFiles([]);
-          setCoverFile(null);
-          setIsFormVisible(false);
-          fetchPodcasts();
-      }, 500);
-
-    } catch (error) { 
-      console.error(error);
-      setIsUploading(false);
-      alert("Erreur lors de l'upload : " + (error.response?.data?.error || error.message)); 
-    }
+      fetchPodcasts();
+      cancelEdit();
+    } catch (error) { alert("Erreur lors de l'upload."); } 
+    finally { setIsUploading(false); }
   };
 
   const handleDelete = async (id) => {
-      if(window.confirm("Voulez-vous vraiment supprimer cet audio ?")) {
+      if(window.confirm("Supprimer cet audio définitivement ?")) {
           try {
-             const token = localStorage.getItem('token');
-             await axios.delete(`/api/podcasts/${id}`, {
-                headers: { Authorization: `Bearer ${token}` }
-             });
+             await API.delete(`/api/podcasts/${id}`);
              setPodcasts(podcasts.filter(p => p._id !== id));
-          } catch (error) {
-             console.error(error);
-             alert("Erreur serveur lors de la suppression");
-          }
+          } catch (error) { alert("Erreur lors de la suppression."); }
       }
   };
 
   return (
     <AdminLayout>
-      <div className="flex justify-between items-center mb-8">
+      <div className="flex justify-between items-center mb-10 gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-800 font-serif">Gestion Podcasts</h1>
-          <p className="text-gray-500 text-sm mt-1">{podcasts.length} fichiers audio disponibles</p>
+          <h1 className="text-4xl font-serif font-bold text-gray-900 flex items-center gap-4">
+            <div className="p-3 bg-rose-500 rounded-2xl text-white shadow-lg"><Mic size={32} /></div>
+            Podcasts & Audios
+          </h1>
+          <p className="text-gray-500 mt-2 font-medium">{podcasts.length} fichiers audio disponibles.</p>
         </div>
-        <button 
-          onClick={() => setIsFormVisible(!isFormVisible)} 
-          className={`${isFormVisible ? 'bg-gray-500' : 'bg-rose-600 hover:bg-rose-700'} text-white px-6 py-3 rounded-xl font-bold shadow-lg transition flex items-center gap-2`}
-        >
-          {isFormVisible ? 'Fermer' : <><Plus size={20}/> Ajouter Audio(s)</>}
+        <button onClick={() => { setIsFormVisible(!isFormVisible); if(editingPod) cancelEdit(); }} className={`${isFormVisible ? 'bg-white text-gray-600 border border-gray-200' : 'bg-rose-600 text-white hover:bg-rose-700'} px-8 py-4 rounded-2xl font-bold shadow-xl transition flex items-center gap-2`}>
+          {isFormVisible ? <><X size={20}/> Annuler</> : <><Plus size={20}/> Ajouter Podcast</>}
         </button>
       </div>
 
+      <AnimatePresence>
       {isFormVisible && (
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mb-8 animate-fade-in-down relative overflow-hidden">
-          
-          {/* OVERLAY DE CHARGEMENT ÉLÉGANT */}
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="bg-white p-8 rounded-[2.5rem] shadow-2xl border border-gray-100 mb-12 relative overflow-hidden">
           {isUploading && (
-              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-6 text-center backdrop-blur-sm">
-                  <div className="w-full max-w-xs">
-                      <div className="mb-4 flex justify-center text-rose-600">
-                        <Loader className="animate-spin h-12 w-12"/>
-                      </div>
+              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center p-6 text-center backdrop-blur-md">
+                  <div className="w-80 p-8 bg-white rounded-3xl shadow-xl border border-gray-100">
+                      <Loader className="animate-spin h-12 w-12 text-rose-600 mx-auto mb-4"/>
                       <h3 className="text-lg font-bold text-gray-800 mb-2">{uploadStep}</h3>
-                      <div className="flex justify-between text-sm font-bold text-rose-700 mb-2">
-                          <span>Progression</span>
-                          <span>{uploadProgress}%</span>
+                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden mb-2">
+                          <div className="h-full bg-rose-600 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                       </div>
-                      <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden border border-gray-200">
-                          <div 
-                              className="h-full bg-rose-600 transition-all duration-300 ease-out"
-                              style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                      </div>
-                      <p className="text-xs text-gray-400 mt-4 italic">Le traitement peut prendre du temps selon la taille de l'audio.</p>
+                      <span className="font-black text-rose-600">{uploadProgress}%</span>
                   </div>
               </div>
           )}
-
-          <h2 className="text-xl font-bold mb-6 text-rose-800 flex items-center gap-2">
-            <div className="p-2 bg-rose-100 rounded-lg"><Mic size={24}/></div>
-            Ajouter des fichiers audio
+          
+          <h2 className="text-xl font-bold mb-8 text-rose-800 flex items-center gap-3">
+             <div className="p-2 bg-rose-100 rounded-xl text-rose-600">{editingPod ? <Edit3 size={24}/> : <Mic size={24}/>}</div>
+             {editingPod ? `Modification : ${editingPod.title}` : 'Publier de nouveaux audios'}
           </h2>
           
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-6">
               <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block">Titre (Optionnel)</label>
-                <input 
-                  type="text" 
-                  placeholder="Laisser vide pour utiliser le nom du fichier" 
-                  className="w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-rose-500 outline-none" 
-                  value={formData.title} 
-                  onChange={e => setFormData({...formData, title: e.target.value})} 
-                />
+                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Type size={12}/> Titre de l'audio</label>
+                <input type="text" placeholder="Laisser vide pour utiliser le nom du fichier" className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
               </div>
-
-              <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block flex items-center gap-1"><User size={14}/> Conférencier</label>
-                <input 
-                  type="text" 
-                  className="w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-rose-500 outline-none" 
-                  value={formData.speaker} 
-                  onChange={e => setFormData({...formData, speaker: e.target.value})} 
-                />
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><User size={12}/> Orateur</label>
+                  <input type="text" className={inputStyle} value={formData.speaker} onChange={e => setFormData({...formData, speaker: e.target.value})} />
+                </div>
+                <div>
+                  <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2"><Clock size={12}/> Durée (Optionnel)</label>
+                  <input type="text" placeholder="Ex: 45:00" className={inputStyle} value={formData.duration} onChange={e => setFormData({...formData, duration: e.target.value})} />
+                </div>
               </div>
-
-              <CategoryManager 
-                type="podcast" 
-                selectedCategory={formData.category} 
-                onSelectCategory={(cat) => setFormData({...formData, category: cat})} 
-              />
-              
-              <div>
-                <label className="text-sm font-bold text-gray-700 mb-1 block flex items-center gap-1"><Clock size={14}/> Durée (Optionnel)</label>
-                <input 
-                  type="text" 
-                  placeholder="Ex: 45:00" 
-                  className="w-full p-3 bg-gray-50 border rounded-xl focus:ring-2 focus:ring-rose-500 outline-none" 
-                  value={formData.duration} 
-                  onChange={e => setFormData({...formData, duration: e.target.value})} 
-                />
-              </div>
+              <CategoryManager type="podcast" selectedCategory={formData.category} onSelectCategory={(cat) => setFormData({...formData, category: cat})} />
             </div>
 
-            <div className="space-y-4 flex flex-col h-full">
-               <div className={`p-4 border-2 border-dashed rounded-xl flex-1 flex flex-col justify-center transition ${audioFiles.length > 0 ? 'border-rose-500 bg-rose-50' : 'border-rose-200 bg-rose-50'}`}>
-                 <label className="text-xs font-bold text-rose-700 uppercase mb-2 block text-center cursor-pointer">
-                    {audioFiles.length > 0 ? `${audioFiles.length} fichier(s) prêt(s)` : "Sélectionner Fichiers Audio (MP3)"}
-                 </label>
-                 <input 
-                   id="audioInput"
-                   type="file" 
-                   multiple 
-                   accept="audio/*" 
-                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-white file:text-rose-700 file:shadow-sm cursor-pointer" 
-                   onChange={(e) => setAudioFiles(e.target.files)} 
-                   required 
-                 />
-                 {audioFiles.length > 0 && (
-                    <div className="mt-2 text-center text-xs text-rose-600 font-medium italic">
-                        {Array.from(audioFiles).slice(0, 2).map(f => f.name).join(', ')}
-                        {audioFiles.length > 2 && ` + ${audioFiles.length - 2} autres`}
-                    </div>
-                 )}
+            <div className="space-y-6">
+               {!editingPod && (
+                  <div className="p-6 border-2 border-dashed border-rose-200 rounded-2xl bg-rose-50/30 hover:border-rose-400 transition-colors relative group">
+                    <label className="text-xs font-bold text-rose-700 mb-2 block text-center cursor-pointer">{audioFiles.length > 0 ? `${audioFiles.length} fichier(s) sélectionné(s)` : "Sélectionner Fichiers Audio (MP3)"}</label>
+                    <input id="audioInput" type="file" multiple accept="audio/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setAudioFiles(e.target.files)} required />
+                  </div>
+               )}
+               <div className="p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/30 hover:border-gray-400 transition-colors relative group">
+                 <label className="text-xs font-bold text-gray-500 mb-2 block text-center">🖼️ Image de Couverture (Optionnel)</label>
+                 <input id="coverInput" type="file" accept="image/*" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onChange={(e) => setCoverFile(e.target.files[0])} />
                </div>
-
-               <div className="p-4 border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl">
-                 <label className="text-xs font-bold text-gray-500 uppercase mb-2 block text-center">Couverture (Optionnel)</label>
-                 <input 
-                   id="coverInput"
-                   type="file" 
-                   accept="image/*" 
-                   className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:bg-white file:text-gray-700 file:shadow-sm cursor-pointer" 
-                   onChange={(e) => setCoverFile(e.target.files[0])} 
-                 />
-               </div>
-
-               <button 
-                 type="submit" 
-                 disabled={isUploading}
-                 className={`w-full text-white py-4 rounded-xl font-bold transition shadow-md flex items-center justify-center gap-2 ${isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-rose-600 hover:bg-rose-700 hover:shadow-lg'}`}
-               >
-                 {isUploading ? <Loader size={20} className="animate-spin"/> : <Music size={20}/>}
-                 {isUploading ? 'Traitement...' : 'Démarrer l\'ajout'}
+               <button type="submit" disabled={isUploading} className="w-full py-5 bg-rose-600 text-white font-black text-xs uppercase tracking-widest rounded-2xl hover:bg-rose-700 transition-all shadow-xl transform active:scale-95">
+                 {isUploading ? 'Traitement...' : editingPod ? 'Sauvegarder les modifications' : 'Démarrer la publication'}
                </button>
             </div>
           </form>
-        </div>
+        </motion.div>
       )}
+      </AnimatePresence>
 
-      {/* LISTE DES AUDIOS */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-100">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Titre de l'audio</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Catégorie</th>
-              <th className="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase">Auteur</th>
-              <th className="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase">Action</th>
+      <div className="bg-white rounded-[2.5rem] shadow-lg border border-gray-100 overflow-hidden mb-20">
+        <table className="w-full text-left border-collapse">
+          <thead>
+            <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
+              <th className="px-8 py-5">Titre de l'audio</th>
+              <th className="px-8 py-5">Orateur / Catégorie</th>
+              <th className="px-8 py-5 text-right">Actions</th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-50">
             {podcasts.map((pod) => (
-              <tr key={pod._id} className="hover:bg-gray-50 transition group">
-                <td className="px-6 py-4">
-                  <div className="flex items-center">
-                    <div className="h-10 w-10 bg-rose-100 rounded-lg flex items-center justify-center text-rose-600 mr-3 overflow-hidden shadow-sm border border-rose-200">
-                      {pod.coverImage ? <img src={pod.coverImage} className="w-full h-full object-cover" alt="cover"/> : <Music size={20} />}
+              <tr key={pod._id} className="group hover:bg-rose-50/30 transition-colors">
+                <td className="px-8 py-5">
+                  <div className="flex items-center gap-4">
+                    <div className="h-14 w-14 bg-rose-100 rounded-2xl flex items-center justify-center text-rose-600 shrink-0 overflow-hidden shadow-inner border border-rose-100">
+                      {pod.coverImage ? <img src={pod.coverImage} className="w-full h-full object-cover" alt=""/> : <Music size={24} />}
                     </div>
                     <div>
-                      <span className="font-bold text-gray-900 text-sm block max-w-[200px] truncate" title={pod.title}>{pod.title}</span>
-                      <span className="text-xs text-gray-400">{pod.duration ? `${pod.duration} min` : 'Audio'}</span>
+                      <span className="font-bold text-gray-900 block truncate max-w-[250px]">{pod.title}</span>
+                      <span className="text-[10px] font-bold text-rose-400 uppercase tracking-widest">{pod.duration ? `${pod.duration} min` : 'Format Audio'}</span>
                     </div>
                   </div>
                 </td>
-                <td className="px-6 py-4"><span className="px-3 py-1 text-xs font-bold rounded-full bg-rose-50 text-rose-700 border border-rose-100">{pod.category}</span></td>
-                <td className="px-6 py-4 text-sm text-gray-500 font-medium">{pod.speaker}</td>
-                <td className="px-6 py-4 text-right">
-                    <div className="flex items-center justify-end gap-2">
-                      <a href={pod.audioUrl} target="_blank" rel="noopener noreferrer" className="p-2 text-gray-400 hover:text-rose-600 hover:bg-rose-50 rounded-full transition"><PlayCircle size={20}/></a>
-                      <button onClick={() => handleDelete(pod._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition"><Trash2 size={18}/></button>
-                    </div>
+                <td className="px-8 py-5">
+                   <p className="text-sm font-bold text-gray-700">{pod.speaker}</p>
+                   <p className="text-[10px] font-black text-gray-400 uppercase tracking-tighter italic">{pod.category}</p>
+                </td>
+                <td className="px-8 py-5 text-right space-x-2">
+                    <a href={pod.audioUrl} target="_blank" rel="noopener noreferrer" className="inline-flex p-3 text-rose-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-rose-100 transition-all"><PlayCircle size={20}/></a>
+                    <button onClick={() => handleEdit(pod)} className="p-3 text-primary-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-primary-100 transition-all"><Edit3 size={20}/></button>
+                    <button onClick={() => handleDelete(pod._id)} className="p-3 text-red-400 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 transition-all"><Trash2 size={20}/></button>
                 </td>
               </tr>
             ))}
           </tbody>
         </table>
-        {podcasts.length === 0 && (
-          <div className="p-12 text-center text-gray-400">Aucun fichier audio trouvé.</div>
-        )}
+        {podcasts.length === 0 && <div className="p-20 text-center text-gray-300 italic font-medium">Aucun podcast disponible.</div>}
       </div>
     </AdminLayout>
   );

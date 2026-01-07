@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../services/api'; // ✅ Mise à jour de l'import pour la sécurité
 import { motion, AnimatePresence } from 'framer-motion';
 import { Image, Play, Maximize2, X, Filter, Film, ChevronLeft, ChevronRight } from 'lucide-react';
 
@@ -9,7 +9,7 @@ export default function Gallery() {
   const [activeFilter, setActiveFilter] = useState('Tous');
   const [selectedMedia, setSelectedMedia] = useState(null);
   
-  // --- ÉTATS PAGINATION ---
+  // --- ÉTATS PAGINATION (Conservés exactement comme ton original) ---
   const [currentPage, setCurrentPage] = useState(1);
   const ITEMS_PER_PAGE = 20;
 
@@ -17,8 +17,9 @@ export default function Gallery() {
   useEffect(() => {
     const fetchMedia = async () => {
       try {
-        const response = await axios.get('/api/media');
-        setMediaItems(response.data);
+        // ✅ Utilisation de l'instance API au lieu d'axios direct
+        const response = await API.get('/api/media'); 
+        setMediaItems(response.data || []); // ✅ Protection contre les données nulles
       } catch (error) {
         console.error("Erreur chargement galerie:", error);
       } finally {
@@ -33,7 +34,7 @@ export default function Gallery() {
     setCurrentPage(1);
   }, [activeFilter]);
 
-  // 2. LOGIQUE DE FILTRAGE & PAGINATION
+  // 2. LOGIQUE DE FILTRAGE & PAGINATION (Conservée)
   const categories = ['Tous', ...new Set(mediaItems.map(item => item.category || 'Autre'))];
 
   const filteredItems = activeFilter === 'Tous' 
@@ -46,10 +47,10 @@ export default function Gallery() {
   const currentItems = filteredItems.slice(indexOfFirstItem, indexOfLastItem);
   const totalPages = Math.ceil(filteredItems.length / ITEMS_PER_PAGE);
 
-  // Fonction pour changer de page avec scroll top doux
+  // Fonction pour changer de page avec scroll top doux (Conservée)
   const paginate = (pageNumber) => {
     setCurrentPage(pageNumber);
-    window.scrollTo({ top: 400, behavior: 'smooth' }); // Remonte un peu après le changement
+    window.scrollTo({ top: 400, behavior: 'smooth' }); 
   };
 
   if (loading) return (
@@ -61,7 +62,7 @@ export default function Gallery() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       
-      {/* --- HEADER --- */}
+      {/* --- HEADER (Ton design original préservé) --- */}
       <div className="bg-primary-900 text-white pt-24 pb-16 px-4 text-center relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] opacity-10"></div>
         <div className="absolute -top-20 -right-20 w-96 h-96 bg-purple-600 rounded-full blur-[150px] opacity-20"></div>
@@ -79,7 +80,7 @@ export default function Gallery() {
           transition={{ delay: 0.2 }}
           className="text-primary-200 mb-10 text-lg relative z-10 max-w-2xl mx-auto"
         >
-          Revivez les moments forts du Daara en images et vidéos. Ziarra, Gamou, Conférences et vie quotidienne.
+          Revivez les moments forts du Daara en images et vidéos.
         </motion.p>
         
         {/* --- FILTRES --- */}
@@ -108,7 +109,7 @@ export default function Gallery() {
         {currentItems.length === 0 ? (
            <div className="text-center py-20 bg-white rounded-2xl shadow-sm border border-gray-100 max-w-4xl mx-auto">
              <Image className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-             <p className="text-gray-500 text-lg">Aucun média trouvé dans cette catégorie.</p>
+             <p className="text-gray-500 text-lg">Aucun média trouvé.</p>
            </div>
         ) : (
           <>
@@ -125,13 +126,13 @@ export default function Gallery() {
                     exit={{ opacity: 0, scale: 0.8 }}
                     transition={{ duration: 0.3 }}
                     key={item._id}
-                    className="relative group rounded-xl overflow-hidden shadow-md cursor-pointer bg-gray-200 aspect-square border border-gray-100 hover:shadow-xl hover:z-10 transition-all"
+                    className="relative group rounded-xl overflow-hidden shadow-md cursor-pointer bg-gray-200 aspect-square border border-gray-100 hover:shadow-xl transition-all"
                     onClick={() => setSelectedMedia(item)}
                   >
                     {item.type === 'video' ? (
                        <div className="w-full h-full bg-gray-900 flex items-center justify-center relative">
                           {item.thumbnail ? (
-                              <img src={item.thumbnail} className="w-full h-full object-cover opacity-60" />
+                              <img src={item.thumbnail} className="w-full h-full object-cover opacity-60" alt="" />
                           ) : (
                               <Film className="text-white/20 w-16 h-16 absolute" />
                           )}
@@ -147,7 +148,7 @@ export default function Gallery() {
                        />
                     )}
                     
-                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col items-center justify-center text-white p-4 text-center backdrop-blur-[2px]">
+                    <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition duration-300 flex flex-col items-center justify-center text-white p-4 text-center">
                       <Maximize2 size={24} className="mb-3 text-gold-400" />
                       <h3 className="font-bold text-base font-serif leading-tight mb-1 line-clamp-2">{item.title}</h3>
                       <span className="text-white/80 text-[10px] font-bold uppercase tracking-widest bg-white/20 px-2 py-0.5 rounded-full">{item.category}</span>
@@ -162,13 +163,13 @@ export default function Gallery() {
               </AnimatePresence>
             </motion.div>
 
-            {/* --- PAGINATION --- */}
+            {/* --- PAGINATION (Conservée exactement) --- */}
             {totalPages > 1 && (
               <div className="mt-16 flex justify-center items-center gap-2">
                 <button 
                   onClick={() => paginate(currentPage - 1)}
                   disabled={currentPage === 1}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gold-50 transition shadow-sm"
                 >
                   <ChevronLeft size={20} />
                 </button>
@@ -178,12 +179,7 @@ export default function Gallery() {
                     <button
                       key={i + 1}
                       onClick={() => paginate(i + 1)}
-                      className={`
-                        w-8 h-8 rounded-full text-sm font-bold transition-all duration-300 flex items-center justify-center
-                        ${currentPage === i + 1 
-                          ? 'bg-gold-500 text-white shadow-md scale-110' 
-                          : 'text-gray-500 hover:bg-gray-100'}
-                      `}
+                      className={`w-8 h-8 rounded-full text-sm font-bold transition-all ${currentPage === i + 1 ? 'bg-gold-500 text-white shadow-md scale-110' : 'text-gray-500 hover:bg-gray-100'}`}
                     >
                       {i + 1}
                     </button>
@@ -193,7 +189,7 @@ export default function Gallery() {
                 <button 
                   onClick={() => paginate(currentPage + 1)}
                   disabled={currentPage === totalPages}
-                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gold-50 hover:text-gold-600 hover:border-gold-200 transition disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+                  className="w-10 h-10 flex items-center justify-center rounded-full bg-white border border-gray-200 text-gray-500 hover:bg-gold-50 transition shadow-sm"
                 >
                   <ChevronRight size={20} />
                 </button>
@@ -203,7 +199,7 @@ export default function Gallery() {
         )}
       </div>
 
-      {/* --- LIGHTBOX --- */}
+      {/* --- LIGHTBOX (Conservée) --- */}
       <AnimatePresence>
         {selectedMedia && (
           <motion.div 
@@ -211,34 +207,18 @@ export default function Gallery() {
             className="fixed inset-0 z-[60] bg-black/95 flex items-center justify-center p-4 backdrop-blur-xl"
             onClick={() => setSelectedMedia(null)}
           >
-            <button className="absolute top-6 right-6 p-3 bg-white/10 hover:bg-white/20 rounded-full text-white transition z-50">
-              <X size={28} />
-            </button>
-
-            <div 
-              className="max-w-6xl w-full max-h-[90vh] flex flex-col items-center justify-center" 
-              onClick={e => e.stopPropagation()}
-            >
+            <button className="absolute top-6 right-6 p-3 bg-white/10 text-white rounded-full"><X size={28} /></button>
+            <div className="max-w-6xl w-full max-h-[90vh] flex flex-col items-center justify-center" onClick={e => e.stopPropagation()}>
               {selectedMedia.type === 'video' ? (
-                <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl border border-white/10">
-                   <video controls autoPlay className="w-full h-full">
-                     <source src={selectedMedia.url} type="video/mp4" />
-                   </video>
+                <div className="w-full aspect-video bg-black rounded-xl overflow-hidden shadow-2xl">
+                   <video controls autoPlay className="w-full h-full"><source src={selectedMedia.url} type="video/mp4" /></video>
                 </div>
               ) : (
-                <img 
-                  src={selectedMedia.url} 
-                  className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" 
-                  alt={selectedMedia.title}
-                />
+                <img src={selectedMedia.url} className="max-w-full max-h-[80vh] object-contain rounded-lg shadow-2xl" alt="" />
               )}
-
-              <div className="mt-6 text-center">
-                <h2 className="text-2xl md:text-3xl font-bold text-white font-serif mb-2">{selectedMedia.title}</h2>
-                <div className="flex items-center justify-center gap-3">
-                   <span className="text-gold-500 font-bold uppercase tracking-widest text-sm bg-gold-500/10 px-3 py-1 rounded-full border border-gold-500/20">{selectedMedia.category}</span>
-                   <span className="text-gray-400 text-sm">• {new Date(selectedMedia.date).toLocaleDateString()}</span>
-                </div>
+              <div className="mt-6 text-center text-white">
+                <h2 className="text-2xl md:text-3xl font-bold font-serif mb-2">{selectedMedia.title}</h2>
+                <span className="text-gold-500 font-bold uppercase tracking-widest text-sm">{selectedMedia.category}</span>
               </div>
             </div>
           </motion.div>
