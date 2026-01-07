@@ -6,7 +6,7 @@ import { User, Lock, Eye, EyeOff, Loader, ArrowLeft } from 'lucide-react';
 
 // --- IMPORTS SÉCURITÉ & CONTEXTE ---
 import { secureStorage } from '../../utils/security';
-import { useAuth } from '../../context/AuthContext'; // ✅ CRUCIAL
+import { useAuth } from '../../context/AuthContext'; 
 
 // --- IMPORTS CAPACITOR & FIREBASE ---
 import { Capacitor } from '@capacitor/core';
@@ -19,12 +19,22 @@ const API_URL = "https://api.daaraserignemordiop.com";
 export default function LoginPublic() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { loginUser } = useAuth(); // ✅ On récupère la fonction du contexte
+  const { token, loginUser } = useAuth(); // ✅ Récupération du token et de la fonction login
   
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // --- 🛡️ LE FIX DE REDIRECTION (EFFET RÉACTIF) ---
+  // Dès que le token change (devient valide), on redirige
+  useEffect(() => {
+    if (token) {
+      console.log("✅ Token détecté dans le contexte, redirection...");
+      const origin = location.state?.from || '/profil';
+      navigate(origin, { replace: true });
+    }
+  }, [token, navigate, location]);
 
   // 1. Initialisation GoogleAuth pour le Web
   useEffect(() => {
@@ -68,12 +78,8 @@ export default function LoginPublic() {
       const res = await axios.post(`${API_URL}${endpoint}`, { token: idToken });
 
       if (res.data && res.data.token) {
-        // ✅ ON UTILISE LE CONTEXTE (Met à jour le State + Storage)
+        // ✅ On appelle loginUser. Le useEffect ci-dessus détectera le changement.
         loginUser(res.data); 
-
-        // ✅ REDIRECTION IMMÉDIATE
-        const origin = location.state?.from || '/profil';
-        navigate(origin, { replace: true });
       }
     } catch (err) {
       console.error("Erreur Google Login:", err);
@@ -93,12 +99,8 @@ export default function LoginPublic() {
       const res = await axios.post(`${API_URL}/api/auth/login`, formData);
 
       if (res.data && res.data.token) {
-        // ✅ ON UTILISE LE CONTEXTE
+        // ✅ On met à jour l'état global. La redirection est gérée par le useEffect.
         loginUser(res.data);
-
-        // ✅ REDIRECTION IMMÉDIATE
-        const origin = location.state?.from || '/profil';
-        navigate(origin, { replace: true });
       }
     } catch (err) {
       setError(err.response?.data?.error || "Identifiant ou mot de passe incorrect.");

@@ -14,25 +14,25 @@ export const secureStorage = {
   },
 
   getItem: (key) => {
-    const data = localStorage.getItem(key);
-    if (!data) return null;
+  const data = localStorage.getItem(key);
+  if (!data) return null;
+  try {
+    const bytes = CryptoJS.AES.decrypt(data, SECRET_KEY);
+    const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    
+    // ✅ Si le déchiffrement échoue ou est vide
+    if (!decrypted) return null;
 
+    // ✅ On n'utilise JSON.parse QUE si c'est un objet (comme les infos user)
+    // Si c'est le token (qui commence par "eyJ"), on le renvoie tel quel
     try {
-      const bytes = CryptoJS.AES.decrypt(data, SECRET_KEY);
-      const decryptedString = bytes.toString(CryptoJS.enc.Utf8);
-
-      if (!decryptedString) {
-        console.warn(`⚠️ Impossible de déchiffrer la clé : ${key}. La clé secrète a peut-être changé.`);
-        return null;
-      }
-
-      return JSON.parse(decryptedString);
+      return JSON.parse(decrypted);
     } catch (e) {
-      // Si ce n'est pas du JSON ou si le déchiffrement échoue
-      console.error(`❌ Erreur de lecture pour ${key}:`, e.message);
-      return null;
+      return decrypted; // C'est le token brut
     }
-  },
-
+  } catch (e) { 
+    return null; 
+  }
+},
   removeItem: (key) => localStorage.removeItem(key)
 };

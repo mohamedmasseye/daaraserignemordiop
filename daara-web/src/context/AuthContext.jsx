@@ -4,43 +4,33 @@ import { secureStorage } from '../utils/security';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(secureStorage.getItem('_d_usr_info'));
-    const [token, setToken] = useState(secureStorage.getItem('_d_usr_vault'));
-    const [adminToken, setAdminToken] = useState(secureStorage.getItem('_d_adm_vault'));
-    const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState(null);
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        // Initialisation au démarrage
-        const t = secureStorage.getItem('_d_usr_vault');
-        const a = secureStorage.getItem('_d_adm_vault');
-        const u = secureStorage.getItem('_d_usr_info');
-        setToken(t);
-        setAdminToken(a);
-        setUser(u);
-        setLoading(false);
-    }, []);
+  useEffect(() => {
+    // Lecture initiale au chargement de l'app
+    const savedToken = secureStorage.getItem('_d_usr_vault');
+    const savedUser = secureStorage.getItem('_d_usr_info');
+    if (savedToken) setToken(savedToken);
+    if (savedUser) setUser(savedUser);
+    setLoading(false);
+  }, []);
 
-    const loginUser = (userData) => {
-        secureStorage.setItem('_d_usr_vault', userData.token);
-        secureStorage.setItem('_d_usr_info', userData.user);
-        localStorage.removeItem('_d_adm_vault');
-        setToken(userData.token);
-        setUser(userData.user);
-        setAdminToken(null);
-    };
+  const loginUser = (userData) => {
+    // 1. On stocke d'abord
+    secureStorage.setItem('_d_usr_vault', userData.token);
+    secureStorage.setItem('_d_usr_info', userData.user);
+    // 2. On met à jour l'état React (déclenche le re-render)
+    setToken(userData.token);
+    setUser(userData.user);
+  };
 
-    const logout = () => {
-        secureStorage.removeItem('_d_usr_vault');
-        secureStorage.removeItem('_d_usr_info');
-        setToken(null);
-        setUser(null);
-    };
-
-    return (
-        <AuthContext.Provider value={{ user, token, adminToken, loading, loginUser, logout, setAdminToken }}>
-            {children}
-        </AuthContext.Provider>
-    );
+  return (
+    <AuthContext.Provider value={{ token, user, loading, loginUser }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);
