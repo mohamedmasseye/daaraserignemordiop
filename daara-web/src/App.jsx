@@ -169,23 +169,39 @@ function App() {
     }
   }, []);
 
-  // ✅ LOGIQUE DE REDIRECTION FORCEE (SÉCURITÉ IPHONE)
+  // ✅ 4. CONTROLEUR DE ROUTAGE ÉLITE (SÉCURITÉ IPHONE & NOTIFICATIONS)
   useEffect(() => {
-    // A. Écoute les messages directs du Service Worker
+    // A. Écoute les messages de navigation forcée du Service Worker
     if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.addEventListener('message', (event) => {
+      const handleSWMessage = (event) => {
         if (event.data && event.data.url) {
+          console.log("🚀 Redirection forcée par le SW vers:", event.data.url);
           window.location.href = event.data.url;
         }
-      });
+      };
+      navigator.serviceWorker.addEventListener('message', handleSWMessage);
     }
 
-    // B. Vérifie l'URL au démarrage (Si iOS force l'ouverture sur Home avec un ?id=)
-    const params = new URLSearchParams(window.location.search);
-    const eventId = params.get('id');
-    if (eventId && !window.location.pathname.includes('/evenements')) {
-      window.location.href = `/evenements?id=${eventId}`;
-    }
+    // B. Vérifie l'URL (Démarrage + Retour au premier plan)
+    const handleCheckRouting = () => {
+      const params = new URLSearchParams(window.location.search);
+      const eventId = params.get('id');
+      // Si on a un ID et qu'on n'est pas déjà sur le modal (pour éviter les boucles)
+      if (eventId && !window.location.pathname.includes('/evenements')) {
+        console.log("🎯 ID détecté au Focus/Démarrage. Redirection...");
+        window.location.href = `/evenements?id=${eventId}`;
+      }
+    };
+
+    // Exécution immédiate au montage
+    handleCheckRouting();
+
+    // Écoute de l'événement 'focus' : Crucial pour iOS quand l'app sort de veille après un clic
+    window.addEventListener('focus', handleCheckRouting);
+    
+    return () => {
+      window.removeEventListener('focus', handleCheckRouting);
+    };
   }, []);
 
   return (

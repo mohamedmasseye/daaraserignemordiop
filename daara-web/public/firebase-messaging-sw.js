@@ -34,23 +34,28 @@ messaging.onBackgroundMessage((payload) => {
 
 // public/firebase-messaging-sw.js
 
+// public/firebase-messaging-sw.js
+
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const targetUrl = event.notification.data?.url || 'https://app.daaraserignemordiop.com/evenements';
+  const targetUrl = event.notification.data?.url || '/evenements';
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // 1. Si l'app est déjà ouverte
+      // 1. Essayer de trouver une fenêtre ouverte et la rediriger
       for (let client of windowClients) {
         if ('focus' in client) {
           client.focus();
-          // On envoie un message interne à React au cas où la navigation échouerait
-          client.postMessage({ type: 'FORCE_REDIRECT', url: targetUrl });
-          return client.navigate(targetUrl);
+          // On envoie un message direct à l'instance active
+          client.postMessage({ type: 'NAVIGATE', url: targetUrl });
+          return;
         }
       }
-      // 2. Si l'app est fermée
-      if (clients.openWindow) return clients.openWindow(targetUrl);
+      // 2. Si aucune fenêtre, ouvrir la PWA (iOS forcera souvent /)
+      // Mais on ajoute l'URL à l'ouverture pour les navigateurs qui l'acceptent
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
     })
   );
 });
