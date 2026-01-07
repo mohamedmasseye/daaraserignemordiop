@@ -24,7 +24,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const messaging = getMessaging(firebaseApp);
 
-// --- IMPORTS COMPOSANTS PUBLICS ---
+// --- IMPORTS COMPOSANTS ---
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -32,23 +32,15 @@ import Books from './components/Books';
 import Events from './components/Events'; 
 import Contact from './components/Contact';
 import Donate from './components/Donate';
-
-// --- IMPORTS BOUTIQUE ---
 import ShopHome from './components/shop/ShopHome';
 import Checkout from './components/shop/Checkout';
 import ProductDetails from './components/shop/ProductDetails';
-
-// --- IMPORTS MÉDIATHÈQUE ---
 import Blog from './components/Blog';
 import Gallery from './components/Gallery';
 import Podcast from './components/Podcast';
-
-// --- IMPORTS AUTHENTIFICATION ---
 import Register from './components/auth/Register';
 import LoginPublic from './components/auth/LoginPublic';
 import Profile from './components/auth/Profile';
-
-// --- IMPORTS ADMINISTRATION ---
 import LoginAdmin from './components/admin/Login';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminBooks from './components/admin/AdminBooks';
@@ -63,7 +55,6 @@ import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
 
-// --- PROTECTION DES ROUTES ---
 const PublicProtectedRoute = ({ children }) => {
   const token = localStorage.getItem('token'); 
   return token ? children : <Navigate to="/login-public" replace />;
@@ -74,7 +65,6 @@ const AdminProtectedRoute = ({ children }) => {
   return token ? children : <Navigate to="/admin-login" replace />;
 };
 
-// --- LAYOUT PUBLIC ---
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
     <Navbar />
@@ -85,7 +75,6 @@ const PublicLayout = ({ children }) => (
 
 function App() {
 
-  // --- 1. INITIALISATION GOOGLE ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
@@ -96,59 +85,45 @@ function App() {
     }
   }, []);
 
-  // --- 2. LOGIQUE DE NOTIFICATION PUSH (CORRIGÉE POUR APK) ---
+  // --- 2. LOGIQUE DE NOTIFICATION PUSH (APK & MOBILE NATIVE) ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       
-      // A. On prépare les écouteurs AVANT d'enregistrer
-      PushNotifications.addListener('registration', (token) => {
-        console.log('✅ APK : Device Token récupéré :', token.value);
-        // On s'abonne au topic global via le plugin FCM
-        FCM.subscribeTo({ topic: 'all_users' })
-          .then(() => console.log('✅ APK : Abonné au topic "all_users"'))
-          .catch(err => console.error('❌ APK : Erreur topic:', err));
-      });
-
-      PushNotifications.addListener('registrationError', (error) => {
-        console.error('❌ APK : Erreur enregistrement:', error);
-      });
-
-      PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        alert(`🔔 ${notification.title}\n${notification.body}`);
-      });
-
-      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        const url = action.notification.data?.url;
-        if (url) {
-          console.log("🚀 APK : Clic détecté, redirection vers:", url);
-          window.location.href = url;
-        }
-      });
-
-      // B. On vérifie et demande les permissions, puis on enregistre
       const setupPush = async () => {
+        // Nettoyage des anciens écouteurs
+        await PushNotifications.removeAllListeners();
+
+        // Écouteur d'enregistrement du Token
+        await PushNotifications.addListener('registration', (token) => {
+          FCM.subscribeTo({ topic: 'all_users' })
+            .then(() => console.log('✅ APK : Abonné au topic'))
+            .catch(err => console.error('❌ APK : Erreur topic', err));
+        });
+
+        // Écouteur de clic (Redirection APK)
+        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          const url = action.notification.data?.url;
+          if (url) {
+            window.location.href = url;
+          }
+        });
+
+        // Demander les permissions
         let permStatus = await PushNotifications.checkPermissions();
-        
         if (permStatus.receive === 'prompt') {
           permStatus = await PushNotifications.requestPermissions();
         }
 
         if (permStatus.receive === 'granted') {
           await PushNotifications.register();
-        } else {
-          console.warn("⚠️ APK : Permissions de notifications refusées");
         }
       };
 
       setupPush();
-
-      return () => {
-        PushNotifications.removeAllListeners();
-      };
     }
   }, []);
 
-  // --- 3. LOGIQUE DE NOTIFICATION PWA (WEB/IPHONE) ---
+  // --- 3. LOGIQUE DE NOTIFICATION PWA (IPHONE/WEB) ---
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       const initWebPush = async () => {
@@ -160,9 +135,8 @@ function App() {
               serviceWorkerRegistration: registration,
               vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
             });
-            if (token) console.log('✅ Web : Token FCM récupéré :', token);
           }
-        } catch (err) { console.error('❌ Erreur Web Push:', err); }
+        } catch (err) {}
       };
 
       const unsubscribeOnMessage = onMessage(messaging, (payload) => {
@@ -176,15 +150,14 @@ function App() {
     }
   }, []);
 
-  // ✅ 4. CONTROLEUR DE ROUTAGE GLOBAL
+  // ✅ 4. CONTROLEUR DE ROUTAGE GLOBAL (SÉCURITÉ REDIRECTION)
   useEffect(() => {
     if ('serviceWorker' in navigator) {
-      const handleSWMessage = (event) => {
+      navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data && event.data.url) {
           window.location.href = event.data.url;
         }
-      };
-      navigator.serviceWorker.addEventListener('message', handleSWMessage);
+      });
     }
 
     const handleCheckRouting = () => {
