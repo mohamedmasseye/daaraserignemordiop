@@ -170,6 +170,16 @@ function App() {
     }
   }, []);
 
+  useEffect(() => {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.addEventListener('message', (event) => {
+      if (event.data && event.data.type === 'REDIRECT' && event.data.url) {
+        window.location.href = event.data.url;
+      }
+    });
+  }
+  }, []);
+
   return (
     <Router>
       <Routes>

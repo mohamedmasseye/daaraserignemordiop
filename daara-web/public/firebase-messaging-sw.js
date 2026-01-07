@@ -35,27 +35,23 @@ messaging.onBackgroundMessage((payload) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
 
-  // 1. On récupère l'URL envoyée (ex: /evenements?id=695d...)
-  const urlPath = event.notification.data?.url || '/evenements';
-  
-  // 2. On crée une URL absolue (Obligatoire pour iOS)
-  const fullTargetUrl = new URL(urlPath, self.location.origin).href;
+  // On récupère l'URL (ex: /evenements?id=695d...)
+  const targetPath = event.notification.data?.url || '/evenements';
+  const targetUrl = new URL(targetPath, self.location.origin).href;
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
-      // Si une fenêtre est déjà ouverte (même sur l'accueil)
+      // 1. On cherche si l'app est déjà ouverte
       for (let client of windowClients) {
         if ('focus' in client) {
           client.focus();
-          // On force la navigation vers la page précise avec l'ID
-          if ('navigate' in client) {
-            return client.navigate(fullTargetUrl);
-          }
+          // Force la navigation même si l'app est déjà sur le Home
+          return client.navigate(targetUrl);
         }
       }
-      // Si l'application était fermée
+      // 2. Si l'app est fermée, on l'ouvre directement sur l'URL de l'événement
       if (clients.openWindow) {
-        return clients.openWindow(fullTargetUrl);
+        return clients.openWindow(targetUrl);
       }
     })
   );
