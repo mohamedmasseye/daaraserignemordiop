@@ -1,9 +1,11 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
-import { secureStorage } from '../../utils/security';
+
+// --- IMPORTS SÉCURITÉ & CONTEXTE ---
+import API from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 // --- IMPORTS CAPACITOR & FIREBASE ---
 import { Capacitor } from '@capacitor/core';
@@ -13,9 +15,18 @@ import { auth, googleProvider } from "../../firebase";
 
 export default function Register() {
   const navigate = useNavigate();
+  const { loginUser, token } = useAuth(); // ✅ Utilisation du contexte
+  
   const [formData, setFormData] = useState({ fullName: '', identifier: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+
+  // 🛡️ REDIRECTION RÉACTIVE : Si on est connecté, on part vers le profil
+  useEffect(() => {
+    if (token) {
+      navigate('/profil', { replace: true });
+    }
+  }, [token, navigate]);
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -35,13 +46,12 @@ export default function Register() {
         idToken = await result.user.getIdToken();
       }
 
-      // Le backend gère l'inscription si l'utilisateur n'existe pas encore
       const endpoint = Capacitor.isNativePlatform() ? '/api/auth/google-mobile' : '/api/auth/google';
-      const res = await axios.post(endpoint, { token: idToken });
+      const res = await API.post(endpoint, { token: idToken });
 
-      secureStorage.setItem('_d_usr_vault', res.data.token);
-      secureStorage.setItem('_d_usr_info', res.data.user);
-      navigate('/profil', { replace: true });
+      if (res.data && res.data.token) {
+        loginUser(res.data); // ✅ Met à jour le contexte global
+      }
     } catch (err) {
       console.error("Erreur Inscription Google:", err);
       setError("Impossible de s'inscrire avec Google.");
@@ -56,15 +66,18 @@ export default function Register() {
     
     setLoading(true);
     try {
-      await axios.post('/api/auth/register', formData);
-      // Connexion auto après inscription
-      const loginRes = await axios.post('/api/auth/login', {
+      // 1. Inscription
+      await API.post('/api/auth/register', formData);
+      
+      // 2. Connexion automatique
+      const loginRes = await API.post('/api/auth/login', {
         identifier: formData.identifier,
         password: formData.password
       });
-      secureStorage.setItem('_d_usr_vault', loginRes.data.token);
-      secureStorage.setItem('_d_usr_info', loginRes.data.user);
-      navigate('/profil', { replace: true });
+
+      if (loginRes.data && loginRes.data.token) {
+        loginUser(loginRes.data); // ✅ Met à jour le contexte global
+      }
     } catch (err) {
       setError(err.response?.data?.error || "Erreur lors de l'inscription.");
     } finally {

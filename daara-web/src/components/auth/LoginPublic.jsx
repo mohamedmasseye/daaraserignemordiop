@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, Eye, EyeOff, Loader, ArrowLeft } from 'lucide-react';
 
 // --- IMPORTS SÉCURITÉ & CONTEXTE ---
-import { secureStorage } from '../../utils/security';
+import API from '../../services/api'; // ✅ Utilise ton instance API
 import { useAuth } from '../../context/AuthContext'; 
 
 // --- IMPORTS CAPACITOR & FIREBASE ---
@@ -14,23 +13,20 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
-const API_URL = "https://api.daaraserignemordiop.com";
-
 export default function LoginPublic() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { token, loginUser } = useAuth(); // ✅ Récupération du token et de la fonction login
+  const { token, loginUser } = useAuth(); 
   
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // --- 🛡️ LE FIX DE REDIRECTION (EFFET RÉACTIF) ---
-  // Dès que le token change (devient valide), on redirige
+  // --- 🛡️ REDIRECTION RÉACTIVE (UNIQUE SOURCE DE VÉRITÉ) ---
   useEffect(() => {
     if (token) {
-      console.log("✅ Token détecté dans le contexte, redirection...");
+      console.log("✅ Connexion détectée, redirection en cours...");
       const origin = location.state?.from || '/profil';
       navigate(origin, { replace: true });
     }
@@ -75,15 +71,15 @@ export default function LoginPublic() {
       }
 
       const endpoint = Capacitor.isNativePlatform() ? '/api/auth/google-mobile' : '/api/auth/google';
-      const res = await axios.post(`${API_URL}${endpoint}`, { token: idToken });
+      const res = await API.post(endpoint, { token: idToken }); // ✅ Utilise API au lieu d'axios brut
 
       if (res.data && res.data.token) {
-        // ✅ On appelle loginUser. Le useEffect ci-dessus détectera le changement.
+        // ✅ On met à jour le contexte. Le useEffect ci-dessus fera la redirection.
         loginUser(res.data); 
       }
     } catch (err) {
       console.error("Erreur Google Login:", err);
-      setError(err.response?.data?.error || "Échec de la connexion avec Google.");
+      setError(err.response?.data?.error || "Échec de la connexion Google.");
     } finally {
       setLoading(false);
     }
@@ -96,7 +92,7 @@ export default function LoginPublic() {
     setError('');
 
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
+      const res = await API.post('/api/auth/login', formData);
 
       if (res.data && res.data.token) {
         // ✅ On met à jour l'état global. La redirection est gérée par le useEffect.
@@ -148,7 +144,7 @@ export default function LoginPublic() {
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email ou Téléphone</label>
               <div className="relative">
                 <User className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                <input type="text" name="identifier" required placeholder="exemple@mail.com" className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900 transition-all" value={formData.identifier} onChange={handleChange} />
+                <input type="text" name="identifier" required placeholder="exemple@mail.com" className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900" value={formData.identifier} onChange={handleChange} />
               </div>
             </div>
 
@@ -156,7 +152,7 @@ export default function LoginPublic() {
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Mot de passe</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                <input type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900 transition-all" value={formData.password} onChange={handleChange} />
+                <input type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900" value={formData.password} onChange={handleChange} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                 </button>
