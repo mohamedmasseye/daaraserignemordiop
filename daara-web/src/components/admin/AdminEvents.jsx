@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../services/api'; // ✅ Utilise l'instance sécurisée
 import { 
   Trash2, Plus, Calendar, Edit, Ticket, DollarSign, Users, 
   Image as ImageIcon, X, Download, QrCode, Loader, Paperclip, 
-  FileText, MapPin, Clock, Bell, ArrowUpRight, CheckCircle2, AlertCircle
+  FileText, MapPin, Clock, Bell, ArrowUpRight, CheckCircle2, 
+  AlertCircle, Tag, AlignLeft, Link as LinkIcon 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout';
 
-// --- COMPOSANT VUE BILLET (Design Raffiné) ---
+// ✅ Style réutilisable pour les champs bien encadrés
+const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none font-bold transition-all duration-200 placeholder:text-gray-300";
+
 const AdminTicketView = ({ ticket, onClose }) => {
   const handlePrint = () => { window.print(); };
   return (
@@ -34,7 +37,7 @@ const AdminTicketView = ({ ticket, onClose }) => {
 
         <div className="w-full md:w-1/3 bg-white p-10 border-l-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
             <div className="p-4 bg-gray-50 rounded-3xl mb-6 border border-gray-100"><QrCode size={140} className="text-primary-900" /></div>
-            <p className="text-[10px] font-mono text-gray-400 mb-8 uppercase tracking-tighter">Ref: {ticket._id.slice(-12)}</p>
+            <p className="text-[10px] font-mono text-gray-400 mb-8 uppercase tracking-tighter">Ref: {ticket._id?.slice(-12)}</p>
             <button onClick={handlePrint} className="w-full py-4 bg-primary-900 text-white rounded-2xl font-bold flex items-center justify-center gap-3 hover:bg-gold-500 transition-all shadow-xl print:hidden active:scale-95"><Download size={20}/> Imprimer le billet</button>
         </div>
       </motion.div>
@@ -63,25 +66,22 @@ export default function AdminEvents() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const token = localStorage.getItem('token');
-      const config = { headers: { Authorization: `Bearer ${token}` } };
+      // 1. Charger les événements
+      const eventsRes = await API.get('/api/events');
+      setEvents(eventsRes.data || []);
 
-      // 1. Charger d'abord les événements (Route souvent publique ou protégée)
-      const eventsRes = await axios.get('/api/events');
-      setEvents(eventsRes.data);
-
-      // 2. Charger les tickets vendus (Route obligatoirement protégée)
+      // 2. Charger les tickets (stats)
       try {
-        const ordersRes = await axios.get('/api/orders', config); // ✅ Ajout du token ici
+        const ordersRes = await API.get('/api/orders'); 
         const extractedTickets = [];
-        ordersRes.data.forEach(order => {
+        (ordersRes.data || []).forEach(order => {
           if (order.status !== 'Cancelled') {
-            order.items.forEach(item => {
+            (order.items || []).forEach(item => {
               if (item.type === 'ticket') {
                 extractedTickets.push({
                   _id: order._id,
                   eventId: item.ticketEvent || item.product,
-                  eventTitle: item.name.replace('Ticket - ', ''),
+                  eventTitle: item.name?.replace('Ticket - ', '') || 'Événement',
                   userName: order.user?.fullName || 'Anonyme',
                   userEmail: order.user?.email || 'N/A',
                   quantity: item.quantity,
@@ -95,13 +95,10 @@ export default function AdminEvents() {
         });
         setAllTickets(extractedTickets);
       } catch (orderErr) {
-        console.error("Erreur lors du chargement des tickets (Orders) :", orderErr);
-        // On ne bloque pas l'affichage des événements si seules les stats échouent
+        console.error("Erreur stats billets :", orderErr);
       }
-
     } catch (e) {
-      console.error("Erreur générale fetchData :", e);
-      alert("Erreur de connexion au serveur.");
+      console.error("Erreur fetchData :", e);
     } finally {
       setLoading(false);
     }
@@ -109,27 +106,18 @@ export default function AdminEvents() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // Dans AdminEvents.jsx
-const handleBroadcastEvent = async (event) => {
-  const confirmBroadcast = window.confirm(`Diffuser une notification pour : ${event.title} ?`);
-  if (!confirmBroadcast) return;
-
-  try {
-    const token = localStorage.getItem('token');
-    await axios.post('/api/notifications', {
-      title: "📅 Nouvel Événement !",
-      body: `${event.title}. Cliquez pour voir les détails et réserver.`,
-      type: 'info',
-      // ✅ C'EST CETTE LIGNE QUI FAIT LA MAGIE QUE VOUS VENEZ DE TESTER
-      url: `/evenements?id=${event._id}` 
-    }, {
-      headers: { Authorization: `Bearer ${token}` }
-    });
-    alert("🚀 Notification diffusée avec succès !");
-  } catch (err) {
-    alert("Erreur lors de la diffusion.");
-  }
-};
+  const handleBroadcastEvent = async (event) => {
+    if (!window.confirm(`Diffuser une notification pour : ${event.title} ?`)) return;
+    try {
+      await API.post('/api/notifications', {
+        title: "📅 Nouvel Événement !",
+        body: `${event.title}. Cliquez pour voir les détails et réserver.`,
+        type: 'info',
+        url: `/evenements?id=${event._id}` 
+      });
+      alert("🚀 Notification diffusée !");
+    } catch (err) { alert("Erreur lors de la diffusion."); }
+  };
 
   const getEventStats = (eventId) => {
     const eventTickets = allTickets.filter(t => String(t.eventId) === String(eventId));
@@ -148,14 +136,23 @@ const handleBroadcastEvent = async (event) => {
         Object.keys(formData).forEach(key => data.append(key, formData[key]));
         if (imageFile) data.append('eventImage', imageFile);
         if (documentFile) data.append('eventDocument', documentFile);
-        const token = localStorage.getItem('token');
-        const config = { headers: { 'Content-Type': 'multipart/form-data', Authorization: `Bearer ${token}` } };
-        if (isEditing) await axios.put(`/api/events/${editId}`, data, config);
-        else await axios.post('/api/events', data, config);
+
+        if (isEditing) await API.put(`/api/events/${editId}`, data);
+        else await API.post('/api/events', data);
+        
         closeForm();
         fetchData();
         alert("Opération réussie !");
     } catch (err) { alert("Erreur d'enregistrement."); } finally { setUploading(false); }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("⚠️ Supprimer définitivement cet événement ?")) return;
+    try {
+      await API.delete(`/api/events/${id}`);
+      setEvents(events.filter(e => e._id !== id));
+      alert("Supprimé.");
+    } catch (error) { alert("Erreur suppression."); }
   };
 
   const closeForm = () => {
@@ -178,14 +175,13 @@ const handleBroadcastEvent = async (event) => {
 
   return (
     <AdminLayout>
-        {/* --- HEADER --- */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-4xl font-serif font-bold text-primary-900 flex items-center gap-4">
                 <div className="p-3 bg-gold-500 rounded-2xl text-white shadow-lg shadow-gold-500/20"><Calendar size={28} /></div>
                 Agenda Spirituel
             </h1>
-            <p className="text-gray-500 mt-2 font-medium">Gérez vos célébrations, conférences et billetteries.</p>
+            <p className="text-gray-500 mt-2 font-medium">Gérez vos célébrations et billetteries.</p>
           </div>
           <button 
             onClick={() => { isFormVisible ? closeForm() : setIsFormVisible(true); }} 
@@ -195,7 +191,6 @@ const handleBroadcastEvent = async (event) => {
           </button>
         </div>
 
-        {/* --- FORMULAIRE (Design "Card-Floating") --- */}
         <AnimatePresence>
         {isFormVisible && (
           <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden mb-12">
@@ -205,20 +200,44 @@ const handleBroadcastEvent = async (event) => {
               <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2 space-y-8">
                     <div className="space-y-6">
-                        <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Nom de l'événement</label><input className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-gold-500 transition-all font-bold" value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required placeholder="Ex: Grand Gamou Annuel"/></div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Date & Heure</label><input type="datetime-local" className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-gold-500 font-bold" value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} required/></div>
-                            <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Lieu</label><input className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-gold-500 font-bold" value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})} placeholder="Villa N169..."/></div>
+                        <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><Tag size={12}/> Nom de l'événement</label>
+                          <input className={inputStyle} value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required placeholder="Ex: Grand Gamou Annuel"/>
                         </div>
-                        <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Description détaillée</label><textarea className="w-full p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-gold-500 h-40 resize-none font-medium" value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})} placeholder="Présentez l'événement aux fidèles..."/></div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div>
+                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><Clock size={12}/> Date & Heure</label>
+                              <input type="datetime-local" className={inputStyle} value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} required/>
+                            </div>
+                            <div>
+                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><MapPin size={12}/> Lieu</label>
+                              <input className={inputStyle} value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})} placeholder="Ville, Quartier..."/>
+                            </div>
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><AlignLeft size={12}/> Description détaillée</label>
+                          <textarea className={`${inputStyle} h-40 resize-none font-medium`} value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})} placeholder="Présentez l'événement..."/>
+                        </div>
                     </div>
                 </div>
                 <div className="space-y-8 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
                     <div className="space-y-4">
                         <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Médias associés</label>
                         <div className="grid grid-cols-1 gap-4">
-                            <div className="relative group"><input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/><div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors"><ImageIcon className="mx-auto text-gray-400 mb-2"/> <span className="text-xs font-bold text-gray-500">{imageFile ? imageFile.name : "Ajouter l'affiche"}</span></div></div>
-                            <div className="relative group"><input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/><div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors"><FileText className="mx-auto text-gray-400 mb-2"/> <span className="text-xs font-bold text-gray-500">{documentFile ? documentFile.name : "Programme PDF"}</span></div></div>
+                            <div className="relative group">
+                              <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                              <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors">
+                                <ImageIcon className="mx-auto text-gray-400 mb-2"/> 
+                                <span className="text-xs font-bold text-gray-500 truncate block">{imageFile ? imageFile.name : "Affiche (JPG/PNG)"}</span>
+                              </div>
+                            </div>
+                            <div className="relative group">
+                              <input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                              <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors">
+                                <FileText className="mx-auto text-gray-400 mb-2"/> 
+                                <span className="text-xs font-bold text-gray-500 truncate block">{documentFile ? documentFile.name : "Programme (PDF)"}</span>
+                              </div>
+                            </div>
                         </div>
                     </div>
                     <div className={`p-6 rounded-2xl border-2 transition-all ${formData.hasTicket ? 'bg-gold-500 text-white border-gold-600 shadow-lg shadow-gold-500/20' : 'bg-white border-gray-100 text-gray-400'}`}>
@@ -230,7 +249,7 @@ const handleBroadcastEvent = async (event) => {
                             </div>
                         )}
                     </div>
-                    <button disabled={uploading} type="submit" className="w-full bg-primary-900 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-gold-500 transition-all shadow-xl shadow-primary-900/10 flex justify-center items-center gap-3">
+                    <button disabled={uploading} type="submit" className="w-full bg-primary-900 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-gold-500 transition-all shadow-xl flex justify-center items-center gap-3">
                         {uploading ? <Loader className="animate-spin"/> : (isEditing ? "Mettre à jour" : "Publier l'événement")}
                     </button>
                 </div>
@@ -239,10 +258,9 @@ const handleBroadcastEvent = async (event) => {
         )}
         </AnimatePresence>
 
-        {/* --- LISTE DES EVENEMENTS (Design Dashboard) --- */}
         <div className="grid grid-cols-1 gap-6">
           {loading ? <div className="text-center py-20"><Loader className="animate-spin mx-auto text-gold-500" size={48}/></div> : events.length === 0 ? (
-             <div className="text-center py-24 text-gray-400 bg-white rounded-[3rem] border-2 border-dashed border-gray-100 italic">Aucun événement dans l'agenda.</div>
+             <div className="text-center py-24 text-gray-400 bg-white rounded-[3rem] border-2 border-dashed border-gray-100 italic">Aucun événement.</div>
           ) : (
             events.map((event) => {
               const stats = getEventStats(event._id);
@@ -255,28 +273,24 @@ const handleBroadcastEvent = async (event) => {
                   viewport={{ once: true }}
                   className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-500 flex flex-col lg:flex-row items-center gap-8 group"
                 >
-                   {/* Date Bloc */}
                    <div className="flex flex-col items-center justify-center w-20 h-20 bg-primary-50 rounded-2xl shrink-0 group-hover:bg-primary-900 transition-colors duration-500">
                       <span className="text-2xl font-black text-primary-900 group-hover:text-gold-500 leading-none">{eventDate.getDate()}</span>
                       <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest group-hover:text-white">{eventDate.toLocaleDateString('fr-FR', {month: 'short'})}</span>
                    </div>
 
-                   {/* Image & Title */}
                    <div className="flex items-center gap-6 flex-1 w-full">
                       <div className="w-24 h-24 rounded-2xl bg-gray-100 overflow-hidden shrink-0 border border-gray-100 relative shadow-inner">
                         {event.image ? <img src={event.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" /> : <div className="w-full h-full flex items-center justify-center text-gray-200"><ImageIcon size={32}/></div>}
-                        {event.isOnline && <div className="absolute top-1 right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white animate-pulse"></div>}
                       </div>
                       <div className="space-y-2">
                           <h3 className="font-serif font-bold text-2xl text-primary-900 group-hover:text-gold-600 transition-colors">{event.title}</h3>
                           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-tighter">
                             <span className="flex items-center gap-1.5"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
-                            <span className="flex items-center gap-1.5"><MapPin size={14} className="text-gold-500"/> {event.location || 'Lieu non défini'}</span>
+                            <span className="flex items-center gap-1.5"><MapPin size={14} className="text-gold-500"/> {event.location || 'N/A'}</span>
                           </div>
                       </div>
                    </div>
 
-                   {/* Stats Badges */}
                    <div className="flex gap-4 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
                       {event.hasTicket && (
                         <>
@@ -290,25 +304,13 @@ const handleBroadcastEvent = async (event) => {
                           </div>
                         </>
                       )}
-                      {event.documentUrl && <div className="w-12 h-12 flex items-center justify-center bg-purple-50 text-purple-600 rounded-2xl border border-purple-100" title="PDF de l'événement"><FileText size={20}/></div>}
                    </div>
 
-                   {/* Actions Buttons */}
                    <div className="flex gap-2 w-full lg:w-auto justify-end border-t lg:border-t-0 pt-4 lg:pt-0 border-gray-50">
-                      <button 
-                        onClick={() => handleBroadcastEvent(event)} 
-                        className="flex-1 lg:flex-none p-4 bg-gradient-to-br from-gold-400 to-gold-600 text-white rounded-2xl hover:shadow-lg hover:shadow-gold-500/30 transition-all active:scale-95" 
-                        title="Envoyer une notification push"
-                      >
-                        <Bell size={20}/>
-                      </button>
-
+                      <button onClick={() => handleBroadcastEvent(event)} className="p-4 bg-gradient-to-br from-gold-400 to-gold-600 text-white rounded-2xl hover:shadow-lg transition-all active:scale-95" title="Diffuser"><Bell size={20}/></button>
                       {event.hasTicket && (
-                        <button onClick={() => setSelectedEventForStats({ ...event, ...stats })} className="flex-1 lg:flex-none p-4 bg-primary-900 text-white rounded-2xl hover:bg-gold-500 transition-all active:scale-95" title="Liste des participants">
-                          <Users size={20}/>
-                        </button>
+                        <button onClick={() => setSelectedEventForStats({ ...event, ...stats })} className="p-4 bg-primary-900 text-white rounded-2xl hover:bg-gold-500 transition-all active:scale-95" title="Liste participants"><Users size={20}/></button>
                       )}
-
                       <button onClick={() => handleEditClick(event)} className="p-4 text-gray-400 hover:text-primary-900 hover:bg-gray-100 rounded-2xl transition-all"><Edit size={20} /></button>
                       <button onClick={() => handleDelete(event._id)} className="p-4 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all"><Trash2 size={20} /></button>
                    </div>
@@ -318,7 +320,6 @@ const handleBroadcastEvent = async (event) => {
           )}
         </div>
 
-        {/* --- MODAL PARTICIPANTS (Style High-Tech) --- */}
         <AnimatePresence>
           {selectedEventForStats && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/80 backdrop-blur-sm p-4">
@@ -327,8 +328,8 @@ const handleBroadcastEvent = async (event) => {
                      <div>
                         <h2 className="font-serif font-bold text-3xl mb-2">{selectedEventForStats.title}</h2>
                         <div className="flex gap-4">
-                          <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-gold-400 flex items-center gap-2"><CheckCircle2 size={12}/> {selectedEventForStats.totalSold} Tickets vendus</span>
-                          <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-green-400 flex items-center gap-2"><DollarSign size={12}/> {selectedEventForStats.totalRevenue.toLocaleString()} F récoltés</span>
+                          <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-gold-400 flex items-center gap-2"><CheckCircle2 size={12}/> {selectedEventForStats.totalSold} Tickets</span>
+                          <span className="px-3 py-1 bg-white/10 rounded-full text-[10px] font-bold uppercase tracking-wider text-green-400 flex items-center gap-2"><DollarSign size={12}/> {selectedEventForStats.totalRevenue.toLocaleString()} F</span>
                         </div>
                      </div>
                      <button onClick={() => setSelectedEventForStats(null)} className="p-3 bg-white/10 rounded-full hover:bg-red-500 transition-colors"><X size={24}/></button>
@@ -339,8 +340,7 @@ const handleBroadcastEvent = async (event) => {
                           <thead className="bg-gray-50/50 border-b border-gray-100">
                              <tr>
                                 <th className="py-5 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">Acheteur</th>
-                                <th className="py-5 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Quantité</th>
-                                <th className="py-5 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest">Date d'achat</th>
+                                <th className="py-5 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Qté</th>
                                 <th className="py-5 px-8 text-[10px] font-black text-gray-400 uppercase tracking-widest text-right">Action</th>
                              </tr>
                           </thead>
@@ -354,13 +354,12 @@ const handleBroadcastEvent = async (event) => {
                                     </div>
                                   </td>
                                   <td className="py-5 px-8 text-center"><span className="px-3 py-1 bg-gold-100 text-gold-700 rounded-lg font-black text-sm">x{t.quantity}</span></td>
-                                  <td className="py-5 px-8 text-sm font-medium text-gray-500">{new Date(t.purchaseDate).toLocaleDateString('fr-FR', {day:'2-digit', month:'long'})}</td>
                                   <td className="py-5 px-8 text-right"><button onClick={() => setTicketToPrint(t)} className="p-2 bg-gray-100 text-primary-900 rounded-xl hover:bg-primary-900 hover:text-white transition-all opacity-0 group-hover:opacity-100"><ArrowUpRight size={18}/></button></td>
                                </tr>
                              ))}
                           </tbody>
                        </table>
-                       {selectedEventForStats.eventTickets.length === 0 && <div className="py-20 text-center text-gray-400 flex flex-col items-center gap-4"><AlertCircle size={48} className="opacity-20"/><p className="font-medium italic text-sm">Aucune vente enregistrée pour cet événement.</p></div>}
+                       {selectedEventForStats.eventTickets.length === 0 && <div className="py-20 text-center text-gray-400 flex flex-col items-center gap-4"><AlertCircle size={48} className="opacity-20"/><p className="font-medium italic text-sm">Aucune vente.</p></div>}
                      </div>
                   </div>
                </motion.div>
