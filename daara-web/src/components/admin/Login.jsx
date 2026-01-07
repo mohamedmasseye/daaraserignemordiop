@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, AlertCircle } from 'lucide-react';
-import { secureStorage } from '../utils/security'; // ✅ IMPORT SÉCURITÉ
+import { secureStorage } from '../../utils/security'; // ✅ IMPORT SÉCURITÉ
 
 export default function Login() {
   const [email, setEmail] = useState('');
