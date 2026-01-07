@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api'; // ✅ Utilise l'instance sécurisée
 import { 
   Save, Layout, BookOpen, Image as ImageIcon, Type, Info, 
-  Plus, Trash2, ExternalLink, UploadCloud, Loader, Tag, AlignLeft, MapPin, Phone
+  Plus, Trash2, ExternalLink, UploadCloud, Loader, Tag, AlignLeft, MapPin, Phone,User
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout'; 
