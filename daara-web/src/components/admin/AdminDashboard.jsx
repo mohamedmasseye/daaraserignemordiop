@@ -3,7 +3,7 @@ import API from '../../services/api';
 import { Link } from 'react-router-dom';
 import { 
   Users, BookOpen, ShoppingBag, DollarSign, Calendar, 
-  ArrowRight, Activity, Package
+  ArrowRight, Activity, Package, Bell
 } from 'lucide-react';
 import { motion } from 'framer-motion';
 import AdminLayout from './AdminLayout';
