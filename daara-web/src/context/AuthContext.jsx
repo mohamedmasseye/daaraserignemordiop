@@ -44,8 +44,13 @@ export const AuthProvider = ({ children }) => {
     setToken(null);
     setUser(null);
     setAdminToken(null);
-    window.location.href = isAdmin ? '/portal-daara-admin-77' : '/login-public';
-  };
+    
+    if (isAdmin) {
+    window.location.href = '/portal-daara-admin-77';
+  } else {
+    window.location.href = '/login-public';
+  }
+};
 
   return (
     <AuthContext.Provider value={{ token, user, adminToken, loading, loginUser, loginAdmin, logout }}>
