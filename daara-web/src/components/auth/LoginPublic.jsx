@@ -3,7 +3,10 @@ import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, Eye, EyeOff, Loader, ArrowLeft } from 'lucide-react';
+
+// --- IMPORTS SÉCURITÉ & CONTEXTE ---
 import { secureStorage } from '../../utils/security';
+import { useAuth } from '../../context/AuthContext'; // ✅ CRUCIAL
 
 // --- IMPORTS CAPACITOR & FIREBASE ---
 import { Capacitor } from '@capacitor/core';
@@ -11,12 +14,12 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
-// Configuration de l'URL de base si nécessaire (ajustez selon votre environnement)
-const API_URL = "https://api.daaraserignemordiop.com"; // Ou laissez vide si proxy configuré
+const API_URL = "https://api.daaraserignemordiop.com";
 
 export default function LoginPublic() {
   const navigate = useNavigate();
   const location = useLocation();
+  const { loginUser } = useAuth(); // ✅ On récupère la fonction du contexte
   
   const [formData, setFormData] = useState({ identifier: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
@@ -33,9 +36,8 @@ export default function LoginPublic() {
             scopes: ['profile', 'email'],
             grantOfflineAccess: true,
           });
-          console.log("✅ GoogleAuth Web initialisé");
         } catch (err) {
-          console.warn("⚠️ GoogleAuth déjà initialisé ou erreur:", err);
+          console.warn("GoogleAuth déjà initialisé");
         }
       }
     };
@@ -51,45 +53,31 @@ export default function LoginPublic() {
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
-    console.log("🚀 Lancement du flux Google...");
 
     try {
       let idToken;
-
       if (Capacitor.isNativePlatform()) {
-        // --- MOBILE ---
         const nativeUser = await GoogleAuth.signIn();
         idToken = nativeUser.authentication.idToken;
-        console.log("📱 Token Mobile obtenu");
       } else {
-        // --- WEB (Firebase Popup) ---
-        // Si le pop-up se ferme sans rien faire, vérifiez les "Domaines autorisés" dans Firebase Console
         const result = await signInWithPopup(auth, googleProvider);
         idToken = await result.user.getIdToken();
-        console.log("🌐 Token Web obtenu via Firebase");
       }
 
-      // Envoi au Backend
       const endpoint = Capacitor.isNativePlatform() ? '/api/auth/google-mobile' : '/api/auth/google';
       const res = await axios.post(`${API_URL}${endpoint}`, { token: idToken });
 
       if (res.data && res.data.token) {
-        secureStorage.setItem('_d_usr_vault', res.data.token);
-        secureStorage.setItem('_d_usr_info', res.data.user);
-        localStorage.removeItem('_d_adm_vault');
+        // ✅ ON UTILISE LE CONTEXTE (Met à jour le State + Storage)
+        loginUser(res.data); 
 
+        // ✅ REDIRECTION IMMÉDIATE
         const origin = location.state?.from || '/profil';
         navigate(origin, { replace: true });
-        console.log("✅ Authentification réussie et redirection effectuée");
       }
     } catch (err) {
-      console.error("❌ Erreur complète:", err);
-      // Gestion spécifique des erreurs Firebase (ex: Popup fermée par l'utilisateur)
-      if (err.code === 'auth/popup-closed-by-user') {
-        setError("La fenêtre de connexion a été fermée.");
-      } else {
-        setError(err.response?.data?.error || "Échec de l'authentification avec Google.");
-      }
+      console.error("Erreur Google Login:", err);
+      setError(err.response?.data?.error || "Échec de la connexion avec Google.");
     } finally {
       setLoading(false);
     }
@@ -103,11 +91,15 @@ export default function LoginPublic() {
 
     try {
       const res = await axios.post(`${API_URL}/api/auth/login`, formData);
-      secureStorage.setItem('_d_usr_vault', res.data.token);
-      secureStorage.setItem('_d_usr_info', res.data.user);
-      localStorage.removeItem('_d_adm_vault');
 
-      navigate(location.state?.from || '/profil', { replace: true });
+      if (res.data && res.data.token) {
+        // ✅ ON UTILISE LE CONTEXTE
+        loginUser(res.data);
+
+        // ✅ REDIRECTION IMMÉDIATE
+        const origin = location.state?.from || '/profil';
+        navigate(origin, { replace: true });
+      }
     } catch (err) {
       setError(err.response?.data?.error || "Identifiant ou mot de passe incorrect.");
     } finally {
@@ -117,7 +109,6 @@ export default function LoginPublic() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
-      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-[50vh] bg-primary-900 rounded-b-[3rem] z-0">
          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
       </div>
@@ -155,7 +146,7 @@ export default function LoginPublic() {
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Email ou Téléphone</label>
               <div className="relative">
                 <User className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                <input type="text" name="identifier" required placeholder="exemple@mail.com" className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900" value={formData.identifier} onChange={handleChange} />
+                <input type="text" name="identifier" required placeholder="exemple@mail.com" className="w-full pl-12 pr-4 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900 transition-all" value={formData.identifier} onChange={handleChange} />
               </div>
             </div>
 
@@ -163,7 +154,7 @@ export default function LoginPublic() {
               <label className="text-xs font-bold text-gray-500 uppercase ml-1">Mot de passe</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-3.5 text-gray-400" size={20} />
-                <input type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900" value={formData.password} onChange={handleChange} />
+                <input type={showPassword ? "text" : "password"} name="password" required placeholder="••••••••" className="w-full pl-12 pr-12 py-3 bg-gray-50 border border-gray-200 rounded-xl outline-none focus:ring-2 focus:ring-primary-900 transition-all" value={formData.password} onChange={handleChange} />
                 <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute right-4 top-3.5 text-gray-400 hover:text-gray-600">
                   {showPassword ? <EyeOff size={20}/> : <Eye size={20}/>}
                 </button>
