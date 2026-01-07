@@ -101,7 +101,7 @@ function App() {
     }
   }, []);
 
-  // --- 2. LOGIQUE DE NOTIFICATION PUSH (MOBILE NATIVE) ---
+  // --- 2. LOGIQUE DE NOTIFICATION PUSH (MOBILE NATIVE / APK) ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const initPush = async () => {
@@ -123,12 +123,23 @@ function App() {
 
       initPush();
 
+      // Écouteur de réception (Quand l'app est ouverte)
       const listenerReceived = PushNotifications.addListener('pushNotificationReceived', (notification) => {
         alert(`🔔 ${notification.title}\n${notification.body}`);
       });
 
+      // ✅ AJOUT : Écouteur de clic (Pour redirection APK/Android)
+      const listenerAction = PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const url = action.notification.data?.url;
+        if (url) {
+          console.log("🚀 APK redirection vers:", url);
+          window.location.href = url;
+        }
+      });
+
       return () => {
         listenerReceived.remove();
+        listenerAction.remove();
       };
     }
   }, []);
@@ -171,7 +182,6 @@ function App() {
 
   // ✅ 4. CONTROLEUR DE ROUTAGE ÉLITE (SÉCURITÉ IPHONE & NOTIFICATIONS)
   useEffect(() => {
-    // A. Écoute les messages de navigation forcée du Service Worker
     if ('serviceWorker' in navigator) {
       const handleSWMessage = (event) => {
         if (event.data && event.data.url) {
@@ -182,21 +192,16 @@ function App() {
       navigator.serviceWorker.addEventListener('message', handleSWMessage);
     }
 
-    // B. Vérifie l'URL (Démarrage + Retour au premier plan)
     const handleCheckRouting = () => {
       const params = new URLSearchParams(window.location.search);
       const eventId = params.get('id');
-      // Si on a un ID et qu'on n'est pas déjà sur le modal (pour éviter les boucles)
       if (eventId && !window.location.pathname.includes('/evenements')) {
-        console.log("🎯 ID détecté au Focus/Démarrage. Redirection...");
+        console.log("🎯 ID détecté. Redirection...");
         window.location.href = `/evenements?id=${eventId}`;
       }
     };
 
-    // Exécution immédiate au montage
     handleCheckRouting();
-
-    // Écoute de l'événement 'focus' : Crucial pour iOS quand l'app sort de veille après un clic
     window.addEventListener('focus', handleCheckRouting);
     
     return () => {
