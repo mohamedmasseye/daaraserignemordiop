@@ -85,7 +85,7 @@ const PublicLayout = ({ children }) => (
 
 function App() {
 
-  // --- 1. INITIALISATION GOOGLE & TEST RÉSEAU ---
+  // --- 1. INITIALISATION GOOGLE ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       GoogleAuth.initialize({
@@ -93,53 +93,57 @@ function App() {
         scopes: ['profile', 'email'],
         grantOfflineAccess: true,
       });
-
-      const testUrl = 'https://api.daaraserignemordiop.com/api/home-content';
-      fetch(testUrl)
-        .then(() => console.log('Connexion API OK'))
-        .catch(() => console.log('Erreur test réseau au démarrage'));
     }
   }, []);
 
-  // --- 2. LOGIQUE DE NOTIFICATION PUSH (MOBILE NATIVE / APK) ---
+  // --- 2. LOGIQUE DE NOTIFICATION PUSH (CORRIGÉE POUR APK) ---
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
-      const initPush = async () => {
+      
+      // A. On prépare les écouteurs AVANT d'enregistrer
+      PushNotifications.addListener('registration', (token) => {
+        console.log('✅ APK : Device Token récupéré :', token.value);
+        // On s'abonne au topic global via le plugin FCM
+        FCM.subscribeTo({ topic: 'all_users' })
+          .then(() => console.log('✅ APK : Abonné au topic "all_users"'))
+          .catch(err => console.error('❌ APK : Erreur topic:', err));
+      });
+
+      PushNotifications.addListener('registrationError', (error) => {
+        console.error('❌ APK : Erreur enregistrement:', error);
+      });
+
+      PushNotifications.addListener('pushNotificationReceived', (notification) => {
+        alert(`🔔 ${notification.title}\n${notification.body}`);
+      });
+
+      PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+        const url = action.notification.data?.url;
+        if (url) {
+          console.log("🚀 APK : Clic détecté, redirection vers:", url);
+          window.location.href = url;
+        }
+      });
+
+      // B. On vérifie et demande les permissions, puis on enregistre
+      const setupPush = async () => {
         let permStatus = await PushNotifications.checkPermissions();
+        
         if (permStatus.receive === 'prompt') {
           permStatus = await PushNotifications.requestPermissions();
         }
 
         if (permStatus.receive === 'granted') {
           await PushNotifications.register();
-          try {
-            await FCM.subscribeTo({ topic: 'all_users' });
-            console.log('✅ Mobile : Abonné au topic "all_users"');
-          } catch (err) {
-            console.error('❌ Erreur abonnement topic:', err);
-          }
+        } else {
+          console.warn("⚠️ APK : Permissions de notifications refusées");
         }
       };
 
-      initPush();
-
-      // Écouteur de réception (Quand l'app est ouverte)
-      const listenerReceived = PushNotifications.addListener('pushNotificationReceived', (notification) => {
-        alert(`🔔 ${notification.title}\n${notification.body}`);
-      });
-
-      // ✅ AJOUT : Écouteur de clic (Pour redirection APK/Android)
-      const listenerAction = PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-        const url = action.notification.data?.url;
-        if (url) {
-          console.log("🚀 APK redirection vers:", url);
-          window.location.href = url;
-        }
-      });
+      setupPush();
 
       return () => {
-        listenerReceived.remove();
-        listenerAction.remove();
+        PushNotifications.removeAllListeners();
       };
     }
   }, []);
@@ -152,40 +156,31 @@ function App() {
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            
             const token = await getToken(messaging, {
               serviceWorkerRegistration: registration,
               vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
             });
-
-            if (token) {
-              console.log('✅ Web : Token FCM récupéré :', token);
-            }
+            if (token) console.log('✅ Web : Token FCM récupéré :', token);
           }
-        } catch (err) {
-          console.error('❌ Erreur Web Push (iPhone/Web):', err);
-        }
+        } catch (err) { console.error('❌ Erreur Web Push:', err); }
       };
 
       const unsubscribeOnMessage = onMessage(messaging, (payload) => {
-        console.log('Message reçu au premier plan (Web) :', payload);
         alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`);
       });
       
       if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) {
         initWebPush();
       }
-
       return () => unsubscribeOnMessage();
     }
   }, []);
 
-  // ✅ 4. CONTROLEUR DE ROUTAGE ÉLITE (SÉCURITÉ IPHONE & NOTIFICATIONS)
+  // ✅ 4. CONTROLEUR DE ROUTAGE GLOBAL
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       const handleSWMessage = (event) => {
         if (event.data && event.data.url) {
-          console.log("🚀 Redirection forcée par le SW vers:", event.data.url);
           window.location.href = event.data.url;
         }
       };
@@ -196,23 +191,18 @@ function App() {
       const params = new URLSearchParams(window.location.search);
       const eventId = params.get('id');
       if (eventId && !window.location.pathname.includes('/evenements')) {
-        console.log("🎯 ID détecté. Redirection...");
         window.location.href = `/evenements?id=${eventId}`;
       }
     };
 
     handleCheckRouting();
     window.addEventListener('focus', handleCheckRouting);
-    
-    return () => {
-      window.removeEventListener('focus', handleCheckRouting);
-    };
+    return () => window.removeEventListener('focus', handleCheckRouting);
   }, []);
 
   return (
     <Router>
       <Routes>
-        {/* ROUTES ADMIN */}
         <Route path="/admin-login" element={<LoginAdmin />} /> 
         <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
@@ -228,7 +218,6 @@ function App() {
         <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
         <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />
 
-        {/* ROUTES PUBLIQUES */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
         <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
