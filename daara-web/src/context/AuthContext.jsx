@@ -7,21 +7,23 @@ export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
   const [adminToken, setAdminToken] = useState(null);
-  const [loading, setLoading] = useState(true); // ✅ ÉTAT CRITIQUE
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Au démarrage, on synchronise une seule fois
-    const t = secureStorage.getItem('_d_usr_vault');
-    const u = secureStorage.getItem('_d_usr_info');
-    const a = secureStorage.getItem('_d_adm_vault');
-    
-    if (t) setToken(t);
-    if (u) setUser(u);
-    if (a) setAdminToken(a);
-    
-    setLoading(false); // ✅ On libère l'application seulement ici
+    const initAuth = () => {
+      const t = secureStorage.getItem('_d_usr_vault');
+      const u = secureStorage.getItem('_d_usr_info');
+      const a = secureStorage.getItem('_d_adm_vault');
+      
+      if (t) setToken(t);
+      if (u) setUser(u);
+      if (a) setAdminToken(a);
+      setLoading(false);
+    };
+    initAuth();
   }, []);
 
+  // ✅ Connexion Client
   const loginUser = (userData) => {
     secureStorage.setItem('_d_usr_vault', userData.token);
     secureStorage.setItem('_d_usr_info', userData.user);
@@ -29,7 +31,13 @@ export const AuthProvider = ({ children }) => {
     setUser(userData.user);
   };
 
-  const logout = () => {
+  // ✅ Connexion Admin
+  const loginAdmin = (adminData) => {
+    secureStorage.setItem('_d_adm_vault', adminData.token);
+    setAdminToken(adminData.token); // Indispensable pour AdminProtectedRoute
+  };
+
+  const logout = (isAdmin = false) => {
     secureStorage.removeItem('_d_usr_vault');
     secureStorage.removeItem('_d_usr_info');
     secureStorage.removeItem('_d_adm_vault');
@@ -40,7 +48,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ token, user, adminToken, loading, loginUser, logout, setAdminToken }}>
+    <AuthContext.Provider value={{ token, user, adminToken, loading, loginUser, loginAdmin, logout }}>
       {children}
     </AuthContext.Provider>
   );

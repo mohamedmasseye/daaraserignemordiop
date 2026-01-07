@@ -1,15 +1,26 @@
-import React, { useState } from 'react';
-import axios from 'axios';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Lock, User, AlertCircle } from 'lucide-react';
-import { secureStorage } from '../../utils/security'; // ✅ IMPORT SÉCURITÉ
+import { useAuth } from '../../context/AuthContext'; // ✅ UTILISE LE CONTEXTE
+import API from '../../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 
 export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const { adminToken, loginAdmin } = useAuth(); // ✅ Récupération du contexte
+
+  // --- 🛡️ REDIRECTION RÉACTIVE ---
+  // Dès que le token admin est détecté dans le contexte, on part vers le dashboard
+  useEffect(() => {
+    if (adminToken) {
+      console.log("✅ Accès Admin validé, redirection...");
+      navigate('/admin/dashboard', { replace: true });
+    }
+  }, [adminToken, navigate]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -17,25 +28,22 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await axios.post(`/api/auth/login`, { 
+      // ✅ On utilise l'instance API centralisée
+      const res = await API.post(`/api/auth/login`, { 
         identifier: email, 
         password 
       });
 
-      // ✅ VÉRIFICATION DU RÔLE (SÉCURITÉ SUPPLÉMENTAIRE)
+      // ✅ VÉRIFICATION DU RÔLE
       if (res.data.user.role !== 'admin') {
-        setError("Accès refusé. Vous n'êtes pas administrateur.");
+        setError("Accès refusé. Ce portail est réservé aux Maîtres.");
         return;
       }
       
-      // ✅ STOCKAGE CHIFFRÉ DANS LE COFFRE ADMIN
-      secureStorage.setItem('_d_adm_vault', res.data.token);
-      secureStorage.setItem('_d_adm_info', res.data.user);
-      
-      // ✅ ON NETTOIE LE TOKEN PUBLIC POUR ÉVITER LES CONFLITS
-      localStorage.removeItem('_d_usr_vault');
+      // ✅ ON UTILISE loginAdmin DU CONTEXTE
+      // Cela va mettre à jour le State React ET le secureStorage
+      loginAdmin(res.data);
 
-      navigate('/admin/dashboard'); 
     } catch (err) {
       setError(err.response?.data?.error || 'Email ou mot de passe incorrect.');
     } finally {
@@ -45,6 +53,7 @@ export default function Login() {
 
   return (
     <div className="min-h-screen bg-primary-900 flex items-center justify-center px-4 font-sans">
+      {/* Ton design reste identique car il est très réussi */}
       <div className="max-w-md w-full bg-white rounded-3xl shadow-2xl p-10 border border-gray-100">
         <div className="text-center mb-8">
           <div className="bg-gold-50 w-20 h-20 rounded-2xl rotate-3 flex items-center justify-center mx-auto mb-6 shadow-inner">
