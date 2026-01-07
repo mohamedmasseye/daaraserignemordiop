@@ -3,25 +3,17 @@ import axios from 'axios';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Mail, Lock, CheckCircle, Loader, ArrowLeft } from 'lucide-react';
+import { secureStorage } from '../../utils/security'; // ✅ IMPORT SÉCURITÉ
 
-// --- IMPORTS CAPACITOR & NATIF ---
+// --- IMPORTS CAPACITOR & FIREBASE (Identiques) ---
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
-
-// --- IMPORTS FIREBASE ---
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
 export default function Register() {
   const navigate = useNavigate();
-  
-  const [formData, setFormData] = useState({
-    fullName: '',
-    identifier: '', 
-    password: '',
-    confirmPassword: ''
-  });
-  
+  const [formData, setFormData] = useState({ fullName: '', identifier: '', password: '', confirmPassword: '' });
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,53 +22,55 @@ export default function Register() {
     setError('');
   };
 
-  // --- 1. INSCRIPTION VIA GOOGLE (HYBRIDE) ---
- const handleGoogleRegister = async () => {
-  setError('');
-  setLoading(true);
-
-  try {
-    // =========================
-    // 📱 MOBILE NATIF
-    // =========================
-    if (Capacitor.isNativePlatform()) {
-      const nativeUser = await GoogleAuth.signIn();
-
-      const res = await axios.post('/api/auth/google-mobile', {
-        idToken: nativeUser.authentication.idToken
-      });
-
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user_info', JSON.stringify(res.data.user));
-
+  // --- 1. INSCRIPTION VIA GOOGLE ---
+  const handleGoogleRegister = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      let userData;
+      if (Capacitor.isNativePlatform()) {
+        const nativeUser = await GoogleAuth.signIn();
+        const res = await axios.post('/api/auth/google-mobile', { idToken: nativeUser.authentication.idToken });
+        userData = res.data;
+      } else {
+        const result = await signInWithPopup(auth, googleProvider);
+        const tokenForBackend = await result.user.getIdToken();
+        const res = await axios.post('/api/auth/google', { token: tokenForBackend });
+        userData = res.data;
+      }
+      secureStorage.setItem('_d_usr_vault', userData.token);
+      secureStorage.setItem('_d_usr_info', userData.user);
       navigate('/profil', { replace: true });
-      return;
+    } catch (err) {
+      setError("Impossible de s'inscrire avec Google.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // =========================
-    // 💻 WEB
-    // =========================
-    const result = await signInWithPopup(auth, googleProvider);
-    const firebaseUser = result.user;
-
-    const tokenForBackend = await firebaseUser.getIdToken();
-
-    const res = await axios.post('/api/auth/google', {
-      token: tokenForBackend
-    });
-
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user_info', JSON.stringify(res.data.user));
-
-    navigate('/profil', { replace: true });
-
-  } catch (err) {
-    console.error(err);
-    setError("Impossible de s'inscrire avec Google.");
-  } finally {
-    setLoading(false);
-  }
-};
+  // --- 2. INSCRIPTION CLASSIQUE ---
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (formData.password !== formData.confirmPassword) return setError("Les mots de passe ne correspondent pas.");
+    
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post('/api/auth/register', formData);
+      // Après inscription, on connecte automatiquement
+      const loginRes = await axios.post('/api/auth/login', {
+        identifier: formData.identifier,
+        password: formData.password
+      });
+      secureStorage.setItem('_d_usr_vault', loginRes.data.token);
+      secureStorage.setItem('_d_usr_info', loginRes.data.user);
+      navigate('/profil');
+    } catch (err) {
+      setError(err.response?.data?.error || "Erreur lors de l'inscription.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 font-sans relative overflow-hidden">

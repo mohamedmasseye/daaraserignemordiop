@@ -3,6 +3,7 @@ import axios from 'axios';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { User, Lock, Eye, EyeOff, Loader, ArrowLeft } from 'lucide-react';
+import { secureStorage } from '../../utils/security'; // ✅ IMPORT SÉCURITÉ
 
 // --- IMPORTS CAPACITOR & NATIF ---
 import { Capacitor } from '@capacitor/core';
@@ -26,61 +27,43 @@ export default function LoginPublic() {
     setError('');
   };
 
-  // --- 1. CONNEXION VIA GOOGLE (HYBRIDE WEB/NATIF) ---
+  // --- 1. CONNEXION VIA GOOGLE (HYBRIDE) ---
   const handleGoogleLogin = async () => {
-  setError('');
-  setLoading(true);
+    setError('');
+    setLoading(true);
 
-  try {
-    // =========================
-    // 📱 MOBILE NATIF
-    // =========================
-    if (Capacitor.isNativePlatform()) {
-      const nativeUser = await GoogleAuth.signIn();
+    try {
+      let userData;
 
-      // 🔥 On envoie DIRECTEMENT le token Google au backend
-      const res = await axios.post('/api/auth/google-mobile', {
-        idToken: nativeUser.authentication.idToken
-      });
+      if (Capacitor.isNativePlatform()) {
+        const nativeUser = await GoogleAuth.signIn();
+        const res = await axios.post('/api/auth/google-mobile', {
+          idToken: nativeUser.authentication.idToken
+        });
+        userData = res.data;
+      } else {
+        const result = await signInWithPopup(auth, googleProvider);
+        const tokenForBackend = await result.user.getIdToken();
+        const res = await axios.post('/api/auth/google', { token: tokenForBackend });
+        userData = res.data;
+      }
 
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user_info', JSON.stringify(res.data.user));
+      // ✅ STOCKAGE SÉCURISÉ DANS LE COFFRE PUBLIC
+      secureStorage.setItem('_d_usr_vault', userData.token);
+      secureStorage.setItem('_d_usr_info', userData.user);
+      
+      // Nettoyage session admin pour éviter les conflits
+      localStorage.removeItem('_d_adm_vault');
 
-      navigate('/profil', { replace: true });
-      return;
+      navigate(location.state?.from || '/profil', { replace: true });
+    } catch (err) {
+      setError("Échec de la connexion Google.");
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // =========================
-    // 💻 WEB
-    // =========================
-    const result = await signInWithPopup(auth, googleProvider);
-    const firebaseUser = result.user;
-
-    const tokenForBackend = await firebaseUser.getIdToken();
-
-    const res = await axios.post('/api/auth/google', {
-      token: tokenForBackend
-    });
-
-    localStorage.setItem('token', res.data.token);
-    localStorage.setItem('user_info', JSON.stringify(res.data.user));
-
-    let origin = location.state?.from;
-    if (!origin || origin.includes('/login') || origin.includes('/register')) {
-      origin = '/profil';
-    }
-    navigate(origin, { replace: true });
-
-  } catch (err) {
-    console.error(err);
-    setError("Échec de la connexion Google.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  // --- 2. CONNEXION CLASSIQUE (Email/Pass) ---
+  // --- 2. CONNEXION CLASSIQUE ---
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -89,18 +72,15 @@ export default function LoginPublic() {
     try {
       const res = await axios.post('/api/auth/login', formData);
 
-      localStorage.setItem('token', res.data.token);
-      localStorage.setItem('user_info', JSON.stringify(res.data.user));
+      // ✅ STOCKAGE SÉCURISÉ DANS LE COFFRE PUBLIC
+      secureStorage.setItem('_d_usr_vault', res.data.token);
+      secureStorage.setItem('_d_usr_info', res.data.user);
+      
+      localStorage.removeItem('_d_adm_vault');
 
-      let origin = location.state?.from;
-      if (!origin || origin.includes('/login') || origin.includes('/register') || origin.includes('/auth')) {
-          origin = '/profil';
-      }
-
+      let origin = location.state?.from || '/profil';
       navigate(origin, { replace: true });
-
     } catch (err) {
-      console.error(err);
       setError(err.response?.data?.error || "Identifiant ou mot de passe incorrect.");
     } finally {
       setLoading(false);
