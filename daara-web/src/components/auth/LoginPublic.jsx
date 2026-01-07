@@ -21,9 +21,14 @@ export default function LoginPublic() {
   const [error, setError] = useState('');
 
   // Initialisation GoogleAuth pour le Web (obligatoire pour Capacitor Google Auth sur navigateur)
-  useEffect(() => {
+useEffect(() => {
+    // Initialisation indispensable pour le WEB
     if (!Capacitor.isNativePlatform()) {
-      GoogleAuth.initialize();
+      GoogleAuth.initialize({
+        clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
+        scopes: ['profile', 'email'],
+        grantOfflineAccess: true,
+      });
     }
   }, []);
 
