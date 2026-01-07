@@ -1,43 +1,65 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
+import API from '../../services/api'; 
 import AdminLayout from './AdminLayout';
-import { Trash2, Plus, Book, Image as ImageIcon, CheckCircle, Loader } from 'lucide-react';
+import { Trash2, Plus, Book, Image as ImageIcon, CheckCircle, Loader, Edit3, X, Save, User } from 'lucide-react';
 
 export default function AdminBooks() {
   const [books, setBooks] = useState([]);
   const [formData, setFormData] = useState({
-    title: '', author: 'Serigne Mor Diop', description: '', category: ''
+    title: '', 
+    author: 'Serigne Mor Diop', 
+    description: '', 
+    category: ''
   });
   
   const [pdfFile, setPdfFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   
-  // States pour la progression
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  // On initialise avec un texte simple
-  const [uploadStep, setUploadStep] = useState('Préparation...');
+  const [uploadStep, setUploadStep] = useState('');
+  
+  const [isEditing, setIsEditing] = useState(false);
+  const [editId, setEditId] = useState(null);
 
   const fetchBooks = async () => {
     try {
-      const res = await axios.get('/api/books');
-      setBooks(res.data);
-    } catch (err) { console.error(err); }
+      const res = await API.get('/api/books');
+      setBooks(res.data || []);
+    } catch (err) { console.error("Erreur fetch books:", err); }
   };
 
   useEffect(() => { fetchBooks(); }, []);
 
+  const handleEdit = (book) => {
+    setIsEditing(true);
+    setEditId(book._id);
+    setFormData({
+      title: book.title || '',
+      author: book.author || 'Serigne Mor Diop',
+      description: book.description || '',
+      category: book.category || ''
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const cancelEdit = () => {
+    setIsEditing(false);
+    setEditId(null);
+    setFormData({ title: '', author: 'Serigne Mor Diop', description: '', category: '' });
+    setPdfFile(null);
+    setCoverFile(null);
+    if (document.getElementById('fileInputPdf')) document.getElementById('fileInputPdf').value = "";
+    if (document.getElementById('fileInputCover')) document.getElementById('fileInputCover').value = "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!pdfFile && !formData.pdfUrl) {
-        alert("Veuillez sélectionner un fichier PDF.");
-        return;
-    }
+    if (!isEditing && !pdfFile) return alert("Veuillez sélectionner un fichier PDF.");
 
     setIsUploading(true);
     setUploadProgress(0);
-    // ✅ TEXTE SIMPLIFIÉ AU DÉBUT
-    setUploadStep('Démarrage de l\'ajout...');
+    setUploadStep(isEditing ? 'Mise à jour...' : 'Téléversement...');
 
     try {
       const data = new FormData();
@@ -48,200 +70,165 @@ export default function AdminBooks() {
       if (pdfFile) data.append('pdfFile', pdfFile);
       if (coverFile) data.append('coverImage', coverFile);
 
-      await axios.post('/api/books', data, {
-          headers: { 
-              'Content-Type': 'multipart/form-data',
-              Authorization: `Bearer ${localStorage.getItem('token')}`
-          },
-          // ✅ GESTION DE LA PROGRESSION CORRIGÉE
-          onUploadProgress: (progressEvent) => {
-              const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-              setUploadProgress(percentCompleted);
-              
-              // On change le texte selon l'étape, SANS remettre le % dans le texte
-              if (percentCompleted < 100) {
-                  setUploadStep('Ajout du livre en cours...');
-              } else {
-                  // Quand c'est à 100%, c'est que le serveur traite le fichier
-                  setUploadStep('Finalisation du traitement (Ne quittez pas)...');
-              }
-          }
-      });
+      const config = {
+        onUploadProgress: (progressEvent) => {
+          const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percent);
+          if (percent === 100) setUploadStep('Traitement par le serveur...');
+        }
+      };
+
+      if (isEditing) {
+        await API.put(`/api/books/${editId}`, data, config);
+      } else {
+        await API.post('/api/books', data, config);
+      }
       
-      setUploadStep('Terminé !');
+      setUploadStep('Réussite !');
       setTimeout(() => {
           setIsUploading(false);
-          alert('✅ Livre ajouté avec succès !');
-          setFormData({ title: '', author: 'Serigne Mor Diop', description: '', category: '' });
-          setPdfFile(null);
-          setCoverFile(null);
-          document.getElementById('fileInputPdf').value = "";
-          document.getElementById('fileInputCover').value = "";
+          alert(isEditing ? '✅ Livre mis à jour !' : '✅ Livre ajouté !');
+          cancelEdit();
           fetchBooks();
-      }, 500);
+      }, 600);
 
     } catch (error) {
       console.error(error);
       setIsUploading(false);
-      alert(error.response?.data?.error || "Erreur lors de l'ajout.");
+      alert(error.response?.data?.error || "Une erreur est survenue.");
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm("⚠️ Supprimer ce livre ?")) {
+    if (window.confirm("⚠️ Supprimer définitivement ce livre ?")) {
       try {
-        await axios.delete(`/api/books/${id}`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-        });
+        await API.delete(`/api/books/${id}`);
         setBooks(books.filter(b => b._id !== id));
-      } catch (error) { console.error(error); }
+      } catch (error) { 
+          alert("Erreur lors de la suppression.");
+      }
     }
   };
 
   return (
     <AdminLayout>
-      <div className="max-w-5xl mx-auto">
-        <h1 className="text-3xl font-bold text-gray-800 mb-8">Gestion des Livres</h1>
+      <div className="max-w-5xl mx-auto pb-20">
+        <div className="flex justify-between items-center mb-8">
+            <h1 className="text-3xl font-serif font-bold text-gray-900">Bibliothèque Numérique</h1>
+            <div className="bg-primary-100 text-primary-700 px-4 py-1 rounded-full text-sm font-bold">
+                {books.length} Ouvrages
+            </div>
+        </div>
 
-        {/* --- ZONE D'AJOUT --- */}
-        <div className="bg-white p-8 rounded-2xl shadow-lg border border-gray-100 mb-10 relative overflow-hidden">
+        {/* --- FORMULAIRE --- */}
+        <div className="bg-white p-8 rounded-3xl shadow-xl border border-gray-100 mb-12 relative overflow-hidden">
           
-          {/* ✅ OVERLAY DE CHARGEMENT CORRIGÉ */}
           {isUploading && (
-              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center backdrop-blur-md transition-all">
-                  <div className="w-72 p-6 bg-white rounded-2xl shadow-xl border border-gray-100 text-center">
-                      {/* Icône animée */}
-                      <div className="mb-4 flex justify-center text-primary-600">
-                        {uploadProgress < 100 ? (
-                           <Loader className="animate-spin h-10 w-10"/>
-                        ) : (
-                           <CheckCircle className="h-10 w-10 text-green-500 animate-bounce"/>
-                        )}
+              <div className="absolute inset-0 bg-white/95 z-50 flex flex-col items-center justify-center backdrop-blur-md">
+                  <div className="w-80 p-8 bg-white rounded-3xl shadow-2xl border border-gray-100 text-center">
+                      <div className="mb-4 flex justify-center">
+                        {uploadProgress < 100 ? <Loader className="animate-spin text-primary-600" size={40}/> : <CheckCircle className="text-green-500 animate-bounce" size={40}/>}
                       </div>
-
-                      {/* Titre de l'étape */}
                       <h3 className="text-lg font-bold text-gray-800 mb-2">{uploadStep}</h3>
-                      
-                      {/* Barre et Pourcentage unique */}
-                      <div className="flex items-center justify-between text-sm font-bold text-primary-700 mb-2">
-                          <span>Progression</span>
-                          {/* ✅ LE SEUL ENDROIT OÙ LE % S'AFFICHE */}
-                          <span>{uploadProgress}%</span>
+                      <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden mb-2">
+                          <div className="h-full bg-primary-600 transition-all duration-300" style={{ width: `${uploadProgress}%` }}></div>
                       </div>
-                      <div className="h-4 w-full bg-gray-100 rounded-full overflow-hidden shadow-inner border border-gray-200 relative">
-                          <div 
-                              className={`h-full rounded-full transition-all duration-300 ease-out relative overflow-hidden ${uploadProgress < 100 ? 'bg-primary-600' : 'bg-green-500'}`}
-                              style={{ width: `${uploadProgress}%` }}
-                          >
-                              {/* Petit effet brillant sur la barre */}
-                              <div className="absolute inset-0 bg-white/30 w-full h-full animate-pulse"></div>
-                          </div>
-                      </div>
-                      
-                      <p className="text-xs text-gray-400 mt-4 italic">Cela peut prendre quelques secondes selon la taille du PDF.</p>
+                      <span className="text-sm font-black text-primary-900">{uploadProgress}%</span>
                   </div>
               </div>
           )}
 
-          <h2 className="text-xl font-bold mb-6 flex items-center text-primary-900">
-            <div className="p-2 bg-primary-100 rounded-lg mr-3 text-primary-600">
-                <Plus className="h-6 w-6" />
+          <div className="flex justify-between items-center mb-8">
+            <h2 className="text-xl font-bold flex items-center text-primary-900">
+                <div className="p-2 bg-gold-100 rounded-xl mr-3 text-gold-600">
+                    {isEditing ? <Edit3 size={24}/> : <Plus size={24} />}
+                </div>
+                {isEditing ? `Modification en cours` : 'Ajouter un nouvel ouvrage'}
+            </h2>
+            {isEditing && (
+                <button onClick={cancelEdit} className="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition flex items-center gap-2">
+                    <X size={18}/> Annuler
+                </button>
+            )}
+          </div>
+
+          <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className="space-y-5">
+                <div>
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Titre de l'œuvre</label>
+                    <input type="text" required className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                </div>
+                <div>
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Auteur</label>
+                    <div className="relative">
+                        <User className="absolute left-4 top-4 text-gray-300" size={18}/>
+                        <input type="text" required className="w-full mt-1 pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} />
+                    </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                    <div>
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Catégorie</label>
+                        <input type="text" placeholder="Ex: Xassaïd" className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+                    </div>
+                    <div>
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Description (Optionnel)</label>
+                        <textarea rows="1" className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                    </div>
+                </div>
             </div>
-            Ajouter un nouveau livre
-          </h2>
 
-          <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-4">
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Titre du livre</label>
-                    <input 
-                        type="text" required
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 focus:border-transparent outline-none transition"
-                        value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Catégorie</label>
-                    <input 
-                        type="text" placeholder="Ex: Biographie"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                        value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})}
-                    />
-                </div>
-                <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                    <textarea 
-                        rows="3"
-                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-primary-500 outline-none"
-                        value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})}
-                    />
-                </div>
-            </div>
-
-            <div className="space-y-4">
-                <div className="p-4 border-2 border-dashed border-primary-200 rounded-xl bg-primary-50/50 hover:bg-primary-50 transition-colors cursor-pointer relative group">
-                    <label className="block text-sm font-bold text-primary-900 mb-2 group-hover:text-primary-700 transition-colors">📄 Fichier PDF (Livre) *</label>
-                    <input 
-                        id="fileInputPdf" type="file" accept="application/pdf" required
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary-100 file:text-primary-700 hover:file:bg-primary-200 cursor-pointer"
-                        onChange={(e) => setPdfFile(e.target.files[0])}
-                    />
-                    {pdfFile && <div className="mt-2 text-xs text-green-600 flex items-center font-medium"><CheckCircle size={14} className="mr-1"/> {pdfFile.name} ({(pdfFile.size/1024/1024).toFixed(2)} MB)</div>}
+            <div className="space-y-5">
+                <div className="p-6 border-2 border-dashed border-primary-100 rounded-2xl bg-primary-50/30">
+                    <label className="block text-sm font-bold text-primary-900 mb-2">📄 Fichier PDF {isEditing && '(Optionnel si inchangé)'}</label>
+                    <input id="fileInputPdf" type="file" accept="application/pdf" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary-900 file:text-white" onChange={(e) => setPdfFile(e.target.files[0])} />
                 </div>
 
-                <div className="p-4 border-2 border-dashed border-gray-200 rounded-xl hover:bg-gray-50 transition-colors relative">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">🖼️ Couverture (Optionnel)</label>
-                    <input 
-                        id="fileInputCover" type="file" accept="image/*"
-                        className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-gray-100 file:text-gray-700 hover:file:bg-gray-200 cursor-pointer"
-                        onChange={(e) => setCoverFile(e.target.files[0])}
-                    />
-                    {coverFile && <div className="mt-2 text-xs text-green-600 flex items-center font-medium"><CheckCircle size={14} className="mr-1"/> Image sélectionnée</div>}
+                <div className="p-6 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">🖼️ Image de Couverture</label>
+                    <input id="fileInputCover" type="file" accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-gray-700" onChange={(e) => setCoverFile(e.target.files[0])} />
                 </div>
 
-                <button 
-                    type="submit" 
-                    disabled={isUploading}
-                    className={`w-full py-4 rounded-xl font-bold text-lg shadow-lg transform transition hover:-translate-y-1 flex items-center justify-center ${
-                        isUploading ? 'bg-gray-400 cursor-not-allowed' : 'bg-primary-900 text-white hover:bg-primary-800 shadow-primary-900/30'
-                    }`}
-                >
-                    {isUploading ? <Loader className="animate-spin mr-2"/> : <Plus className="mr-2"/>}
-                    {isUploading ? 'Patientez...' : 'Enregistrer le Livre'}
+                <button type="submit" disabled={isUploading} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-3 ${isUploading ? 'bg-gray-300 text-gray-500' : 'bg-primary-900 text-white hover:bg-gold-500 hover:text-primary-900'}`}>
+                    {isUploading ? <Loader className="animate-spin"/> : isEditing ? <Save size={20}/> : <Plus size={20}/>}
+                    {isUploading ? 'Traitement en cours...' : isEditing ? 'Sauvegarder les modifications' : 'Publier l\'ouvrage'}
                 </button>
             </div>
           </form>
         </div>
 
-        {/* --- LISTE DES LIVRES --- */}
-        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
-              <h3 className="font-bold text-gray-700">Bibliothèque ({books.length})</h3>
-          </div>
-          <table className="min-w-full divide-y divide-gray-100">
-            <tbody className="divide-y divide-gray-100">
+        {/* --- LISTE --- */}
+        <div className="bg-white rounded-3xl shadow-lg border border-gray-100 overflow-hidden">
+          <table className="w-full text-left border-collapse">
+            <thead>
+                <tr className="bg-gray-50/50 text-gray-400 text-[10px] font-black uppercase tracking-widest border-b border-gray-100">
+                    <th className="px-8 py-4">Ouvrage</th>
+                    <th className="px-8 py-4">Auteur / Catégorie</th>
+                    <th className="px-8 py-4 text-right">Actions</th>
+                </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
               {books.map((book) => (
-                <tr key={book._id} className="hover:bg-gray-50 transition-colors group">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center">
-                      <div className="h-12 w-10 flex-shrink-0 bg-gray-200 rounded overflow-hidden mr-4 shadow-sm border border-gray-100">
-                          {book.coverUrl ? (
-                              <img src={book.coverUrl} alt="" className="h-full w-full object-cover"/>
-                          ) : (
-                              <div className="h-full w-full flex items-center justify-center text-gray-400 bg-gray-100"><Book size={20}/></div>
-                          )}
+                <tr key={book._id} className="group hover:bg-primary-50/30 transition-colors">
+                  <td className="px-8 py-5">
+                    <div className="flex items-center gap-4">
+                      <div className="h-16 w-12 bg-gray-100 rounded-lg overflow-hidden shadow-sm border border-gray-200 shrink-0">
+                          {book.coverUrl ? <img src={book.coverUrl} className="h-full w-full object-cover"/> : <div className="h-full w-full flex items-center justify-center text-gray-300"><Book size={20}/></div>}
                       </div>
                       <div>
-                          <div className="font-bold text-gray-900">{book.title}</div>
-                          <div className="text-sm text-gray-500">{book.category || 'Général'} • {(new Date(book.createdAt)).toLocaleDateString()}</div>
+                          <p className="font-bold text-gray-900 leading-tight">{book.title}</p>
+                          <p className="text-xs text-primary-600 font-medium mt-1 uppercase tracking-tighter">Ajouté le {new Date(book.createdAt).toLocaleDateString()}</p>
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-right whitespace-nowrap">
-                    <a href={book.pdfUrl} target="_blank" rel="noreferrer" className="inline-flex items-center px-3 py-1.5 bg-primary-50 text-primary-700 hover:bg-primary-100 rounded-lg text-sm font-medium mr-4 transition-colors">
-                      <Book size={16} className="mr-1"/> Voir PDF
-                    </a>
-                    <button onClick={() => handleDelete(book._id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all">
+                  <td className="px-8 py-5">
+                      <p className="text-sm font-bold text-gray-700">{book.author}</p>
+                      <p className="text-xs text-gray-400 font-medium italic">{book.category || 'Général'}</p>
+                  </td>
+                  <td className="px-8 py-5 text-right space-x-2">
+                    <button onClick={() => handleEdit(book)} className="p-3 text-primary-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-primary-100 transition-all">
+                      <Edit3 size={18} />
+                    </button>
+                    <button onClick={() => handleDelete(book._id)} className="p-3 text-red-400 hover:text-red-600 hover:bg-white rounded-xl shadow-sm border border-transparent hover:border-red-100 transition-all">
                       <Trash2 size={18} />
                     </button>
                   </td>
@@ -249,12 +236,7 @@ export default function AdminBooks() {
               ))}
             </tbody>
           </table>
-          {books.length === 0 && (
-              <div className="p-12 flex flex-col items-center justify-center text-gray-400">
-                  <Book size={48} className="mb-4 opacity-20"/>
-                  <p>Aucun livre pour le moment.</p>
-              </div>
-          )}
+          {books.length === 0 && <div className="p-20 text-center text-gray-300 font-medium italic">Aucun livre dans la bibliothèque.</div>}
         </div>
       </div>
     </AdminLayout>
