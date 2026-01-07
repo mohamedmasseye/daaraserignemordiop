@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext'; // ✅ IMPORT DU CONTEXTE
+import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext'; // ✅ Chemin corrigé
 import { 
   LayoutDashboard, BookOpen, Calendar, MessageSquare, 
   Bell, LogOut, Users, ChevronRight, Mic, Image, 
@@ -9,21 +9,18 @@ import {
 
 export default function AdminLayout({ children }) {
   const location = useLocation();
-  const { logout } = useAuth(); // ✅ RÉCUPÉRATION DE LOGOUT
+  const { logout } = useAuth(); // ✅ Récupération de logout depuis le contexte
   const [isSidebarOpen, setSidebarOpen] = useState(false); 
 
   const handleLogout = () => {
-    if(confirm("Voulez-vous vraiment vous déconnecter de l'administration ?")) {
-      logout(true); // ✅ UTILISE LA LOGIQUE SÉCURISÉE (Redirige vers portal-admin)
+    if(window.confirm("Voulez-vous vraiment vous déconnecter de l'administration ?")) {
+      logout(true); // ✅ Utilise la redirection vers le portail secret
     }
   };
 
   const menuItems = [
     { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
-    
-    // --- NOUVEAU MENU ACCUEIL ---
     { path: '/admin/home', icon: Layout, label: 'Gestion Accueil' },
-    
     { path: '/admin/books', icon: BookOpen, label: 'Bibliothèque' },
     { path: '/admin/blog', icon: Newspaper, label: 'Journal / Blog' },
     { path: '/admin/galerie', icon: Image, label: 'Médiathèque' },
@@ -42,7 +39,7 @@ export default function AdminLayout({ children }) {
       {/* OVERLAY MOBILE */}
       {isSidebarOpen && (
         <div 
-          className="fixed inset-0 bg-black/50 z-20 md:hidden glass-effect"
+          className="fixed inset-0 bg-black/50 z-20 md:hidden backdrop-blur-sm"
           onClick={() => setSidebarOpen(false)}
         ></div>
       )}
@@ -56,10 +53,9 @@ export default function AdminLayout({ children }) {
           md:translate-x-0 md:static md:flex 
         `}
       >
-        {/* Logo */}
         <div className="h-20 flex items-center justify-between px-6 border-b border-white/10 bg-primary-950">
           <div className="flex items-center gap-3">
-            <div className="bg-gold-500 p-2 rounded-lg shadow-lg shadow-gold-500/20">
+            <div className="bg-gold-500 p-2 rounded-lg shadow-lg">
               <BookOpen size={24} className="text-white" />
             </div>
             <div>
@@ -67,15 +63,11 @@ export default function AdminLayout({ children }) {
               <p className="text-xs text-primary-300 font-medium">Panel de Gestion</p>
             </div>
           </div>
-          <button 
-            onClick={() => setSidebarOpen(false)}
-            className="md:hidden text-gray-400 hover:text-white"
-          >
+          <button onClick={() => setSidebarOpen(false)} className="md:hidden text-gray-400 hover:text-white">
             <X size={24} />
           </button>
         </div>
 
-        {/* Menu */}
         <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto">
           <p className="px-4 text-xs font-bold text-primary-400 uppercase tracking-wider mb-2">Menu Principal</p>
           {menuItems.map((item) => {
@@ -101,7 +93,6 @@ export default function AdminLayout({ children }) {
           })}
         </nav>
 
-        {/* Footer */}
         <div className="p-4 border-t border-white/10 bg-primary-950">
           <button 
             onClick={handleLogout} 
@@ -116,13 +107,9 @@ export default function AdminLayout({ children }) {
       <main className="flex-1 flex flex-col h-screen overflow-hidden relative">
         <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-8 shadow-sm z-10 shrink-0">
           <div className="flex items-center gap-4">
-            <button 
-              onClick={() => setSidebarOpen(true)}
-              className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
-            >
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg">
               <Menu size={24} />
             </button>
-
             <h2 className="text-xl md:text-2xl font-serif font-bold text-gray-800 truncate">
               {menuItems.find(i => i.path === location.pathname)?.label || 'Espace Admin'}
             </h2>

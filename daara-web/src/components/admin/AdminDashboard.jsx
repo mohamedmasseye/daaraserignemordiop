@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import API from '../../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
+import API from '../../services/api'; 
 import { Link } from 'react-router-dom';
 import { 
   Users, BookOpen, ShoppingBag, DollarSign, Calendar, 
@@ -19,35 +19,37 @@ export default function AdminDashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // ✅ PLUS BESOIN de localStorage.getItem ni de config headers ici !
-        // L'intercepteur de API.js s'en occupe automatiquement.
-
         const [usersRes, booksRes, ordersRes] = await Promise.all([
             API.get('/api/users'),
             API.get('/api/books'),
             API.get('/api/orders')
         ]);
 
-        const shopOrders = ordersRes.data.filter(order => 
-            order.items.some(item => item.type !== 'ticket')
+        // ✅ Sécurisation des données (évite les erreurs .filter() sur undefined)
+        const allOrders = ordersRes.data || [];
+        const allUsers = usersRes.data || [];
+        const allBooks = booksRes.data || [];
+
+        const shopOrders = allOrders.filter(order => 
+            order.items?.some(item => item.type !== 'ticket')
         );
 
-        const totalRevenue = ordersRes.data
+        const totalRevenue = allOrders
             .filter(o => o.status !== 'Cancelled')
             .reduce((acc, o) => acc + (o.totalAmount || 0), 0);
 
         setData({
             counts: {
-                users: usersRes.data.length,
-                books: booksRes.data.length,
+                users: allUsers.length,
+                books: allBooks.length,
                 orders: shopOrders.length,
                 revenue: totalRevenue
             },
-            recentUsers: usersRes.data.slice(0, 5),
+            recentUsers: allUsers.slice(0, 5),
             recentOrders: shopOrders.slice(0, 5)
         });
       } catch (error) {
-        console.error("Erreur dashboard", error);
+        console.error("Erreur dashboard :", error);
       } finally {
         setLoading(false);
       }
@@ -55,11 +57,10 @@ export default function AdminDashboard() {
     fetchData();
   }, []);
 
-  // --- STATS CARDS CONFIG ---
   const stats = [
     { 
       label: "Chiffre d'Affaires Global", 
-      value: `${data.counts.revenue.toLocaleString()} F`, 
+      value: `${(data.counts.revenue || 0).toLocaleString()} F`, 
       icon: DollarSign, 
       color: "text-green-600", bg: "bg-green-100", 
       trend: "Total (Boutique + Tickets)" 
@@ -87,7 +88,14 @@ export default function AdminDashboard() {
     },
   ];
 
-  if (loading) return <div className="min-h-screen flex items-center justify-center bg-gray-50"><Activity className="animate-spin text-primary-900 mr-2"/> Chargement du Dashboard...</div>;
+  if (loading) return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+      <div className="flex flex-col items-center gap-4">
+        <Activity className="animate-spin text-primary-900" size={48}/> 
+        <p className="text-gray-500 font-bold">Chargement du Dashboard...</p>
+      </div>
+    </div>
+  );
 
   return (
     <AdminLayout>
@@ -127,10 +135,10 @@ export default function AdminDashboard() {
             ))}
         </div>
 
-        {/* 2. SECTION CENTRALE (Commandes & Inscriptions) */}
+        {/* 2. SECTION CENTRALE */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             
-            {/* DERNIÈRES COMMANDES (BOUTIQUE SEULEMENT) */}
+            {/* DERNIÈRES COMMANDES */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex justify-between items-center">
                     <h3 className="font-bold text-lg text-gray-800 flex items-center gap-2">
@@ -155,7 +163,7 @@ export default function AdminDashboard() {
                                 <tr key={order._id} className="hover:bg-gray-50 transition">
                                     <td className="px-6 py-4 font-mono font-bold text-gray-400">#{order._id.slice(-6).toUpperCase()}</td>
                                     <td className="px-6 py-4 font-bold text-gray-800">{order.user?.fullName || 'Client Inconnu'}</td>
-                                    <td className="px-6 py-4 font-bold text-primary-900">{order.totalAmount.toLocaleString()} F</td>
+                                    <td className="px-6 py-4 font-bold text-primary-900">{(order.totalAmount || 0).toLocaleString()} F</td>
                                     <td className="px-6 py-4">
                                         <span className={`px-3 py-1 rounded-full text-xs font-bold ${
                                             order.status === 'Delivered' ? 'bg-green-100 text-green-700' :
@@ -167,7 +175,9 @@ export default function AdminDashboard() {
                                     </td>
                                 </tr>
                             ))}
-                            {data.recentOrders.length === 0 && <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-400 italic">Aucune commande boutique récente.</td></tr>}
+                            {data.recentOrders.length === 0 && (
+                                <tr><td colSpan="4" className="px-6 py-8 text-center text-gray-400 italic">Aucune commande boutique récente.</td></tr>
+                            )}
                         </tbody>
                     </table>
                 </div>
@@ -184,11 +194,11 @@ export default function AdminDashboard() {
                     {data.recentUsers.map(user => (
                         <div key={user._id} className="flex items-center gap-4 p-3 hover:bg-gray-50 rounded-xl transition">
                             <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-900 font-bold flex items-center justify-center text-sm">
-                                {user.fullName.charAt(0)}
+                                {user.fullName?.charAt(0) || '?'}
                             </div>
                             <div className="flex-1 min-w-0">
                                 <p className="font-bold text-gray-900 truncate">{user.fullName}</p>
-                                <p className="text-xs text-gray-500 truncate">{user.email}</p>
+                                <p className="text-xs text-gray-500 truncate">{user.email || user.phone}</p>
                             </div>
                             <span className="text-xs text-gray-400 font-medium whitespace-nowrap">
                                 {new Date(user.createdAt).toLocaleDateString()}
@@ -201,11 +211,10 @@ export default function AdminDashboard() {
                     <Link to="/admin/users" className="text-sm font-bold text-primary-900 hover:text-gold-600 transition">Gérer les utilisateurs</Link>
                 </div>
             </div>
-
         </div>
 
         {/* 3. RACCOURCIS RAPIDES */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-10">
             {[
                 { label: "Ajouter Produit", icon: Package, link: "/admin/products", color: "bg-blue-600" },
                 { label: "Nouvel Événement", icon: Calendar, link: "/admin/events", color: "bg-gold-500" },
