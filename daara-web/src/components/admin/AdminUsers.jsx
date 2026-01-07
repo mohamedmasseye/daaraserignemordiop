@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import axios from 'axios';
 import { 
   Users, Trash2, Search, Mail, Phone, Shield, RefreshCw, 
   UserPlus, Edit3, Key, X, CheckCircle, AlertCircle 
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout';
+import API from '../../services/api'; // ✅ Utilisation de l'instance API avec intercepteur
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -26,13 +26,11 @@ export default function AdminUsers() {
   const fetchUsers = async () => {
     setLoading(true);
     try {
-      const token = localStorage.getItem('token');
-      const res = await axios.get('/api/users', {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      // ✅ Plus besoin de headers ni de localStorage ici, l'intercepteur s'en charge
+      const res = await API.get('/api/users');
       setUsers(res.data);
     } catch (err) {
-      console.error("Erreur", err);
+      console.error("Erreur lors de la récupération des utilisateurs", err);
     } finally {
       setLoading(false);
     }
@@ -42,27 +40,24 @@ export default function AdminUsers() {
 
   // --- ACTIONS ---
 
-  // 1. Ouvrir Modal Ajout
   const openAddModal = () => {
       setModalType('add');
       setFormData({ fullName: '', identifier: '', role: 'user', password: '' });
       setIsModalOpen(true);
   };
 
-  // 2. Ouvrir Modal Édition
   const openEditModal = (user) => {
       setModalType('edit');
       setCurrentUser(user);
       setFormData({ 
           fullName: user.fullName, 
-          identifier: user.email || user.phone, // On affiche l'un ou l'autre
+          identifier: user.email || user.phone, 
           role: user.role, 
-          password: '' // Pas utilisé en edit
+          password: '' 
       });
       setIsModalOpen(true);
   };
 
-  // 3. Ouvrir Modal Password
   const openPasswordModal = (user) => {
       setCurrentUser(user);
       setNewPassword('');
@@ -73,22 +68,17 @@ export default function AdminUsers() {
 
   const handleSaveUser = async (e) => {
       e.preventDefault();
-      const token = localStorage.getItem('token');
       try {
           if (modalType === 'add') {
               // Création
-              const res = await axios.post('/api/users', formData, {
-                  headers: { Authorization: `Bearer ${token}` }
-              });
+              const res = await API.post('/api/users', formData);
               setUsers([res.data, ...users]);
               alert("Utilisateur créé avec succès !");
           } else {
-              // Modification (Pas le mot de passe ici)
-              const res = await axios.put(`/api/users/${currentUser._id}`, {
+              // Modification
+              const res = await API.put(`/api/users/${currentUser._id}`, {
                   fullName: formData.fullName,
                   role: formData.role
-              }, {
-                  headers: { Authorization: `Bearer ${token}` }
               });
               setUsers(users.map(u => u._id === currentUser._id ? res.data : u));
               alert("Utilisateur modifié !");
@@ -101,12 +91,9 @@ export default function AdminUsers() {
 
   const handleResetPassword = async (e) => {
       e.preventDefault();
-      const token = localStorage.getItem('token');
       try {
-          await axios.put(`/api/users/${currentUser._id}/reset-password`, {
+          await API.put(`/api/users/${currentUser._id}/reset-password`, {
               newPassword: newPassword
-          }, {
-              headers: { Authorization: `Bearer ${token}` }
           });
           alert("Mot de passe réinitialisé !");
           setIsPasswordModalOpen(false);
@@ -118,12 +105,11 @@ export default function AdminUsers() {
   const handleDelete = async (id) => {
     if (window.confirm("Êtes-vous sûr ? Cette action est irréversible.")) {
       try {
-        const token = localStorage.getItem('token');
-        await axios.delete(`/api/users/${id}`, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
+        await API.delete(`/api/users/${id}`);
         setUsers(users.filter(user => user._id !== id));
-      } catch (err) { alert("Erreur suppression"); }
+      } catch (err) { 
+        alert("Erreur lors de la suppression."); 
+      }
     }
   };
 
@@ -188,42 +174,33 @@ export default function AdminUsers() {
               ) : (
                 filteredUsers.map((user) => (
                   <tr key={user._id} className="hover:bg-blue-50/30 transition duration-200 group">
-                    {/* DANS AdminUsers.jsx - Remplacement de la colonne Avatar */}
-
-<td className="px-6 py-4">
-  <div className="flex items-center gap-4">
-    
-    {/* LOGIQUE AVATAR INTELLIGENTE */}
-    <div className="relative w-12 h-12 flex-shrink-0">
-        {user.avatar ? (
-            <img 
-                src={user.avatar} 
-                alt={user.fullName}
-                className="w-12 h-12 rounded-full object-cover border-2 border-gray-100 shadow-sm"
-                onError={(e) => {
-                    // ASTUCE : Si l'image plante, on cache l'image et on affiche le div d'initiales qui est juste en dessous
-                    e.target.style.display = 'none';
-                    e.target.nextSibling.style.display = 'flex';
-                }}
-            />
-        ) : null}
-
-        {/* C'est ce bloc qui s'affiche si pas d'image OU si l'image plante */}
-        <div 
-            style={{ display: user.avatar ? 'none' : 'flex' }}
-            className={`w-12 h-12 rounded-full font-bold items-center justify-center text-lg shadow-sm absolute top-0 left-0 ${user.role === 'admin' ? 'bg-gradient-to-br from-gold-400 to-gold-600 text-white' : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'}`}
-        >
-            {(user.fullName || "?").charAt(0).toUpperCase()}
-        </div>
-    </div>
-
-    {/* Info Nom + Date */}
-    <div>
-        <p className="font-bold text-gray-900 text-base">{user.fullName}</p>
-        <p className="text-xs text-gray-400">Inscrit le {new Date(user.createdAt).toLocaleDateString()}</p>
-    </div>
-  </div>
-</td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-4">
+                        <div className="relative w-12 h-12 flex-shrink-0">
+                            {user.avatar ? (
+                                <img 
+                                    src={user.avatar} 
+                                    alt={user.fullName}
+                                    className="w-12 h-12 rounded-full object-cover border-2 border-gray-100 shadow-sm"
+                                    onError={(e) => {
+                                        e.target.style.display = 'none';
+                                        if(e.target.nextSibling) e.target.nextSibling.style.display = 'flex';
+                                    }}
+                                />
+                            ) : null}
+                            <div 
+                                style={{ display: user.avatar ? 'none' : 'flex' }}
+                                className={`w-12 h-12 rounded-full font-bold items-center justify-center text-lg shadow-sm absolute top-0 left-0 ${user.role === 'admin' ? 'bg-gradient-to-br from-gold-400 to-gold-600 text-white' : 'bg-gradient-to-br from-gray-200 to-gray-300 text-gray-600'}`}
+                            >
+                                {(user.fullName || "?").charAt(0).toUpperCase()}
+                            </div>
+                        </div>
+                        <div>
+                            <p className="font-bold text-gray-900 text-base">{user.fullName}</p>
+                            <p className="text-xs text-gray-400">Inscrit le {new Date(user.createdAt).toLocaleDateString()}</p>
+                        </div>
+                      </div>
+                    </td>
                     <td className="px-6 py-4">
                       {user.email ? (
                           <div className="flex items-center gap-2 text-sm text-gray-700 font-medium bg-white border border-gray-200 px-3 py-1 rounded-full w-fit"><Mail size={14} className="text-blue-500"/> {user.email}</div>
@@ -250,7 +227,6 @@ export default function AdminUsers() {
                             <button onClick={() => openPasswordModal(user)} className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition" title="Réinitialiser Mot de passe">
                                 <Key size={18}/>
                             </button>
-                            {/* Protection : On ne peut pas supprimer le Super Admin */}
                             {user.email !== 'admin@daara.com' && (
                                 <button onClick={() => handleDelete(user._id)} className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition" title="Supprimer le compte">
                                     <Trash2 size={18}/>
@@ -285,7 +261,6 @@ export default function AdminUsers() {
                                 value={formData.fullName} onChange={e => setFormData({...formData, fullName: e.target.value})} />
                         </div>
                         
-                        {/* En mode édition, on ne change pas l'email/tél pour éviter les conflits, ou alors il faut gérer l'unicité */}
                         {modalType === 'add' && (
                             <div>
                                 <label className="block text-sm font-bold text-gray-700 mb-1">Email ou Téléphone</label>
