@@ -11,6 +11,9 @@ import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { signInWithPopup } from "firebase/auth";
 import { auth, googleProvider } from "../../firebase"; 
 
+// Configuration de l'URL de base si nécessaire (ajustez selon votre environnement)
+const API_URL = "https://api.daaraserignemordiop.com"; // Ou laissez vide si proxy configuré
+
 export default function LoginPublic() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -20,16 +23,23 @@ export default function LoginPublic() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Initialisation GoogleAuth pour le Web (obligatoire pour Capacitor Google Auth sur navigateur)
-useEffect(() => {
-    // Initialisation indispensable pour le WEB
-    if (!Capacitor.isNativePlatform()) {
-      GoogleAuth.initialize({
-        clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
-        scopes: ['profile', 'email'],
-        grantOfflineAccess: true,
-      });
-    }
+  // 1. Initialisation GoogleAuth pour le Web
+  useEffect(() => {
+    const initWebAuth = async () => {
+      if (!Capacitor.isNativePlatform()) {
+        try {
+          await GoogleAuth.initialize({
+            clientId: '1060878832216-l4nfks09797bsh49u8jqce0kd95tfb8e.apps.googleusercontent.com',
+            scopes: ['profile', 'email'],
+            grantOfflineAccess: true,
+          });
+          console.log("✅ GoogleAuth Web initialisé");
+        } catch (err) {
+          console.warn("⚠️ GoogleAuth déjà initialisé ou erreur:", err);
+        }
+      }
+    };
+    initWebAuth();
   }, []);
 
   const handleChange = (e) => {
@@ -37,58 +47,62 @@ useEffect(() => {
     setError('');
   };
 
-  // --- LOGIQUE DE CONNEXION GOOGLE (WEB & MOBILE) ---
+  // 2. Logique de connexion Google
   const handleGoogleLogin = async () => {
     setError('');
     setLoading(true);
-    console.log("Tentative de connexion Google...");
+    console.log("🚀 Lancement du flux Google...");
 
     try {
       let idToken;
 
       if (Capacitor.isNativePlatform()) {
-        // --- CAS MOBILE ---
+        // --- MOBILE ---
         const nativeUser = await GoogleAuth.signIn();
         idToken = nativeUser.authentication.idToken;
-        console.log("Token Google Mobile obtenu");
+        console.log("📱 Token Mobile obtenu");
       } else {
-        // --- CAS WEB ---
+        // --- WEB (Firebase Popup) ---
+        // Si le pop-up se ferme sans rien faire, vérifiez les "Domaines autorisés" dans Firebase Console
         const result = await signInWithPopup(auth, googleProvider);
         idToken = await result.user.getIdToken();
-        console.log("Token Google Web obtenu");
+        console.log("🌐 Token Web obtenu via Firebase");
       }
 
-      // ENVOI AU BACKEND
+      // Envoi au Backend
       const endpoint = Capacitor.isNativePlatform() ? '/api/auth/google-mobile' : '/api/auth/google';
-      const res = await axios.post(endpoint, { token: idToken });
+      const res = await axios.post(`${API_URL}${endpoint}`, { token: idToken });
 
       if (res.data && res.data.token) {
-        console.log("Connexion réussie, stockage des données...");
-        // STOCKAGE
         secureStorage.setItem('_d_usr_vault', res.data.token);
         secureStorage.setItem('_d_usr_info', res.data.user);
         localStorage.removeItem('_d_adm_vault');
 
-        // REDIRECTION
         const origin = location.state?.from || '/profil';
         navigate(origin, { replace: true });
+        console.log("✅ Authentification réussie et redirection effectuée");
       }
     } catch (err) {
-      console.error("Erreur d'authentification Google:", err);
-      setError(err.response?.data?.error || "Échec de l'authentification avec Google.");
+      console.error("❌ Erreur complète:", err);
+      // Gestion spécifique des erreurs Firebase (ex: Popup fermée par l'utilisateur)
+      if (err.code === 'auth/popup-closed-by-user') {
+        setError("La fenêtre de connexion a été fermée.");
+      } else {
+        setError(err.response?.data?.error || "Échec de l'authentification avec Google.");
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  // --- CONNEXION CLASSIQUE ---
+  // 3. Connexion classique
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setError('');
 
     try {
-      const res = await axios.post('/api/auth/login', formData);
+      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
       secureStorage.setItem('_d_usr_vault', res.data.token);
       secureStorage.setItem('_d_usr_info', res.data.user);
       localStorage.removeItem('_d_adm_vault');
@@ -103,6 +117,7 @@ useEffect(() => {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4 relative overflow-hidden font-sans">
+      {/* Background Decor */}
       <div className="absolute top-0 left-0 w-full h-[50vh] bg-primary-900 rounded-b-[3rem] z-0">
          <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
       </div>
