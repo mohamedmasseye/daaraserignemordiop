@@ -59,8 +59,14 @@ import AdminHome from './components/admin/AdminHome';
 
 const PublicProtectedRoute = ({ children }) => {
   const { token, loading } = useAuth();
-  // On attend que le chargement du contexte soit fini pour décider
-  if (loading) return null; 
+  
+  // ✅ TANT QU'ON LIT LE COFFRE, ON NE REDIRIGE PAS
+  if (loading) return (
+    <div className="h-screen w-full flex items-center justify-center bg-white">
+      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-primary-900"></div>
+    </div>
+  );
+
   return token ? children : <Navigate to="/login-public" replace />;
 };
 

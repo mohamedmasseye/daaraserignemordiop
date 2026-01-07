@@ -6,28 +6,39 @@ const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
   const [token, setToken] = useState(null);
   const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [adminToken, setAdminToken] = useState(null);
+  const [loading, setLoading] = useState(true); // ✅ ÉTAT CRITIQUE
 
   useEffect(() => {
-    // Lecture initiale au chargement de l'app
-    const savedToken = secureStorage.getItem('_d_usr_vault');
-    const savedUser = secureStorage.getItem('_d_usr_info');
-    if (savedToken) setToken(savedToken);
-    if (savedUser) setUser(savedUser);
-    setLoading(false);
+    // Au démarrage, on synchronise une seule fois
+    const t = secureStorage.getItem('_d_usr_vault');
+    const u = secureStorage.getItem('_d_usr_info');
+    const a = secureStorage.getItem('_d_adm_vault');
+    
+    if (t) setToken(t);
+    if (u) setUser(u);
+    if (a) setAdminToken(a);
+    
+    setLoading(false); // ✅ On libère l'application seulement ici
   }, []);
 
   const loginUser = (userData) => {
-    // 1. On stocke d'abord
     secureStorage.setItem('_d_usr_vault', userData.token);
     secureStorage.setItem('_d_usr_info', userData.user);
-    // 2. On met à jour l'état React (déclenche le re-render)
     setToken(userData.token);
     setUser(userData.user);
   };
 
+  const logout = () => {
+    secureStorage.removeItem('_d_usr_vault');
+    secureStorage.removeItem('_d_usr_info');
+    setToken(null);
+    setUser(null);
+    window.location.href = '/login-public';
+  };
+
   return (
-    <AuthContext.Provider value={{ token, user, loading, loginUser }}>
+    <AuthContext.Provider value={{ token, user, adminToken, loading, loginUser, logout, setAdminToken }}>
       {children}
     </AuthContext.Provider>
   );
