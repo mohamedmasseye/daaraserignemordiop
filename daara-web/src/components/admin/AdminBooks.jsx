@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import API from '../../services/api'; 
 import AdminLayout from './AdminLayout';
-import { Trash2, Plus, Book, Image as ImageIcon, CheckCircle, Loader, Edit3, X, Save, User } from 'lucide-react';
+import { Trash2, Plus, Book, Image as ImageIcon, CheckCircle, Loader, Edit3, X, Save, User, AlignLeft, Tag } from 'lucide-react';
 
 export default function AdminBooks() {
   const [books, setBooks] = useState([]);
@@ -74,7 +74,6 @@ export default function AdminBooks() {
         onUploadProgress: (progressEvent) => {
           const percent = Math.round((progressEvent.loaded * 100) / progressEvent.total);
           setUploadProgress(percent);
-          if (percent === 100) setUploadStep('Traitement par le serveur...');
         }
       };
 
@@ -84,7 +83,7 @@ export default function AdminBooks() {
         await API.post('/api/books', data, config);
       }
       
-      setUploadStep('Réussite !');
+      setUploadStep('Terminé !');
       setTimeout(() => {
           setIsUploading(false);
           alert(isEditing ? '✅ Livre mis à jour !' : '✅ Livre ajouté !');
@@ -93,7 +92,6 @@ export default function AdminBooks() {
       }, 600);
 
     } catch (error) {
-      console.error(error);
       setIsUploading(false);
       alert(error.response?.data?.error || "Une erreur est survenue.");
     }
@@ -104,11 +102,12 @@ export default function AdminBooks() {
       try {
         await API.delete(`/api/books/${id}`);
         setBooks(books.filter(b => b._id !== id));
-      } catch (error) { 
-          alert("Erreur lors de la suppression.");
-      }
+      } catch (error) { alert("Erreur lors de la suppression."); }
     }
   };
+
+  // ✅ Style réutilisable pour les inputs bien encadrés
+  const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none font-bold transition-all duration-200 placeholder:text-gray-300";
 
   return (
     <AdminLayout>
@@ -143,7 +142,7 @@ export default function AdminBooks() {
                 <div className="p-2 bg-gold-100 rounded-xl mr-3 text-gold-600">
                     {isEditing ? <Edit3 size={24}/> : <Plus size={24} />}
                 </div>
-                {isEditing ? `Modification en cours` : 'Ajouter un nouvel ouvrage'}
+                {isEditing ? `Modification : ${formData.title}` : 'Ajouter un nouvel ouvrage'}
             </h2>
             {isEditing && (
                 <button onClick={cancelEdit} className="text-red-500 font-bold hover:bg-red-50 px-4 py-2 rounded-xl transition flex items-center gap-2">
@@ -155,37 +154,42 @@ export default function AdminBooks() {
           <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <div className="space-y-5">
                 <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Titre de l'œuvre</label>
-                    <input type="text" required className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <Book size={14}/> Titre de l'œuvre
+                    </label>
+                    <input type="text" required placeholder="Entrez le titre..." className={inputStyle} value={formData.title} onChange={e => setFormData({...formData, title: e.target.value})} />
                 </div>
                 <div>
-                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Auteur</label>
-                    <div className="relative">
-                        <User className="absolute left-4 top-4 text-gray-300" size={18}/>
-                        <input type="text" required className="w-full mt-1 pl-12 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} />
-                    </div>
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                        <User size={14}/> Auteur
+                    </label>
+                    <input type="text" required className={inputStyle} value={formData.author} onChange={e => setFormData({...formData, author: e.target.value})} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <div>
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Catégorie</label>
-                        <input type="text" placeholder="Ex: Xassaïd" className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <Tag size={14}/> Catégorie
+                        </label>
+                        <input type="text" placeholder="Ex: Xassaïd" className={inputStyle} value={formData.category} onChange={e => setFormData({...formData, category: e.target.value})} />
                     </div>
                     <div>
-                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1">Description (Optionnel)</label>
-                        <textarea rows="1" className="w-full mt-1 p-4 bg-gray-50 border-none rounded-2xl focus:ring-2 focus:ring-primary-500 outline-none font-bold" value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
+                        <label className="text-xs font-black text-gray-400 uppercase tracking-widest ml-1 flex items-center gap-2">
+                            <AlignLeft size={14}/> Description
+                        </label>
+                        <textarea rows="1" placeholder="..." className={inputStyle} value={formData.description} onChange={e => setFormData({...formData, description: e.target.value})} />
                     </div>
                 </div>
             </div>
 
             <div className="space-y-5">
-                <div className="p-6 border-2 border-dashed border-primary-100 rounded-2xl bg-primary-50/30">
+                <div className="p-6 border-2 border-dashed border-primary-100 rounded-2xl bg-primary-50/30 hover:border-primary-400 transition-colors">
                     <label className="block text-sm font-bold text-primary-900 mb-2">📄 Fichier PDF {isEditing && '(Optionnel si inchangé)'}</label>
-                    <input id="fileInputPdf" type="file" accept="application/pdf" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary-900 file:text-white" onChange={(e) => setPdfFile(e.target.files[0])} />
+                    <input id="fileInputPdf" type="file" accept="application/pdf" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-primary-900 file:text-white cursor-pointer" onChange={(e) => setPdfFile(e.target.files[0])} />
                 </div>
 
-                <div className="p-6 border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/30">
+                <div className="p-6 border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/30 hover:border-gray-400 transition-colors">
                     <label className="block text-sm font-bold text-gray-700 mb-2">🖼️ Image de Couverture</label>
-                    <input id="fileInputCover" type="file" accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-gray-700" onChange={(e) => setCoverFile(e.target.files[0])} />
+                    <input id="fileInputCover" type="file" accept="image/*" className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-gray-200 file:text-gray-700 cursor-pointer" onChange={(e) => setCoverFile(e.target.files[0])} />
                 </div>
 
                 <button type="submit" disabled={isUploading} className={`w-full py-5 rounded-2xl font-black text-sm uppercase tracking-widest shadow-xl transition-all transform active:scale-95 flex items-center justify-center gap-3 ${isUploading ? 'bg-gray-300 text-gray-500' : 'bg-primary-900 text-white hover:bg-gold-500 hover:text-primary-900'}`}>
@@ -212,7 +216,7 @@ export default function AdminBooks() {
                   <td className="px-8 py-5">
                     <div className="flex items-center gap-4">
                       <div className="h-16 w-12 bg-gray-100 rounded-lg overflow-hidden shadow-sm border border-gray-200 shrink-0">
-                          {book.coverUrl ? <img src={book.coverUrl} className="h-full w-full object-cover"/> : <div className="h-full w-full flex items-center justify-center text-gray-300"><Book size={20}/></div>}
+                          {book.coverUrl ? <img src={book.coverUrl} className="h-full w-full object-cover" alt=""/> : <div className="h-full w-full flex items-center justify-center text-gray-300"><Book size={20}/></div>}
                       </div>
                       <div>
                           <p className="font-bold text-gray-900 leading-tight">{book.title}</p>
