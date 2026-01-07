@@ -89,37 +89,51 @@ function App() {
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       
-      const setupPush = async () => {
-        // Nettoyage des anciens écouteurs
-        await PushNotifications.removeAllListeners();
-
-        // Écouteur d'enregistrement du Token
-        await PushNotifications.addListener('registration', (token) => {
-          FCM.subscribeTo({ topic: 'all_users' })
-            .then(() => console.log('✅ APK : Abonné au topic'))
-            .catch(err => console.error('❌ APK : Erreur topic', err));
-        });
-
-        // Écouteur de clic (Redirection APK)
-        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-          const url = action.notification.data?.url;
-          if (url) {
-            window.location.href = url;
-          }
-        });
-
-        // Demander les permissions
+      const initPushLogic = async () => {
+        // A. Vérifier et demander les permissions d'abord
         let permStatus = await PushNotifications.checkPermissions();
+        
         if (permStatus.receive === 'prompt') {
           permStatus = await PushNotifications.requestPermissions();
         }
 
-        if (permStatus.receive === 'granted') {
-          await PushNotifications.register();
+        if (permStatus.receive !== 'granted') {
+          console.warn("⚠️ APK : Permission non accordée");
+          return;
         }
+
+        // B. Une fois la permission acquise, on prépare les écouteurs
+        await PushNotifications.removeAllListeners();
+
+        // Écouteur de succès d'enregistrement
+        await PushNotifications.addListener('registration', (token) => {
+          console.log('✅ APK Token:', token.value);
+          FCM.subscribeTo({ topic: 'all_users' })
+            .then(() => console.log('✅ APK abonné au topic global'))
+            .catch(err => console.error('❌ Erreur Topic:', err));
+        });
+
+        // Écouteur de réception (Quand l'app est OUVERTE)
+        await PushNotifications.addListener('pushNotificationReceived', (notification) => {
+          alert(`🔔 ${notification.title}\n${notification.body}`);
+        });
+
+        // Écouteur d'action (Quand on CLIQUE sur la notif, app fermée ou background)
+        await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          const url = action.notification.data?.url;
+          if (url) {
+            console.log("🚀 APK Redirection au clic:", url);
+            window.location.href = url;
+          }
+        });
+
+        // C. Enfin, on s'enregistre auprès de Firebase
+        await PushNotifications.register();
       };
 
-      setupPush();
+      initPushLogic();
+
+      // On ne vide pas les listeners ici pour laisser Android gérer le clic quand l'app est tuée
     }
   }, []);
 
