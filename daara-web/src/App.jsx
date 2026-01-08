@@ -9,7 +9,7 @@ import { FCM } from '@capacitor-community/fcm';
 import { Capacitor } from '@capacitor/core';
 import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import { initializeApp } from "firebase/app";
-import { getMessaging, getToken, onMessage } from "firebase/messaging";
+// Importation déplacée dans le useEffect pour éviter le crash mobile
 
 // --- CONFIGURATION FIREBASE ---
 const firebaseConfig = {
@@ -22,10 +22,10 @@ const firebaseConfig = {
 };
 
 const firebaseApp = initializeApp(firebaseConfig);
-const messaging = getMessaging(firebaseApp);
+// ✅ Initialisation globale supprimée ici pour éviter le crash APK
 
 // --- IMPORTS COMPOSANTS ---
-import ScrollToTop from './components/ScrollToTop'; // ✅ AJOUT DE L'IMPORT
+import ScrollToTop from './components/ScrollToTop'; 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import Home from './components/Home';
@@ -131,11 +131,15 @@ function AppContent() {
     }
   }, []);
 
-  // 4. LOGIQUE WEB PUSH (FIREBASE)
+  // 4. LOGIQUE WEB PUSH (Uniquement sur navigateur, PAS dans l'APK)
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       const initWebPush = async () => {
         try {
+          // ✅ Importation dynamique pour ne pas charger Firebase Messaging sur mobile
+          const { getMessaging, getToken, onMessage } = await import("firebase/messaging");
+          const messaging = getMessaging(firebaseApp);
+
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
@@ -143,12 +147,16 @@ function AppContent() {
               serviceWorkerRegistration: registration, 
               vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
             });
+
+            onMessage(messaging, (payload) => { 
+              alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); 
+            });
           }
-        } catch (err) {}
+        } catch (err) {
+          console.log("Erreur initialisation Web Push", err);
+        }
       };
-      onMessage(messaging, (payload) => { 
-        alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); 
-      });
+
       if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) { 
         initWebPush(); 
       }

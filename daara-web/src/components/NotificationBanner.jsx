@@ -9,7 +9,10 @@ export default function NotificationBanner() {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    // 1. Vérifier si l'utilisateur a déjà fermé la bannière manuellement dans cette session
+    if (Capacitor.isNativePlatform()) {
+      setIsVisible(false);
+      return;
+    }
     const isDismissed = localStorage.getItem('daara_notif_dismissed');
     if (isDismissed) return;
 
