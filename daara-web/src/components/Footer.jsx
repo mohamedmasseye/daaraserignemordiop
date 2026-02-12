@@ -90,12 +90,6 @@ export default function Footer() {
                   </Link>
                 </li>
               ))}
-              {/* LIEN AJOUTÉ ICI */}
-              <li>
-                <Link to="/don" className="text-gold-400 hover:text-white transition flex items-center group font-bold mt-2">
-                  <Heart size={14} className="mr-2 fill-current" /> Faire un don
-                </Link>
-              </li>
             </ul>
           </div>
 
@@ -119,6 +113,7 @@ export default function Footer() {
                 <div className="flex flex-col">
                   <span className="break-all">daaraserignemordiop@gmail.com</span>
                   <span className="break-all">moultazam@gmail.com</span>
+                  <span className="break-all">infos@daaraserignemordiop.com</span>
                 </div>
               </li>
             </ul>
