@@ -30,8 +30,6 @@ export default function Navbar() {
     window.location.reload();
   };
 
-  const isActive = (path) => location.pathname === path;
-  // ✅ /livres retiré de isMediaActive car il est maintenant un onglet principal
   const isMediaActive = ['/blog', '/galerie', '/podcast'].includes(location.pathname);
 
   const menuVariants = {
@@ -49,36 +47,41 @@ export default function Navbar() {
       <nav 
         className={`fixed w-full z-50 transition-all duration-500 ease-in-out border-b ${
           scrolled 
-            ? "bg-primary-900/95 backdrop-blur-md py-2 border-primary-800 shadow-xl" 
-            : "bg-primary-900 py-4 border-transparent shadow-none"
+            ? "bg-primary-900/95 backdrop-blur-md py-1 border-primary-800 shadow-xl" 
+            : "bg-primary-900 py-3 border-transparent shadow-none"
         }`}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
+        {/* Changement : max-w-full et padding horizontal plus large pour le style Laptop */}
+        <div className="w-full mx-auto px-4 md:px-8 lg:px-12">
+          
+          {/* Grille à 3 colonnes pour le bureau, flex classique pour mobile */}
+          <div className="flex lg:grid lg:grid-cols-3 items-center h-16">
             
-            {/* LOGO */}
-            <Link to="/" className="flex items-center gap-3 group relative z-50">
-              <div className="bg-white p-1 rounded-full shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 overflow-hidden flex items-center justify-center h-10 w-10 md:h-12 md:w-12">
-                <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" 
-                     onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
-                <BookOpen className="text-primary-900 hidden h-5 w-5" />
-              </div>
-              <div className="flex flex-col">
-                <span className="text-lg md:text-xl font-serif font-bold tracking-wide leading-none text-white drop-shadow-md">Daara<span className="text-gold-500">SMD</span></span>
-                <span className={`text-[10px] md:text-xs text-primary-300 uppercase tracking-widest hidden sm:block transition-all duration-300 ${scrolled ? 'opacity-0 h-0' : 'opacity-100'}`}>Enseignement & Excellence</span>
-              </div>
-            </Link>
+            {/* 1. LOGO (Aligné à gauche) */}
+            <div className="flex justify-start">
+              <Link to="/" className="flex items-center gap-3 group relative z-50">
+                <div className="bg-white p-1 rounded-full shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 overflow-hidden flex items-center justify-center h-10 w-10 md:h-12 md:w-12">
+                  <img src="/logo.png" alt="Logo" className="h-full w-full object-contain" 
+                       onError={(e) => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'block'; }} />
+                  <BookOpen className="text-primary-900 hidden h-5 w-5" />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-lg md:text-xl font-serif font-bold tracking-wide leading-none text-white drop-shadow-md">Daara<span className="text-gold-500">SMD</span></span>
+                  <span className={`text-[10px] md:text-xs text-primary-300 uppercase tracking-widest hidden sm:block transition-all duration-300 ${scrolled ? 'opacity-0 h-0' : 'opacity-100'}`}>Enseignement & Excellence</span>
+                </div>
+              </Link>
+            </div>
 
-            {/* --- MENU BUREAU --- */}
-            <div className="hidden lg:flex items-center gap-6 xl:gap-8">
-              <div className={`flex items-center space-x-1 px-6 py-2 rounded-full border transition-all duration-300 ${
+            {/* 2. MENU CAPSULE (Parfaitement centré sur Laptop) */}
+            <div className="hidden lg:flex justify-center">
+              <div className={`flex items-center space-x-1 px-4 py-1.5 rounded-full border transition-all duration-300 ${
                   scrolled 
-                  ? "bg-transparent border-transparent" 
-                  : "bg-white/5 border-white/10 shadow-lg"
+                  ? "bg-white/5 border-white/10" 
+                  : "bg-white/10 border-white/20 shadow-lg"
               }`}>
                 <DesktopNavItem to="/" current={location.pathname}>Accueil</DesktopNavItem>
                 
-                {/* Dropdown Médiathèque Desktop */}
+                {/* Dropdown Médiathèque */}
                 <div className="relative group px-3 py-2 cursor-pointer rounded-full transition-colors hover:bg-white/5">
                   <span className={`text-sm font-medium flex items-center gap-1 transition-colors relative z-10 ${
                     isMediaActive ? "text-gold-500 font-bold" : "text-gray-300 group-hover:text-white"
@@ -87,8 +90,7 @@ export default function Navbar() {
                   </span>
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pt-2">
                     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 p-2">
-                      <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Explorer</div>
-                      {/* Bibliothèque retirée d'ici car elle est maintenant un onglet principal */}
+                      <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 text-center">Explorer</div>
                       <DropdownItem to="/blog" icon={Newspaper} label="Le Blog" desc="Articles & Actualités" color="bg-green-50 text-green-600" />
                       <DropdownItem to="/galerie" icon={Image} label="Galerie Photo" desc="Souvenirs en images" color="bg-purple-50 text-purple-600" />
                       <DropdownItem to="/podcast" icon={Mic} label="Podcasts" desc="Audios & Conférences" color="bg-red-50 text-red-600" />
@@ -96,15 +98,15 @@ export default function Navbar() {
                   </div>
                 </div>
 
-                {/* ✅ Bibliothèque remplace Boutique */}
                 <DesktopNavItem to="/livres" current={location.pathname}>Bibliothèque</DesktopNavItem>
                 <DesktopNavItem to="/evenements" current={location.pathname}>Agenda</DesktopNavItem>
                 <DesktopNavItem to="/contact" current={location.pathname}>Contact</DesktopNavItem>
               </div>
+            </div>
 
-              <div className="flex items-center gap-4">
-                {/* ❌ Bouton Don masqué ici */}
-
+            {/* 3. AUTH / CONNEXION (Aligné à droite) */}
+            <div className="flex flex-1 lg:flex-none justify-end items-center gap-4">
+              <div className="hidden lg:flex items-center">
                 {user ? (
                   <Link to="/profil" className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full bg-primary-800/50 border border-primary-700 hover:bg-primary-800 transition-all duration-300 group">
                     <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-gold-500 group-hover:scale-110 transition-transform">
@@ -113,20 +115,23 @@ export default function Navbar() {
                     <span className="text-sm font-medium text-white max-w-[80px] truncate">{user.fullName.split(' ')[0]}</span>
                   </Link>
                 ) : (
-                  <Link to="/login-public" className="text-sm font-bold text-gray-300 hover:text-white transition-colors bg-white/5 px-4 py-2 rounded-full hover:bg-white/10 border border-white/5">Connexion</Link>
+                  <Link to="/login-public" className="text-sm font-bold text-white hover:text-gold-500 transition-colors bg-white/10 px-6 py-2.5 rounded-full hover:bg-white/20 border border-white/10 shadow-sm">
+                    Connexion
+                  </Link>
                 )}
+              </div>
+
+              {/* BOUTON MOBILE (Uniquement mobile) */}
+              <div className="lg:hidden">
+                <button 
+                  onClick={() => setIsOpen(!isOpen)} 
+                  className={`p-2 rounded-full transition-all duration-300 ${isOpen ? 'text-white' : 'text-gold-500'}`}
+                >
+                  {isOpen ? <X size={32} /> : <Menu size={32} />}
+                </button>
               </div>
             </div>
 
-            {/* --- BOUTON MOBILE --- */}
-            <div className="lg:hidden relative z-50">
-              <button 
-                onClick={() => setIsOpen(!isOpen)} 
-                className={`p-2 rounded-full transition-all duration-300 ${isOpen ? 'text-white' : 'text-gold-500'}`}
-              >
-                {isOpen ? <X size={32} /> : <Menu size={32} />}
-              </button>
-            </div>
           </div>
         </div>
       </nav>
@@ -142,12 +147,7 @@ export default function Navbar() {
             className="fixed inset-0 z-40 bg-primary-900 lg:hidden flex flex-col pt-24 pb-10 px-6 overflow-y-auto"
           >
             <div className="flex flex-col space-y-2 flex-1">
-              
-              <motion.div variants={itemVariants}>
-                 <MobileNavItem to="/" onClick={() => setIsOpen(false)}>Accueil</MobileNavItem>
-              </motion.div>
-
-              {/* Accordéon Médiathèque */}
+              <motion.div variants={itemVariants}><MobileNavItem to="/" onClick={() => setIsOpen(false)}>Accueil</MobileNavItem></motion.div>
               <motion.div variants={itemVariants} className="pl-2 py-1">
                 <button 
                   onClick={() => setIsMobileMediaOpen(!isMobileMediaOpen)} 
@@ -156,7 +156,6 @@ export default function Navbar() {
                   <span className="text-lg font-medium">Médiathèque</span>
                   <ChevronDown size={20} className={`transition-transform duration-300 ${isMobileMediaOpen ? 'rotate-180 text-gold-500' : ''}`} />
                 </button>
-                
                 <AnimatePresence>
                   {isMobileMediaOpen && (
                     <motion.div 
@@ -165,7 +164,6 @@ export default function Navbar() {
                       exit={{ height: 0, opacity: 0 }} 
                       className="overflow-hidden pl-4 border-l border-white/10 mt-1 space-y-1"
                     >
-                      {/* Bibliothèque retirée des sous-liens */}
                       <MobileSubLink to="/blog" onClick={() => setIsOpen(false)} icon={Newspaper} label="Le Blog" />
                       <MobileSubLink to="/galerie" onClick={() => setIsOpen(false)} icon={Image} label="Galerie Photos" />
                       <MobileSubLink to="/podcast" onClick={() => setIsOpen(false)} icon={Mic} label="Podcasts Audio" />
@@ -173,40 +171,23 @@ export default function Navbar() {
                   )}
                 </AnimatePresence>
               </motion.div>
-
-              {/* ✅ Bibliothèque remplace Boutique sur Mobile */}
-              <motion.div variants={itemVariants}>
-                 <MobileNavItem to="/livres" onClick={() => setIsOpen(false)}>Bibliothèque</MobileNavItem>
-              </motion.div>
-              <motion.div variants={itemVariants}>
-                 <MobileNavItem to="/evenements" onClick={() => setIsOpen(false)}>Agenda</MobileNavItem>
-              </motion.div>
-              <motion.div variants={itemVariants}>
-                 <MobileNavItem to="/contact" onClick={() => setIsOpen(false)}>Contact</MobileNavItem>
-              </motion.div>
-
+              <motion.div variants={itemVariants}><MobileNavItem to="/livres" onClick={() => setIsOpen(false)}>Bibliothèque</MobileNavItem></motion.div>
+              <motion.div variants={itemVariants}><MobileNavItem to="/evenements" onClick={() => setIsOpen(false)}>Agenda</MobileNavItem></motion.div>
+              <motion.div variants={itemVariants}><MobileNavItem to="/contact" onClick={() => setIsOpen(false)}>Contact</MobileNavItem></motion.div>
             </div>
 
-            {/* Footer Mobile */}
             <motion.div variants={itemVariants} className="mt-8 border-t border-white/10 pt-6 space-y-4">
-              {/* ❌ Bouton Don masqué ici aussi */}
-              
               {user ? (
                  <>
-                    <Link to="/profil" onClick={() => setIsOpen(false)} className="w-full bg-primary-800 border border-primary-700 text-white py-3 rounded-xl font-medium text-center flex justify-center items-center gap-2">
+                    <Link to="/profil" onClick={() => setIsOpen(false)} className="w-full bg-primary-800 border border-primary-700 text-white py-4 rounded-xl font-medium text-center flex justify-center items-center gap-2">
                       <User size={18} /> Mon Profil
                     </Link>
-                    <button onClick={handleLogout} className="w-full text-center text-red-400 text-sm mt-2 hover:text-red-300">
-                      Se déconnecter
-                    </button>
+                    <button onClick={handleLogout} className="w-full text-center text-red-400 text-sm mt-2">Se déconnecter</button>
                  </>
               ) : (
-                <Link to="/login-public" onClick={() => setIsOpen(false)} className="block w-full text-center py-3 bg-white/5 rounded-xl text-gray-300 hover:text-white font-medium border border-white/5">
-                  Connexion
-                </Link>
+                <Link to="/login-public" onClick={() => setIsOpen(false)} className="block w-full text-center py-4 bg-gold-500 rounded-xl text-primary-950 font-bold shadow-lg">Connexion</Link>
               )}
             </motion.div>
-
           </motion.div>
         )}
       </AnimatePresence>
@@ -229,7 +210,7 @@ const DesktopNavItem = ({ to, children, current }) => {
         />
       )}
       <span className={`relative z-10 text-sm font-medium transition-colors duration-200 ${
-        isActive ? 'text-gold-500 font-bold' : 'text-gray-300 hover:text-white'
+        isActive ? 'text-gold-500 font-bold' : 'text-gray-200 hover:text-white'
       }`}>
         {children}
       </span>
@@ -240,32 +221,24 @@ const DesktopNavItem = ({ to, children, current }) => {
 const MobileNavItem = ({ to, children, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
-
   return (
-    <Link to={to} onClick={onClick} className="relative block px-4 py-3 rounded-xl transition-colors">
+    <Link to={to} onClick={onClick} className="relative block px-4 py-3 rounded-xl">
       {isActive && (
-        <motion.div
-          layoutId="activeMobileTab" 
-          className="absolute inset-0 bg-white/10 rounded-xl"
-          initial={false}
-          transition={{ type: "spring", stiffness: 300, damping: 30 }}
-        />
+        <motion.div layoutId="activeMobileTab" className="absolute inset-0 bg-white/10 rounded-xl" initial={false} />
       )}
-      <span className={`relative z-10 text-lg font-medium ${isActive ? "text-gold-500 font-bold" : "text-gray-100"}`}>
-        {children}
-      </span>
+      <span className={`relative z-10 text-lg font-medium ${isActive ? "text-gold-500 font-bold" : "text-gray-100"}`}>{children}</span>
     </Link>
   );
 };
 
 const DropdownItem = ({ to, icon: Icon, label, desc, color }) => (
-    <Link to={to} className="flex items-center px-4 py-3 m-1 rounded-xl transition-all duration-300 group hover:bg-gradient-to-r hover:from-primary-50 hover:to-transparent hover:shadow-sm relative overflow-hidden">
-      <div className={`p-2.5 rounded-xl ${color} bg-opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-sm relative z-10`}>
+    <Link to={to} className="flex items-center px-4 py-3 m-1 rounded-xl transition-all duration-300 group hover:bg-gray-50 relative overflow-hidden">
+      <div className={`p-2.5 rounded-xl ${color} bg-opacity-20 group-hover:scale-110 transition-transform duration-300 relative z-10`}>
         <Icon size={20} className={color.split(' ')[1]} />
       </div>
-      <div className="ml-3.5 relative z-10">
-        <p className="text-sm font-bold text-gray-800 group-hover:text-primary-800 transition-colors">{label}</p>
-        <p className="text-[11px] font-medium text-gray-400 group-hover:text-primary-600/80 transition-colors mt-0.5">{desc}</p>
+      <div className="ml-3.5 relative z-10 text-left">
+        <p className="text-sm font-bold text-gray-800">{label}</p>
+        <p className="text-[11px] font-medium text-gray-400 mt-0.5">{desc}</p>
       </div>
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-gold-500 opacity-0 group-hover:opacity-100 transition-opacity"></div>
     </Link>
@@ -275,7 +248,7 @@ const MobileSubLink = ({ to, onClick, icon: Icon, label }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
   return (
-    <Link to={to} onClick={onClick} className={`flex items-center gap-3 py-3 px-4 rounded-xl text-base font-medium transition-colors ${isActive ? "text-gold-500 bg-white/5" : "text-gray-400 hover:text-white hover:bg-white/5"}`}>
+    <Link to={to} onClick={onClick} className={`flex items-center gap-3 py-3 px-4 rounded-xl text-base font-medium transition-colors ${isActive ? "text-gold-500 bg-white/5" : "text-gray-400 hover:text-white"}`}>
       <Icon size={18} className={isActive ? "text-gold-500" : "text-gray-500"}/>
       <span>{label}</span>
     </Link>
