@@ -32,7 +32,7 @@ export default function AdminHome() {
         setIsLoading(true);
         const res = await API.get('/api/home-content');
         if (res.data && Object.keys(res.data).length > 0) {
-          setContent({ ...DEFAULT_CONTENT, ...res.data });
+          setContent({ ...DEFAULT_CONTENT, ...res.data,about: { ...DEFAULT_CONTENT.about, ...res.data.about } });
         } else {
           setContent(DEFAULT_CONTENT);
         }
