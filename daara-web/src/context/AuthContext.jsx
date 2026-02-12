@@ -23,10 +23,14 @@ export const AuthProvider = ({ children }) => {
     initAuth();
   }, []);
 
-  // ✅ Connexion Client
+  // ✅ Connexion Client (S'assure que setUser est appelé pour la Navbar)
   const loginUser = (userData) => {
+    // On sauvegarde dans le storage
     secureStorage.setItem('_d_usr_vault', userData.token);
     secureStorage.setItem('_d_usr_info', userData.user);
+    
+    // ✅ CRITIQUE : Mise à jour immédiate des états React
+    // C'est ce qui permet à la Navbar de changer sans actualiser
     setToken(userData.token);
     setUser(userData.user);
   };
@@ -34,7 +38,7 @@ export const AuthProvider = ({ children }) => {
   // ✅ Connexion Admin
   const loginAdmin = (adminData) => {
     secureStorage.setItem('_d_adm_vault', adminData.token);
-    setAdminToken(adminData.token); // Indispensable pour AdminProtectedRoute
+    setAdminToken(adminData.token); 
   };
 
   const logout = (isAdmin = false) => {
@@ -45,12 +49,13 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
     setAdminToken(null);
     
+    // On utilise replace pour éviter de revenir en arrière avec le bouton "Précédent"
     if (isAdmin) {
-    window.location.href = '/portal-daara-admin-77';
-  } else {
-    window.location.href = '/login-public';
-  }
-};
+      window.location.replace('/portal-daara-admin-77');
+    } else {
+      window.location.replace('/login-public');
+    }
+  };
 
   return (
     <AuthContext.Provider value={{ token, user, adminToken, loading, loginUser, loginAdmin, logout }}>
