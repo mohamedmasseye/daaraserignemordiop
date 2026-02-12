@@ -167,13 +167,31 @@ export default function AdminHome() {
                       </div>
 
                       <div className="lg:col-span-8 space-y-6">
-                          <div className="grid grid-cols-2 gap-6">
-                            <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Badge</label><input className={inputStyle} value={slide.badge} onChange={e => updateSlide(index, 'badge', e.target.value)} /></div>
-                            <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Lien (Route)</label><input className={inputStyle} value={slide.link} onChange={e => updateSlide(index, 'link', e.target.value)} /></div>
-                          </div>
-                          <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Titre principal</label><input className={`${inputStyle} font-serif text-lg`} value={slide.title} onChange={e => updateSlide(index, 'title', e.target.value)} /></div>
-                          <div><label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Sous-titre explicatif</label><textarea className={`${inputStyle} h-24 resize-none`} value={slide.subtitle} onChange={e => updateSlide(index, 'subtitle', e.target.value)} /></div>
-                      </div>
+  <div className="grid grid-cols-3 gap-6"> {/* Changé de grid-cols-2 à 3 */}
+    <div>
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Badge</label>
+      <input className={inputStyle} value={slide.badge} onChange={e => updateSlide(index, 'badge', e.target.value)} />
+    </div>
+    <div>
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Texte Bouton (CTA)</label>
+      <input className={`${inputStyle} text-primary-600`} value={slide.cta} onChange={e => updateSlide(index, 'cta', e.target.value)} placeholder="Ex: Nous contacter" />
+    </div>
+    <div>
+      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Lien (Route)</label>
+      <input className={inputStyle} value={slide.link} onChange={e => updateSlide(index, 'link', e.target.value)} />
+    </div>
+  </div>
+  
+  <div>
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Titre principal</label>
+    <input className={`${inputStyle} font-serif text-lg`} value={slide.title} onChange={e => updateSlide(index, 'title', e.target.value)} />
+  </div>
+  
+  <div>
+    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Sous-titre explicatif</label>
+    <textarea className={`${inputStyle} h-24 resize-none`} value={slide.subtitle} onChange={e => updateSlide(index, 'subtitle', e.target.value)} />
+  </div>
+</div>
                    </div>
                 </div>
               ))}

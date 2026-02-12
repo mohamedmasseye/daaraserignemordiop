@@ -15,7 +15,7 @@ const DEFAULT_CONTENT = {
   slides: [
     { id: 1, image: "", badge: "Bienvenue au Daara", title: "La Science est une Lumière", subtitle: "Héritier d’une lumière spirituelle...", cta: "Découvrir le Daara", link: "about" },
     { id: 2, image: "", badge: "Éducation & Excellence", title: "Servir le Coran", subtitle: "Un abreuvoir de connaissances.", cta: "Voir les Enseignements", link: "/livres" },
-    { id: 3, image: "", badge: "Communauté & Partage", title: "Au Service de l'Humanité", subtitle: "Un sanctuaire d'inspiration.", cta: "Nous contacter", link: "/don" }
+    { id: 3, image: "", badge: "Communauté & Partage", title: "Au Service de l'Humanité", subtitle: "Un sanctuaire d'inspiration.", cta: "Faire un Don", link: "/don" }
   ],
   about: { title1: "Une vie dédiée à la", highlight1: "foi", title2: "et au", highlight2: "savoir", text1: "...", text2: "...", image: "", bioPdf: "" },
   pillars: { shopImage: "", libraryImage: "", mediaImage: "" },
