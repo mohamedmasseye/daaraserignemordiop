@@ -117,7 +117,7 @@ export default function Home() {
       try {
         const res = await API.get('/api/home-content'); 
         if (res.data && Object.keys(res.data).length > 0) {
-            setContent(prev => ({ ...prev, ...res.data }));
+            setContent(prev => ({ ...prev, ...res.data,about: { ...prev.about, ...res.data.about } }));
         }
       } catch (err) { console.error("Erreur chargement contenu home", err); }
     };
