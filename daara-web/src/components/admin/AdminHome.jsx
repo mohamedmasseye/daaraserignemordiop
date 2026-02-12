@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import API from '../../services/api'; // ✅ Utilise l'instance sécurisée
 import { 
   Save, Layout, BookOpen, Image as ImageIcon, Type, Info, 
-  Plus, Trash2, ExternalLink, UploadCloud, Loader, Tag, AlignLeft, MapPin, Phone,User
+  Plus, Trash2, ExternalLink, UploadCloud, Loader, Tag, AlignLeft, MapPin, Phone,User,FileText
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout'; 
@@ -11,7 +11,7 @@ const DEFAULT_CONTENT = {
   slides: [
     { id: 1, image: "", badge: "Bienvenue", title: "Titre", subtitle: "Sous-titre", cta: "Découvrir", link: "about" }
   ],
-  about: { title1: "", highlight1: "", title2: "", highlight2: "", text1: "", text2: "", image: "" },
+  about: { title1: "", highlight1: "", title2: "", highlight2: "", text1: "", text2: "", image: "",bioPdf: "" },
   pillars: { shopImage: "", libraryImage: "", mediaImage: "" },
   quote: { text: "", title: "" },
   info: { address: "", hours: "", nextGamou: "", phone: "", contactName: "" }
@@ -204,6 +204,37 @@ export default function AdminHome() {
                       <textarea className={`${inputStyle} h-40 font-medium`} placeholder="Paragraphe de fin..." value={content.about.text2} onChange={e => updateSection('about', 'text2', e.target.value)} />
                    </div>
                 </div>
+                <div className="mt-10 p-8 border-2 border-dashed border-gray-200 rounded-[2rem] bg-gray-50/50">
+      <div className="flex items-center gap-4 mb-4">
+        <div className="p-3 bg-red-100 text-red-600 rounded-xl"><FileText size={24}/></div>
+        <div>
+          <h4 className="font-bold text-primary-900">Document de Biographie complet</h4>
+          <p className="text-xs text-gray-500">Téléversez un fichier PDF (Curriculum, biographie détaillée...)</p>
+        </div>
+      </div>
+      
+      <div className="flex items-center gap-4">
+        <div className="flex-1 relative h-16 bg-white border-2 border-gray-100 rounded-2xl flex items-center px-6 overflow-hidden">
+           <span className="text-sm font-medium text-gray-400 truncate">
+             {content.about.bioPdf ? "📄 Document lié : " + content.about.bioPdf.split('/').pop() : "Aucun fichier PDF sélectionné"}
+           </span>
+           <input 
+             type="file" 
+             accept="application/pdf" 
+             className="absolute inset-0 opacity-0 cursor-pointer" 
+             onChange={(e) => handleImageUpload(e, (url) => updateSection('about', 'bioPdf', url))} 
+           />
+        </div>
+        {content.about.bioPdf && (
+          <button 
+            onClick={() => updateSection('about', 'bioPdf', "")}
+            className="p-4 bg-red-50 text-red-500 rounded-2xl hover:bg-red-100 transition-colors"
+          >
+            <Trash2 size={20}/>
+          </button>
+        )}
+      </div>
+    </div>
              </div>
           )}
 

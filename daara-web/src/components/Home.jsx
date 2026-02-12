@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
-  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, ShoppingBag, Image as ImageIcon, Bell
+  Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
+  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown // ✅ Ajouts icones
 } from 'lucide-react';
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
@@ -16,7 +17,7 @@ const DEFAULT_CONTENT = {
     { id: 2, image: "", badge: "Éducation & Excellence", title: "Servir le Coran", subtitle: "Un abreuvoir de connaissances.", cta: "Voir les Enseignements", link: "/livres" },
     { id: 3, image: "", badge: "Communauté & Partage", title: "Au Service de l'Humanité", subtitle: "Un sanctuaire d'inspiration.", cta: "Faire un Don", link: "/don" }
   ],
-  about: { title1: "Une vie dédiée à la", highlight1: "foi", title2: "et au", highlight2: "savoir", text1: "...", text2: "...", image: "" },
+  about: { title1: "Une vie dédiée à la", highlight1: "foi", title2: "et au", highlight2: "savoir", text1: "...", text2: "...", image: "", bioPdf: "" },
   pillars: { shopImage: "", libraryImage: "", mediaImage: "" },
   quote: { text: "...", title: "..." },
   info: { address: "...", hours: "...", nextGamou: "...", phone: "...", contactName: "..." }
@@ -35,6 +36,39 @@ const ImagePlaceholder = ({ label }) => (
     <span className="text-xs font-bold uppercase tracking-widest">{label || "Image non disponible"}</span>
   </div>
 );
+
+// --- COMPOSANT POPUP PDF ---
+const PdfPopup = ({ url, onClose }) => {
+  if (!url) return null;
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-primary-950/90 backdrop-blur-md p-2 md:p-10">
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9, y: 50 }} 
+        animate={{ opacity: 1, scale: 1, y: 0 }} 
+        exit={{ opacity: 0, scale: 0.9, y: 50 }}
+        className="bg-white w-full max-w-4xl h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl border border-white/20"
+      >
+        <div className="p-5 border-b flex justify-between items-center bg-gray-50/50">
+          <div className="flex items-center gap-3 text-primary-900">
+            <div className="p-2 bg-red-100 text-red-600 rounded-lg"><FileText size={20}/></div>
+            <span className="font-bold font-serif text-lg">Biographie Complète</span>
+          </div>
+          <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"><X size={24}/></button>
+        </div>
+        <div className="flex-1 bg-gray-100 relative">
+          <iframe 
+            src={`${getSecureUrl(url)}#view=FitH`} 
+            className="w-full h-full border-none"
+            title="Biographie PDF"
+          />
+        </div>
+        <div className="p-4 bg-gray-50 border-t text-center">
+            <a href={getSecureUrl(url)} download target="_blank" rel="noreferrer" className="text-xs font-black uppercase tracking-widest text-primary-500 hover:text-gold-600 transition-colors">Télécharger le document</a>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
 
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
@@ -75,12 +109,13 @@ export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [content, setContent] = useState(DEFAULT_CONTENT);
+  const [isBioOpen, setIsBioOpen] = useState(false); // ✅ État pour le PDF
 
   // --- CHARGEMENT DU CONTENU DYNAMIQUE ---
   useEffect(() => {
     const fetchContent = async () => {
       try {
-        const res = await API.get('/api/home-content'); // ✅ Utilise API
+        const res = await API.get('/api/home-content'); 
         if (res.data && Object.keys(res.data).length > 0) {
             setContent(prev => ({ ...prev, ...res.data }));
         }
@@ -93,7 +128,7 @@ export default function Home() {
   useEffect(() => {
     const checkEvents = async () => {
       try {
-        const res = await API.get('/api/events'); // ✅ Utilise API
+        const res = await API.get('/api/events'); 
         const upcoming = (res.data || [])
             .filter(e => new Date(e.date) > new Date())
             .sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -151,6 +186,12 @@ export default function Home() {
       <AnimatePresence>
         {showPopup && featuredEvent && (
             <EventPopup event={featuredEvent} onClose={handleClosePopup} onBook={() => { handleClosePopup(); navigate('/evenements'); }} />
+        )}
+      </AnimatePresence>
+
+      <AnimatePresence>
+        {isBioOpen && (
+          <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />
         )}
       </AnimatePresence>
 
@@ -219,7 +260,28 @@ export default function Home() {
               {content.about.title1} <span className="text-gold-500">{content.about.highlight1}</span> {content.about.title2} <span className="text-gold-500">{content.about.highlight2}</span>.
             </h2>
             <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
-            <p className="text-gray-600 text-lg leading-relaxed">{content.about.text2}</p>
+            <p className="text-gray-600 text-lg leading-relaxed mb-4">{content.about.text2}</p>
+
+            {/* ✅ FLÈCHE ANIMÉE ET BOUTON PDF */}
+            {content.about.bioPdf && (
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsBioOpen(true)}
+                className="group flex items-center gap-4 bg-white border-2 border-primary-900/5 px-8 py-4 rounded-2xl shadow-sm hover:shadow-xl hover:border-gold-500/30 transition-all duration-300"
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-primary-900 font-black uppercase tracking-tighter text-sm mb-0.5">Voir plus</span>
+                  <motion.div animate={{ y: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                    <ChevronDown size={18} className="text-gold-500" />
+                  </motion.div>
+                </div>
+                <div className="h-8 w-[1px] bg-gray-100"></div>
+                <div className="p-2 bg-primary-900 text-white rounded-xl group-hover:bg-gold-500 transition-colors">
+                  <FileText size={20} />
+                </div>
+              </motion.button>
+            )}
           </motion.div>
         </motion.div>
       </section>
@@ -233,7 +295,6 @@ export default function Home() {
             <p className="text-primary-200 text-lg">Services et ressources spirituelles.</p>
           </motion.div>
           <motion.div variants={staggerContainer} initial="hidden" whileInView="visible" viewport={{ once: true }} className="grid md:grid-cols-3 gap-8">
-            {/* Boutique */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/boutique')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
                   {getSecureUrl(content.pillars.shopImage) ? <img src={getOptimizedImage(getSecureUrl(content.pillars.shopImage), 400)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" /> : <ImagePlaceholder label="Boutique" />}
@@ -242,7 +303,6 @@ export default function Home() {
               <div className="p-8"><h3 className="text-2xl font-serif font-bold mb-2">La Boutique</h3><p className="text-primary-200 mb-6 text-sm">Miel, Livres, Parfums...</p><span className="text-gold-400 font-bold text-sm flex items-center gap-2 group-hover:gap-4 transition-all">Visiter <ArrowRight size={16}/></span></div>
             </motion.div>
             
-            {/* Bibliothèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/livres')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
                   {getSecureUrl(content.pillars.libraryImage) ? <img src={getOptimizedImage(getSecureUrl(content.pillars.libraryImage), 400)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" /> : <ImagePlaceholder label="Bibliothèque" />}
@@ -251,7 +311,6 @@ export default function Home() {
               <div className="p-8"><h3 className="text-2xl font-serif font-bold mb-2">Bibliothèque</h3><p className="text-primary-200 mb-6 text-sm">Ouvrages numériques.</p><span className="text-white font-bold text-sm flex items-center gap-2 group-hover:gap-4 transition-all">Lire <ArrowRight size={16}/></span></div>
             </motion.div>
             
-            {/* Médiathèque */}
             <motion.div variants={fadeInUp} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden hover:bg-white/10 transition-colors group cursor-pointer" onClick={() => navigate('/podcast')}>
               <div className="h-48 bg-gray-800 relative overflow-hidden flex items-center justify-center">
                   {getSecureUrl(content.pillars.mediaImage) ? <img src={getOptimizedImage(getSecureUrl(content.pillars.mediaImage), 400)} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" loading="lazy" /> : <ImagePlaceholder label="Media" />}
