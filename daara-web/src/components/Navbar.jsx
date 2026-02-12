@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Menu, X, BookOpen, User, Heart, ChevronDown, Mic, Image, Newspaper, Book } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '../context/AuthContext'; // ✅ Ajouté
 
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +11,9 @@ export default function Navbar() {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user_info'));
+  
+  // ✅ Remplacé : Utilisation du contexte réactif au lieu du localStorage statique
+  const { user, logout } = useAuth(); 
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
@@ -24,10 +27,9 @@ export default function Navbar() {
   }, [isOpen]);
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    localStorage.removeItem('user_info');
-    navigate('/auth');
-    window.location.reload();
+    logout(); // ✅ Utilise la fonction logout du contexte
+    navigate('/login-public'); // ✅ Redirection vers la page de login
+    setIsOpen(false);
   };
 
   const isMediaActive = ['/blog', '/galerie', '/podcast'].includes(location.pathname);
@@ -51,13 +53,10 @@ export default function Navbar() {
             : "bg-primary-900 py-3 border-transparent shadow-none"
         }`}
       >
-        {/* Changement : max-w-full et padding horizontal plus large pour le style Laptop */}
         <div className="w-full mx-auto px-4 md:px-8 lg:px-12">
-          
-          {/* Grille à 3 colonnes pour le bureau, flex classique pour mobile */}
           <div className="flex lg:grid lg:grid-cols-3 items-center h-16">
             
-            {/* 1. LOGO (Aligné à gauche) */}
+            {/* 1. LOGO */}
             <div className="flex justify-start">
               <Link to="/" className="flex items-center gap-3 group relative z-50">
                 <div className="bg-white p-1 rounded-full shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 overflow-hidden flex items-center justify-center h-10 w-10 md:h-12 md:w-12">
@@ -72,7 +71,7 @@ export default function Navbar() {
               </Link>
             </div>
 
-            {/* 2. MENU CAPSULE (Parfaitement centré sur Laptop) */}
+            {/* 2. MENU CAPSULE */}
             <div className="hidden lg:flex justify-center">
               <div className={`flex items-center space-x-1 px-4 py-1.5 rounded-full border transition-all duration-300 ${
                   scrolled 
@@ -81,7 +80,6 @@ export default function Navbar() {
               }`}>
                 <DesktopNavItem to="/" current={location.pathname}>Accueil</DesktopNavItem>
                 
-                {/* Dropdown Médiathèque */}
                 <div className="relative group px-3 py-2 cursor-pointer rounded-full transition-colors hover:bg-white/5">
                   <span className={`text-sm font-medium flex items-center gap-1 transition-colors relative z-10 ${
                     isMediaActive ? "text-gold-500 font-bold" : "text-gray-300 group-hover:text-white"
@@ -104,15 +102,15 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* 3. AUTH / CONNEXION (Aligné à droite) */}
+            {/* 3. AUTH / CONNEXION */}
             <div className="flex flex-1 lg:flex-none justify-end items-center gap-4">
               <div className="hidden lg:flex items-center">
                 {user ? (
                   <Link to="/profil" className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full bg-primary-800/50 border border-primary-700 hover:bg-primary-800 transition-all duration-300 group">
-                    <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-gold-500 group-hover:scale-110 transition-transform">
-                         {user.avatar ? <img src={user.avatar} className="w-full h-full rounded-full object-cover"/> : <User size={16} />}
+                    <div className="w-8 h-8 rounded-full bg-primary-700 flex items-center justify-center text-gold-500 group-hover:scale-110 transition-transform overflow-hidden">
+                         {user.avatar ? <img src={user.avatar} className="w-full h-full object-cover"/> : <User size={16} />}
                     </div>
-                    <span className="text-sm font-medium text-white max-w-[80px] truncate">{user.fullName.split(' ')[0]}</span>
+                    <span className="text-sm font-medium text-white max-w-[80px] truncate">{user.fullName?.split(' ')[0]}</span>
                   </Link>
                 ) : (
                   <Link to="/login-public" className="text-sm font-bold text-white hover:text-gold-500 transition-colors bg-white/10 px-6 py-2.5 rounded-full hover:bg-white/20 border border-white/10 shadow-sm">
@@ -121,7 +119,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* BOUTON MOBILE (Uniquement mobile) */}
               <div className="lg:hidden">
                 <button 
                   onClick={() => setIsOpen(!isOpen)} 
@@ -182,7 +179,7 @@ export default function Navbar() {
                     <Link to="/profil" onClick={() => setIsOpen(false)} className="w-full bg-primary-800 border border-primary-700 text-white py-4 rounded-xl font-medium text-center flex justify-center items-center gap-2">
                       <User size={18} /> Mon Profil
                     </Link>
-                    <button onClick={handleLogout} className="w-full text-center text-red-400 text-sm mt-2">Se déconnecter</button>
+                    <button onClick={handleLogout} className="w-full text-center text-red-400 text-sm mt-2 font-bold uppercase tracking-widest">Se déconnecter</button>
                  </>
               ) : (
                 <Link to="/login-public" onClick={() => setIsOpen(false)} className="block w-full text-center py-4 bg-gold-500 rounded-xl text-primary-950 font-bold shadow-lg">Connexion</Link>
@@ -232,7 +229,7 @@ const MobileNavItem = ({ to, children, onClick }) => {
 };
 
 const DropdownItem = ({ to, icon: Icon, label, desc, color }) => (
-    <Link to={to} className="flex items-center px-4 py-3 m-1 rounded-xl transition-all duration-300 group hover:bg-gray-50 relative overflow-hidden">
+    <Link to={to} className="flex items-center px-4 py-3 m-1 rounded-xl transition-all duration-300 group hover:bg-gray-50 relative overflow-hidden text-left">
       <div className={`p-2.5 rounded-xl ${color} bg-opacity-20 group-hover:scale-110 transition-transform duration-300 relative z-10`}>
         <Icon size={20} className={color.split(' ')[1]} />
       </div>
