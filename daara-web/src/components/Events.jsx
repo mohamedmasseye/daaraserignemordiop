@@ -26,7 +26,7 @@ export default function Events() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState('details'); 
 
-  // Booking State
+  // Booking State (Conservé en mémoire mais masqué de l'UI)
   const [ticketQuantity, setTicketQuantity] = useState(1);
   const [purchaseStep, setPurchaseStep] = useState('selection');
   const [paymentMethod, setPaymentMethod] = useState('Wave'); 
@@ -35,7 +35,7 @@ export default function Events() {
   useEffect(() => {
     const fetchEvents = async () => {
       try {
-        const response = await API.get('/api/events'); // ✅ Token géré par API.js
+        const response = await API.get('/api/events'); 
         const loadedEvents = (response.data || []).sort((a, b) => new Date(a.date) - new Date(b.date));
         setEvents(loadedEvents);
         
@@ -49,7 +49,7 @@ export default function Events() {
     fetchEvents();
   }, []);
 
-  // 2. AUTO-OUVERTURE (Si ID dans l'URL via notification)
+  // 2. AUTO-OUVERTURE
   useEffect(() => {
     const eventId = searchParams.get('id');
     if (!loading && events.length > 0 && eventId) {
@@ -62,7 +62,7 @@ export default function Events() {
     }
   }, [events, loading, searchParams]);
 
-  // --- LOGIQUE CALENDRIER (Restaurée) ---
+  // --- LOGIQUE CALENDRIER ---
   const getHijriDate = (date) => new Intl.DateTimeFormat('fr-FR-u-ca-islamic', { day: 'numeric', month: 'long', year: 'numeric' }).format(date);
   
   const getDaysInMonth = () => {
@@ -95,57 +95,10 @@ export default function Events() {
   const hijriMonthName = new Intl.DateTimeFormat('fr-FR-u-ca-islamic', { month: 'long', year: 'numeric' }).format(currentDate);
 
   // --- ACTIONS ---
-  const isLoggedIn = () => !!localStorage.getItem('_d_usr_vault'); // ✅ Utilise ton coffre chiffré
-  
-  const handleBookClick = (event) => {
-    if (!isLoggedIn()) { navigate('/login-public', { state: { from: '/evenements' } }); return; }
-    setSelectedEvent(event);
-    setModalType('booking');
-    setTicketQuantity(1);
-    setPurchaseStep('selection');
-    setPaymentMethod('Wave'); 
-    setIsModalOpen(true);
-  };
-
   const handleDetailsClick = (event) => {
     setSelectedEvent(event);
     setModalType('details');
     setIsModalOpen(true);
-  };
-
-  const handleConfirmPurchase = async () => {
-    setPurchaseStep('processing');
-    try {
-      // ✅ L'API gère le header Authorization toute seule
-      const userResponse = await API.get('/api/auth/me');
-      const realUser = userResponse.data;
-
-      const unitPrice = Number(selectedEvent.price || selectedEvent.ticketPrice || 0);
-      const qty = Number(ticketQuantity);
-      const total = unitPrice * qty;
-
-      const orderData = {
-          user: realUser._id,
-          items: [{
-              type: 'ticket',
-              name: `Ticket - ${selectedEvent.title}`,
-              quantity: qty,
-              price: unitPrice, 
-              ticketEvent: selectedEvent._id 
-          }],
-          totalAmount: total, 
-          paymentMethod: paymentMethod, 
-          customerPhone: realUser.phone || 'Non renseigné'
-      };
-
-      await API.post('/api/orders', orderData);
-      setPurchaseStep('success');
-
-    } catch (error) {
-      console.error(error);
-      alert("Erreur lors de la réservation.");
-      setPurchaseStep('selection');
-    }
   };
 
   const closeModal = () => { setIsModalOpen(false); setSelectedEvent(null); };
@@ -155,7 +108,7 @@ export default function Events() {
   return (
     <div className="min-h-screen bg-gray-50 pb-20 font-sans">
       
-      {/* 1. HERO SECTION (Design Original) */}
+      {/* 1. HERO SECTION */}
       <div className="relative h-[85vh] min-h-[600px] bg-primary-900 text-white overflow-hidden flex items-center">
         <div className="absolute inset-0 z-0">
            {nextEvent?.image ? <img src={nextEvent.image} className="w-full h-full object-cover opacity-40 scale-105 animate-kenburns" alt="Hero" /> : <div className="w-full h-full bg-primary-800 opacity-30"></div>}
@@ -168,21 +121,21 @@ export default function Events() {
               <div className="inline-flex items-center gap-2 bg-gold-500/20 border border-gold-500/30 px-4 py-1.5 rounded-full text-gold-400 text-xs font-bold uppercase tracking-widest mb-6 backdrop-blur-sm"><Star size={14} className="fill-gold-400" /> Événement à la une</div>
               <h1 className="text-5xl md:text-7xl font-serif font-bold leading-tight mb-6">{nextEvent ? nextEvent.title : "Bienvenue au Daara"}</h1>
               <p className="text-lg md:text-xl text-primary-100 mb-8 leading-relaxed max-w-xl">{nextEvent ? (nextEvent.description || "").substring(0, 150) + "..." : "Découvrez nos prochains événements."}</p>
+              
               {nextEvent && (
                 <div className="flex flex-wrap gap-4">
-                  {(nextEvent.hasTicket || nextEvent.price > 0) && (
-                      <button onClick={() => handleBookClick(nextEvent)} className="px-8 py-4 bg-gold-500 text-primary-900 rounded-full font-bold text-lg hover:bg-white transition-all shadow-lg flex items-center gap-2 transform hover:-translate-y-1"><Ticket size={20} /> Réserver ma place</button>
-                  )}
-                  <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 border border-white/30 rounded-full font-bold text-white hover:bg-white/10 transition-all backdrop-blur-md">Plus d'infos</button>
+                  {/* Billetterie masquée dans le Hero */}
+                  <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 bg-gold-500 text-primary-900 rounded-full font-bold text-lg hover:bg-white transition-all shadow-lg flex items-center gap-2 transform hover:-translate-y-1">Plus d'informations</button>
                   
                   {nextEvent.documentUrl && (
-                      <div className="flex items-center gap-2 text-gold-400 text-sm font-bold border-l border-white/20 pl-4 ml-2">
-                          <FileText size={18}/> PDF Disponible
-                      </div>
+                    <div className="flex items-center gap-2 text-gold-400 text-sm font-bold border-l border-white/20 pl-4 ml-2">
+                        <FileText size={18}/> PDF Disponible
+                    </div>
                   )}
                 </div>
               )}
             </motion.div>
+
             {nextEvent && (
               <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8, delay: 0.2 }} className="hidden md:block">
                 <div className="bg-white/5 backdrop-blur-xl border border-white/10 p-8 rounded-3xl relative shadow-2xl">
@@ -201,21 +154,20 @@ export default function Events() {
         </div>
       </div>
 
-      {/* 2. NAVIGATION (Calendrier / Billetterie) */}
+      {/* 2. AGENDA SECTION */}
       <div id="agenda" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        
+        {/* Onglets supprimés pour masquer la Billetterie */}
         <div className="flex justify-center mb-12">
-          <div className="bg-white p-1.5 rounded-full shadow-sm border border-gray-200 inline-flex">
-             {['calendar', 'tickets'].map((tab) => (
-               <button key={tab} onClick={() => setActiveTab(tab)} className={`px-8 py-3 rounded-full text-sm font-bold transition-all duration-300 flex items-center gap-2 ${activeTab === tab ? 'bg-primary-900 text-white shadow-lg transform scale-105' : 'text-gray-500 hover:text-primary-900'}`}>
-                 {tab === 'calendar' ? <CalIcon size={18}/> : <Ticket size={18}/>} {tab === 'calendar' ? 'Calendrier Hégirien' : 'Billetterie'}
-               </button>
-             ))}
-          </div>
+            <div className="text-center">
+                <span className="text-gold-600 font-bold uppercase tracking-[0.3em] text-sm">Calendrier des activités</span>
+                <h2 className="text-4xl font-serif font-bold text-primary-900 mt-2">Agenda Spirituel</h2>
+            </div>
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* CALENDRIER GAUCHE (Picker Restauré) */}
+          {/* CALENDRIER GAUCHE */}
           <div className="lg:col-span-4">
             <div className="bg-white rounded-3xl shadow-xl overflow-hidden border border-gray-100 sticky top-24">
               <div className="bg-gradient-to-br from-primary-900 to-primary-800 p-6 text-white relative">
@@ -262,16 +214,16 @@ export default function Events() {
             </div>
           </div>
 
-          {/* COLONNE DROITE : LISTE (Badges PDF inclus) */}
+          {/* COLONNE DROITE : LISTE */}
           <div className="lg:col-span-8">
              <div className="mb-6 flex items-center justify-between px-2">
                 <h2 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
-                    {activeTab === 'calendar' ? <><CalIcon size={24} className="text-gold-500"/> Agenda de {monthName}</> : <><Ticket size={24} className="text-gold-500"/> Billetterie</>}
+                   <CalIcon size={24} className="text-gold-500"/> Agenda de {monthName}
                 </h2>
              </div>
 
              <div className="space-y-6">
-                {(activeTab === 'tickets' ? events.filter(e => e.hasTicket || e.price > 0) : events).map((event, index) => {
+                {events.map((event, index) => {
                    const eventDate = new Date(event.date);
                    return (
                      <motion.div 
@@ -281,14 +233,9 @@ export default function Events() {
                         <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden bg-gray-200 shrink-0">
                            {event.image ? <img src={event.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><Moon size={40}/></div>}
                            
-                           {/* Badge Prix */}
-                           {(event.price > 0 || event.ticketPrice > 0) && (
-                              <div className="absolute bottom-4 left-4 bg-primary-900 text-white px-3 py-1 rounded-lg text-sm font-bold shadow-lg">
-                                {(event.price || event.ticketPrice).toLocaleString()} F
-                              </div>
-                           )}
+                           {/* Badge Prix masqué */}
 
-                           {/* Badge PDF (Restauré) */}
+                           {/* Badge PDF */}
                            {event.documentUrl && (
                              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-2 rounded-xl text-primary-900 shadow-lg">
                                 <FileText size={18} />
@@ -313,10 +260,9 @@ export default function Events() {
                            <div className="pt-6 border-t border-gray-50 flex items-center justify-between">
                               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
                               <div className="flex gap-2">
-                                <button onClick={() => handleDetailsClick(event)} className="p-3 bg-gray-50 text-gray-400 hover:text-primary-900 hover:bg-gray-100 rounded-xl transition-all"><Eye size={18}/></button>
-                                {(event.hasTicket || event.price > 0) && (
-                                  <button onClick={() => handleBookClick(event)} className="bg-primary-900 text-white px-6 py-3 rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg">Acheter</button>
-                                )}
+                                <button onClick={() => handleDetailsClick(event)} className="px-6 py-3 bg-primary-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center gap-2">
+                                    <Eye size={16}/> Détails
+                                </button>
                               </div>
                            </div>
                         </div>
@@ -328,7 +274,7 @@ export default function Events() {
         </div>
       </div>
 
-      {/* --- MODAL UNIVERSELLE (Détails avec PDF & Réservation) --- */}
+      {/* --- MODAL UNIVERSELLE --- */}
       <AnimatePresence>
         {isModalOpen && selectedEvent && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
@@ -336,78 +282,29 @@ export default function Events() {
               <button onClick={closeModal} className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full hover:bg-gray-200 z-10 transition-colors"><X size={20}/></button>
               
               <div className="text-center mb-8">
-                  <h3 className="text-2xl font-serif font-bold text-primary-900">{modalType === 'booking' ? 'Réserver vos places' : selectedEvent.title}</h3>
+                  <h3 className="text-2xl font-serif font-bold text-primary-900">{selectedEvent.title}</h3>
                   <p className="text-gold-600 text-xs font-bold uppercase tracking-[0.2em] mt-2">{getHijriDate(new Date(selectedEvent.date))}</p>
               </div>
 
-              {/* MODAL TYPE: DETAILS (Restauré avec PDF) */}
-              {modalType === 'details' && (
-                <div className="space-y-6">
-                    <div className="h-48 rounded-2xl overflow-hidden bg-gray-100 relative">
-                       {selectedEvent.image ? <img src={selectedEvent.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-primary-800"></div>}
-                    </div>
-                    <p className="text-gray-600 text-sm leading-relaxed">{selectedEvent.description}</p>
-                    
-                    {/* Bloc PDF dans la Modal (Restauré) */}
-                    {selectedEvent.documentUrl && (
-                      <div className="bg-gold-50 border border-gold-200 rounded-2xl p-5 flex items-center justify-between">
-                        <div className="flex items-center gap-3">
-                           <div className="p-3 bg-gold-500 text-white rounded-xl shadow-lg"><FileText size={20}/></div>
-                           <div><p className="text-sm font-bold text-primary-900">Programme PDF</p><p className="text-[10px] text-gray-400 font-bold uppercase">Disponible</p></div>
-                        </div>
-                        <a href={selectedEvent.documentUrl} target="_blank" rel="noopener noreferrer" className="bg-primary-900 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-gold-500 transition-all"><Download size={14}/> Ouvrir</a>
+              {/* MODAL TYPE: DETAILS */}
+              <div className="space-y-6">
+                  <div className="h-48 rounded-2xl overflow-hidden bg-gray-100 relative">
+                     {selectedEvent.image ? <img src={selectedEvent.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-primary-800"></div>}
+                  </div>
+                  <p className="text-gray-600 text-sm leading-relaxed">{selectedEvent.description}</p>
+                  
+                  {selectedEvent.documentUrl && (
+                    <div className="bg-gold-50 border border-gold-200 rounded-2xl p-5 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                          <div className="p-3 bg-gold-500 text-white rounded-xl shadow-lg"><FileText size={20}/></div>
+                          <div><p className="text-sm font-bold text-primary-900">Programme PDF</p><p className="text-[10px] text-gray-400 font-bold uppercase">Disponible</p></div>
                       </div>
-                    )}
-
-                    {(selectedEvent.hasTicket || selectedEvent.price > 0) && (
-                      <button onClick={() => setModalType('booking')} className="w-full py-5 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">S'inscrire / Acheter</button>
-                    )}
-                </div>
-              )}
-
-              {/* MODAL TYPE: BOOKING (Selection / Paiement Wave-OM) */}
-              {modalType === 'booking' && purchaseStep === 'selection' && (
-                <div className="space-y-8 animate-fadeIn">
-                    <div className="flex items-center justify-between p-6 bg-gray-50 rounded-[2rem] border border-gray-100">
-                      <span className="font-bold text-gray-400 uppercase text-[10px]">Quantité</span>
-                      <div className="flex items-center gap-6">
-                        <button onClick={() => setTicketQuantity(Math.max(1, ticketQuantity - 1))} className="w-10 h-10 rounded-full bg-white border flex items-center justify-center font-bold">-</button>
-                        <span className="font-serif font-bold text-2xl text-primary-900">{ticketQuantity}</span>
-                        <button onClick={() => setTicketQuantity(Math.min(10, ticketQuantity + 1))} className="w-10 h-10 rounded-full bg-white border flex items-center justify-center font-bold">+</button>
-                      </div>
+                      <a href={selectedEvent.documentUrl} target="_blank" rel="noopener noreferrer" className="bg-primary-900 text-white px-4 py-2 rounded-lg text-xs font-bold flex items-center gap-2 hover:bg-gold-500 transition-all"><Download size={14}/> Ouvrir</a>
                     </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <button onClick={() => setPaymentMethod('Wave')} className={`h-20 rounded-[2rem] border-2 transition-all flex items-center justify-center gap-2 ${paymentMethod === 'Wave' ? 'border-[#1dc4ff] bg-[#1dc4ff]/5' : 'border-gray-100 bg-gray-50'}`}><img src={waveLogoImg} className="h-8" alt="Wave"/></button>
-                      <button onClick={() => setPaymentMethod('Orange Money')} className={`h-20 rounded-[2rem] border-2 transition-all flex items-center justify-center gap-2 ${paymentMethod === 'Orange Money' ? 'border-[#ff7900] bg-[#ff7900]/5' : 'border-gray-100 bg-gray-50'}`}><img src={omLogoImg} className="h-8" alt="OM"/></button>
-                    </div>
+                  )}
 
-                    <div className="bg-primary-900 p-6 rounded-[2rem] flex justify-between items-center text-white">
-                      <span className="text-xs font-bold uppercase tracking-widest opacity-60">Total</span>
-                      <span className="text-3xl font-serif font-bold">{( (selectedEvent.price || selectedEvent.ticketPrice || 0) * ticketQuantity).toLocaleString()} F</span>
-                    </div>
-
-                    <button onClick={handleConfirmPurchase} className="w-full py-5 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl active:scale-95 transition-all">Valider la commande</button>
-                </div>
-              )}
-
-              {/* ÉTAPE TRAITEMENT */}
-              {purchaseStep === 'processing' && (
-                <div className="py-16 text-center space-y-6">
-                  <div className="w-16 h-16 border-4 border-gold-500 border-t-transparent animate-spin rounded-full mx-auto"></div>
-                  <h3 className="text-xl font-serif font-bold text-primary-900 italic">Sécurisation de vos places...</h3>
-                </div>
-              )}
-
-              {/* ÉTAPE SUCCÈS */}
-              {purchaseStep === 'success' && (
-                <div className="py-10 text-center animate-fadeIn">
-                  <div className="w-20 h-20 bg-green-50 rounded-full flex items-center justify-center mx-auto mb-6 shadow-inner"><CheckCircle size={40} className="text-green-500" /></div>
-                  <h3 className="text-3xl font-serif font-bold text-primary-900 mb-4">Succès !</h3>
-                  <p className="text-gray-500 mb-10 text-sm">Vos billets sont maintenant disponibles dans votre espace profil.</p>
-                  <button onClick={() => { closeModal(); navigate('/profil'); }} className="w-full py-5 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-2xl transition-all">Voir mes billets</button>
-                </div>
-              )}
+                  <button onClick={closeModal} className="w-full py-5 border border-gray-200 text-gray-500 rounded-2xl font-black uppercase text-xs tracking-widest hover:bg-gray-50 transition-all">Fermer</button>
+              </div>
             </motion.div>
           </div>
         )}
