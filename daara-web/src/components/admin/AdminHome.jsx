@@ -328,11 +328,11 @@ export default function AdminHome() {
                    </div>
                    <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block">Prochain grand événement</label>
-                      <input className={inputStyle} placeholder="Ex: Gamou 2026" value={content.info.nextGamou} onChange={e => updateSection('info', 'nextGamou', e.target.value)} />
+                      <textarea className={inputStyle} placeholder="Ex: Gamou 2026" value={content.info.nextGamou} onChange={e => updateSection('info', 'nextGamou', e.target.value)} />
                    </div>
                    <div>
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-1 mb-1 block flex items-center gap-2"><Phone size={12}/> Téléphone de contact</label>
-                      <input className={inputStyle} value={content.info.phone} onChange={e => updateSection('info', 'phone', e.target.value)} />
+                      <textarea className={inputStyle} value={content.info.phone} onChange={e => updateSection('info', 'phone', e.target.value)} />
                    </div>
                 </div>
              </div>

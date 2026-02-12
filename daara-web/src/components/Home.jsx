@@ -351,15 +351,47 @@ export default function Home() {
 
       {/* 5. INFOS PRATIQUES */}
       <footer className="bg-white border-t border-gray-100 py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></motion.div>
-              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Clock className="text-gold-500"/> Horaires</h4><p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p></motion.div>
-              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Calendar className="text-gold-500"/> Prochain Gamou</h4><p className="text-gray-600"><span className="text-sm text-gold-600 font-bold">{content.info.nextGamou}</span></p></motion.div>
-              <motion.div variants={fadeInUp} className="bg-primary-50 p-4 rounded-xl border border-primary-100"><p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p><p className="text-2xl font-bold text-primary-900">{content.info.phone}</p><p className="text-xs text-gray-500 mt-1">Contactez {content.info.contactName}</p></motion.div>
-          </motion.div>
-        </div>
-      </footer>
+  <div className="max-w-7xl mx-auto">
+    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        
+        {/* Section Adresse */}
+        <motion.div variants={fadeInUp}>
+          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
+            <MapPin className="text-gold-500"/> Adresse
+          </h4>
+          <p className="text-gray-600 whitespace-pre-line">{content.info.address}</p>
+        </motion.div>
+        
+        {/* Section Horaires */}
+        <motion.div variants={fadeInUp}>
+          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
+            <Clock className="text-gold-500"/> Horaires
+          </h4>
+          <p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p>
+        </motion.div>
+        
+        {/* Section Agenda / Gamou (Modifiée avec whitespace-pre-line) */}
+        <motion.div variants={fadeInUp}>
+          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
+            <Calendar className="text-gold-500"/> Prochain Gamou
+          </h4>
+          <p className="text-gray-600 whitespace-pre-line">
+            <span className="text-sm text-gold-600 font-bold">{content.info.nextGamou}</span>
+          </p>
+        </motion.div>
+        
+        {/* Section Contact (Modifiée avec whitespace-pre-line) */}
+        <motion.div variants={fadeInUp} className="bg-primary-50 p-4 rounded-xl border border-primary-100">
+          <p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p>
+          <p className="text-2xl font-bold text-primary-900 whitespace-pre-line">
+            {content.info.phone}
+          </p>
+          <p className="text-xs text-gray-500 mt-1">Contactez {content.info.contactName}</p>
+        </motion.div>
+
+    </motion.div>
+  </div>
+</footer>
     </div>
   );
 }
