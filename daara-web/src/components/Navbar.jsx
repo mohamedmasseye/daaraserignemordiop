@@ -31,9 +31,9 @@ export default function Navbar() {
   };
 
   const isActive = (path) => location.pathname === path;
-  const isMediaActive = ['/livres', '/blog', '/galerie', '/podcast'].includes(location.pathname);
+  // ✅ /livres retiré de isMediaActive car il est maintenant un onglet principal
+  const isMediaActive = ['/blog', '/galerie', '/podcast'].includes(location.pathname);
 
-  // Animations Menu Mobile
   const menuVariants = {
     closed: { opacity: 0, x: "100%" },
     open: { opacity: 1, x: 0, transition: { type: "spring", stiffness: 100, damping: 20, staggerChildren: 0.1 } }
@@ -69,7 +69,7 @@ export default function Navbar() {
               </div>
             </Link>
 
-            {/* --- MENU BUREAU (CAPSULE) --- */}
+            {/* --- MENU BUREAU --- */}
             <div className="hidden lg:flex items-center gap-6 xl:gap-8">
               <div className={`flex items-center space-x-1 px-6 py-2 rounded-full border transition-all duration-300 ${
                   scrolled 
@@ -88,7 +88,7 @@ export default function Navbar() {
                   <div className="absolute top-full left-1/2 -translate-x-1/2 mt-4 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 transform translate-y-2 group-hover:translate-y-0 pt-2">
                     <div className="bg-white rounded-2xl shadow-2xl overflow-hidden border border-gray-100 p-2">
                       <div className="px-4 py-2 text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Explorer</div>
-                      <DropdownItem to="/livres" icon={Book} label="Bibliothèque" desc="Livres & PDF" color="bg-blue-50 text-blue-600" />
+                      {/* Bibliothèque retirée d'ici car elle est maintenant un onglet principal */}
                       <DropdownItem to="/blog" icon={Newspaper} label="Le Blog" desc="Articles & Actualités" color="bg-green-50 text-green-600" />
                       <DropdownItem to="/galerie" icon={Image} label="Galerie Photo" desc="Souvenirs en images" color="bg-purple-50 text-purple-600" />
                       <DropdownItem to="/podcast" icon={Mic} label="Podcasts" desc="Audios & Conférences" color="bg-red-50 text-red-600" />
@@ -96,15 +96,14 @@ export default function Navbar() {
                   </div>
                 </div>
 
-                <DesktopNavItem to="/boutique" current={location.pathname}>Boutique</DesktopNavItem>
+                {/* ✅ Bibliothèque remplace Boutique */}
+                <DesktopNavItem to="/livres" current={location.pathname}>Bibliothèque</DesktopNavItem>
                 <DesktopNavItem to="/evenements" current={location.pathname}>Agenda</DesktopNavItem>
                 <DesktopNavItem to="/contact" current={location.pathname}>Contact</DesktopNavItem>
               </div>
 
               <div className="flex items-center gap-4">
-                <Link to="/don" className="bg-gradient-to-r from-gold-500 to-gold-600 text-white px-5 py-2.5 rounded-full font-bold shadow-lg hover:shadow-gold-500/40 hover:-translate-y-0.5 transition-all duration-300 text-sm flex items-center gap-2">
-                  <Heart size={16} fill="currentColor" /> <span className="hidden xl:inline">Don</span>
-                </Link>
+                {/* ❌ Bouton Don masqué ici */}
 
                 {user ? (
                   <Link to="/profil" className="flex items-center gap-2 pl-2 pr-4 py-1.5 rounded-full bg-primary-800/50 border border-primary-700 hover:bg-primary-800 transition-all duration-300 group">
@@ -132,9 +131,7 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* =======================================================
-                         MENU MOBILE (MODIFIÉ)
-      ======================================================= */}
+      {/* --- MENU MOBILE --- */}
       <AnimatePresence>
         {isOpen && (
           <motion.div 
@@ -146,12 +143,11 @@ export default function Navbar() {
           >
             <div className="flex flex-col space-y-2 flex-1">
               
-              {/* LIENS AVEC ANIMATION LAYOUTID SUR MOBILE */}
               <motion.div variants={itemVariants}>
                  <MobileNavItem to="/" onClick={() => setIsOpen(false)}>Accueil</MobileNavItem>
               </motion.div>
 
-              {/* Accordéon Médiathèque (Style unifié) */}
+              {/* Accordéon Médiathèque */}
               <motion.div variants={itemVariants} className="pl-2 py-1">
                 <button 
                   onClick={() => setIsMobileMediaOpen(!isMobileMediaOpen)} 
@@ -169,7 +165,7 @@ export default function Navbar() {
                       exit={{ height: 0, opacity: 0 }} 
                       className="overflow-hidden pl-4 border-l border-white/10 mt-1 space-y-1"
                     >
-                      <MobileSubLink to="/livres" onClick={() => setIsOpen(false)} icon={Book} label="Bibliothèque" />
+                      {/* Bibliothèque retirée des sous-liens */}
                       <MobileSubLink to="/blog" onClick={() => setIsOpen(false)} icon={Newspaper} label="Le Blog" />
                       <MobileSubLink to="/galerie" onClick={() => setIsOpen(false)} icon={Image} label="Galerie Photos" />
                       <MobileSubLink to="/podcast" onClick={() => setIsOpen(false)} icon={Mic} label="Podcasts Audio" />
@@ -178,8 +174,9 @@ export default function Navbar() {
                 </AnimatePresence>
               </motion.div>
 
+              {/* ✅ Bibliothèque remplace Boutique sur Mobile */}
               <motion.div variants={itemVariants}>
-                 <MobileNavItem to="/boutique" onClick={() => setIsOpen(false)}>Boutique</MobileNavItem>
+                 <MobileNavItem to="/livres" onClick={() => setIsOpen(false)}>Bibliothèque</MobileNavItem>
               </motion.div>
               <motion.div variants={itemVariants}>
                  <MobileNavItem to="/evenements" onClick={() => setIsOpen(false)}>Agenda</MobileNavItem>
@@ -192,9 +189,7 @@ export default function Navbar() {
 
             {/* Footer Mobile */}
             <motion.div variants={itemVariants} className="mt-8 border-t border-white/10 pt-6 space-y-4">
-              <Link to="/don" onClick={() => setIsOpen(false)} className="w-full bg-gold-500 text-white py-4 rounded-xl font-bold text-lg shadow-lg flex items-center justify-center gap-3 active:scale-95 transition-transform">
-                <Heart size={20} fill="currentColor" /> Faire un don
-              </Link>
+              {/* ❌ Bouton Don masqué ici aussi */}
               
               {user ? (
                  <>
@@ -221,7 +216,6 @@ export default function Navbar() {
 
 // --- SOUS-COMPOSANTS ---
 
-// 1. Desktop NavItem (Capsule)
 const DesktopNavItem = ({ to, children, current }) => {
   const isActive = current === to;
   return (
@@ -243,7 +237,6 @@ const DesktopNavItem = ({ to, children, current }) => {
   );
 };
 
-// 2. Mobile NavItem (Avec Animation layoutId fluide sur mobile aussi)
 const MobileNavItem = ({ to, children, onClick }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
@@ -252,7 +245,7 @@ const MobileNavItem = ({ to, children, onClick }) => {
     <Link to={to} onClick={onClick} className="relative block px-4 py-3 rounded-xl transition-colors">
       {isActive && (
         <motion.div
-          layoutId="activeMobileTab" // ID différent pour éviter conflit avec Desktop
+          layoutId="activeMobileTab" 
           className="absolute inset-0 bg-white/10 rounded-xl"
           initial={false}
           transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -265,7 +258,6 @@ const MobileNavItem = ({ to, children, onClick }) => {
   );
 };
 
-// 3. Dropdown Item Desktop
 const DropdownItem = ({ to, icon: Icon, label, desc, color }) => (
     <Link to={to} className="flex items-center px-4 py-3 m-1 rounded-xl transition-all duration-300 group hover:bg-gradient-to-r hover:from-primary-50 hover:to-transparent hover:shadow-sm relative overflow-hidden">
       <div className={`p-2.5 rounded-xl ${color} bg-opacity-20 group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 shadow-sm relative z-10`}>
@@ -279,7 +271,6 @@ const DropdownItem = ({ to, icon: Icon, label, desc, color }) => (
     </Link>
 );
 
-// 4. Mobile SubLink
 const MobileSubLink = ({ to, onClick, icon: Icon, label }) => {
   const location = useLocation();
   const isActive = location.pathname === to;
