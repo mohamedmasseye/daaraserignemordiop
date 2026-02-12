@@ -5,7 +5,7 @@ import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
-  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown // ✅ Ajouts icones
+  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown 
 } from 'lucide-react';
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
@@ -18,7 +18,6 @@ const DEFAULT_CONTENT = {
     { id: 3, image: "", badge: "Communauté & Partage", title: "Au Service de l'Humanité", subtitle: "Un sanctuaire d'inspiration.", cta: "Faire un Don", link: "/don" }
   ],
   about: { title1: "Une vie dédiée à la", highlight1: "foi", title2: "et au", highlight2: "savoir", text1: "...", text2: "...", image: "", bioPdf: "" },
-  // ✅ Structure mise à jour pour correspondre à AdminHome
   pillars: {
     p1: { image: "", label: "Agenda", desc: "Événements à venir", link: "/evenements" },
     p2: { image: "", label: "Bibliothèque", desc: "Ouvrages numériques", link: "/livres" },
@@ -61,11 +60,7 @@ const PdfPopup = ({ url, onClose }) => {
           <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"><X size={24}/></button>
         </div>
         <div className="flex-1 bg-gray-100 relative">
-          <iframe 
-            src={`${getSecureUrl(url)}#view=FitH`} 
-            className="w-full h-full border-none"
-            title="Biographie PDF"
-          />
+          <iframe src={`${getSecureUrl(url)}#view=FitH`} className="w-full h-full border-none" title="Bio PDF" />
         </div>
         <div className="p-4 bg-gray-50 border-t text-center">
             <a href={getSecureUrl(url)} download target="_blank" rel="noreferrer" className="text-xs font-black uppercase tracking-widest text-primary-500 hover:text-gold-600 transition-colors">Télécharger le document</a>
@@ -75,6 +70,7 @@ const PdfPopup = ({ url, onClose }) => {
   );
 };
 
+// --- POPUP ÉVÉNEMENT (MODIFIÉ) ---
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
   const imageUrl = getOptimizedImage(getSecureUrl(event.image), 500);
@@ -90,17 +86,21 @@ const EventPopup = ({ event, onClose, onBook }) => {
             <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-300"><Calendar size={48}/></div>
           )}
           <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
-          <div className="absolute bottom-4 left-4 right-4"><span className="bg-gold-500 text-primary-900 text-xs font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Prochain Événement</span><h3 className="text-white text-xl font-serif font-bold leading-tight">{event.title}</h3></div>
+          <div className="absolute bottom-4 left-4 right-4"><span className="bg-gold-500 text-primary-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Prochain Événement</span><h3 className="text-white text-xl font-serif font-bold leading-tight">{event.title}</h3></div>
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
-              <div className="flex items-center gap-2"><Calendar size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleDateString()}</span></div>
+              {/* ✅ FORMAT DE DATE MODIFIÉ : 14/02/2026 */}
+              <div className="flex items-center gap-2"><Calendar size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleDateString('fr-FR')}</span></div>
               <div className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
           </div>
           <p className="text-gray-500 text-sm line-clamp-2 mb-6">{event.description || "Rejoignez-nous."}</p>
           <div className="flex gap-3">
               <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors">Fermer</button>
-              <button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center justify-center gap-2"><Ticket size={18}/> Réserver</button>
+              {/* ✅ BOUTON RÉSERVER REMPLACÉ PAR EN SAVOIR PLUS */}
+              <button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center justify-center gap-2">
+                <ArrowRight size={18}/> En savoir plus
+              </button>
           </div>
         </div>
       </motion.div>
@@ -114,7 +114,7 @@ export default function Home() {
   const [showPopup, setShowPopup] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [content, setContent] = useState(DEFAULT_CONTENT);
-  const [isBioOpen, setIsBioOpen] = useState(false); // ✅ État pour le PDF
+  const [isBioOpen, setIsBioOpen] = useState(false);
 
   // --- CHARGEMENT DU CONTENU DYNAMIQUE ---
   useEffect(() => {
@@ -126,7 +126,6 @@ export default function Home() {
               ...prev, 
               ...res.data,
               about: { ...prev.about, ...res.data.about },
-              // ✅ Fusion pour les piliers dynamiques
               pillars: { ...prev.pillars, ...res.data.pillars } 
             }));
         }
@@ -249,7 +248,7 @@ export default function Home() {
         <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition z-20"><ChevronRight size={24}/></button>
       </div>
 
-      {/* 2. BIOGRAPHIE (Contenu intact) */}
+      {/* 2. BIOGRAPHIE */}
       <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div variants={fadeInUp} className="relative">
@@ -297,7 +296,7 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 3. LES PILIERS (Agenda remplace Boutique & Dynamique) */}
+      {/* 3. LES PILIERS */}
       <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-full opacity-5 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
         <div className="max-w-7xl mx-auto relative z-10">
@@ -337,61 +336,28 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 4. CITATION (Bouton de don supprimé) */}
+      {/* 4. CITATION */}
       <section className="py-24 px-4">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-8 md:p-16 text-center relative overflow-hidden shadow-xl">
           <Quote className="absolute top-10 left-10 text-gold-200 w-24 h-24 -scale-x-100 opacity-50" />
           <div className="relative z-10">
             <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic">{content.quote.title}</h2>
-            <p className="text-xl md:text-2xl text-gray-700 font-medium max-w-2xl mx-auto leading-relaxed">{content.quote.text}</p>
-            {/* Bouton Don supprimé ici */}
+            <p className="text-xl md:text-2xl text-gray-700 font-medium mb-10 max-w-2xl mx-auto leading-relaxed">{content.quote.text}</p>
           </div>
         </motion.div>
       </section>
 
       {/* 5. INFOS PRATIQUES */}
       <footer className="bg-white border-t border-gray-100 py-16 px-4">
-  <div className="max-w-7xl mx-auto">
-    <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-        
-        {/* Section Adresse */}
-        <motion.div variants={fadeInUp}>
-          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
-            <MapPin className="text-gold-500"/> Adresse
-          </h4>
-          <p className="text-gray-600 whitespace-pre-line">{content.info.address}</p>
-        </motion.div>
-        
-        {/* Section Horaires */}
-        <motion.div variants={fadeInUp}>
-          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
-            <Clock className="text-gold-500"/> Horaires
-          </h4>
-          <p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p>
-        </motion.div>
-        
-        {/* Section Agenda / Gamou (Modifiée avec whitespace-pre-line) */}
-        <motion.div variants={fadeInUp}>
-          <h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2">
-            <Calendar className="text-gold-500"/> Prochain Gamou
-          </h4>
-          <p className="text-gray-600 whitespace-pre-line">
-            <span className="text-sm text-gold-600 font-bold">{content.info.nextGamou}</span>
-          </p>
-        </motion.div>
-        
-        {/* Section Contact (Modifiée avec whitespace-pre-line) */}
-        <motion.div variants={fadeInUp} className="bg-primary-50 p-4 rounded-xl border border-primary-100">
-          <p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p>
-          <p className="text-2xl font-bold text-primary-900 whitespace-pre-line">
-            {content.info.phone}
-          </p>
-          <p className="text-xs text-gray-500 mt-1">Contactez {content.info.contactName}</p>
-        </motion.div>
-
-    </motion.div>
-  </div>
-</footer>
+        <div className="max-w-7xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></motion.div>
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Clock className="text-gold-500"/> Horaires</h4><p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p></motion.div>
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Calendar className="text-gold-500"/> Prochain Gamou</h4><p className="text-gray-600 whitespace-pre-line"><span className="text-sm text-gold-600 font-bold">{content.info.nextGamou}</span></p></motion.div>
+              <motion.div variants={fadeInUp} className="bg-primary-50 p-4 rounded-xl border border-primary-100"><p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p><p className="text-2xl font-bold text-primary-900 whitespace-pre-line">{content.info.phone}</p><p className="text-xs text-gray-500 mt-1">Contactez {content.info.contactName}</p></motion.div>
+          </motion.div>
+        </div>
+      </footer>
     </div>
   );
 }
