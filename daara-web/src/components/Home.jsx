@@ -5,12 +5,12 @@ import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
-  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown, Download, Loader
+  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown, Loader
 } from 'lucide-react';
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
 
-// ✅ AJOUTS POUR LA LECTURE INTELLIGENTE
+// ✅ IMPORTS POUR LA LECTURE INTELLIGENTE
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -51,12 +51,11 @@ const ImagePlaceholder = ({ label }) => (
   </div>
 );
 
-// --- ✅ NOUVEAU COMPOSANT PDF POPUP INTELLIGENT & RESPONSIVE ---
+// --- COMPOSANT PDF POPUP (BOUTON TÉLÉCHARGEMENT SUPPRIMÉ) ---
 const PdfPopup = ({ url, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(window.innerWidth * 0.9);
 
-  // Gère la largeur de la page PDF dynamiquement
   useEffect(() => {
     const handleResize = () => {
       setPageWidth(Math.min(window.innerWidth * 0.95, 850));
@@ -70,7 +69,7 @@ const PdfPopup = ({ url, onClose }) => {
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-primary-950/95 backdrop-blur-xl">
-      {/* Header fixe du lecteur */}
+      {/* Header fixe */}
       <div className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 bg-primary-900/50 shadow-xl relative z-10">
         <div className="flex items-center gap-3 text-white">
           <div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg">
@@ -78,21 +77,11 @@ const PdfPopup = ({ url, onClose }) => {
           </div>
           <div className="text-left">
             <span className="block font-bold font-serif text-lg leading-none">Biographie</span>
-            <span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Version intégrale</span>
+            <span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span>
           </div>
         </div>
         
-        <div className="flex items-center gap-3">
-          <a 
-            href={getSecureUrl(url)} 
-            download 
-            target="_blank" 
-            rel="noreferrer" 
-            className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center gap-2 group"
-          >
-            <Download size={20}/>
-            <span className="hidden md:inline text-xs font-bold">Télécharger</span>
-          </a>
+        <div className="flex items-center">
           <button 
             onClick={onClose} 
             className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"
@@ -103,7 +92,7 @@ const PdfPopup = ({ url, onClose }) => {
       </div>
 
       {/* Zone de lecture défilante */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 scrollbar-hide">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
           <Document 
             file={getSecureUrl(url)} 
@@ -135,9 +124,8 @@ const PdfPopup = ({ url, onClose }) => {
         </div>
       </div>
 
-      {/* Footer indication mobile */}
       <div className="md:hidden p-3 bg-primary-950 border-t border-white/5 text-center">
-        <p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest animate-pulse">
+        <p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest">
           Faites défiler pour lire la suite
         </p>
       </div>
@@ -145,7 +133,7 @@ const PdfPopup = ({ url, onClose }) => {
   );
 };
 
-// --- POPUP ÉVÉNEMENT (MODIFIÉ) ---
+// --- POPUP ÉVÉNEMENT ---
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
   const imageUrl = getOptimizedImage(getSecureUrl(event.image), 500);
@@ -189,7 +177,6 @@ export default function Home() {
   const [content, setContent] = useState(DEFAULT_CONTENT);
   const [isBioOpen, setIsBioOpen] = useState(false);
 
-  // --- CHARGEMENT DU CONTENU DYNAMIQUE ---
   useEffect(() => {
     const fetchContent = async () => {
       try {
@@ -207,7 +194,6 @@ export default function Home() {
     fetchContent();
   }, []);
 
-  // --- CHARGEMENT DES ÉVÉNEMENTS (POPUP) ---
   useEffect(() => {
     const checkEvents = async () => {
       try {
@@ -230,7 +216,6 @@ export default function Home() {
     checkEvents();
   }, []);
 
-  // --- REDIRECTION NOTIFICATION ---
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const eventId = params.get('id');
@@ -345,7 +330,6 @@ export default function Home() {
             <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
             <p className="text-gray-600 text-lg leading-relaxed mb-4">{content.about.text2}</p>
 
-            {/* ✅ FLÈCHE ANIMÉE ET BOUTON PDF */}
             {content.about.bioPdf && (
               <motion.button
                 whileHover={{ scale: 1.02 }}
