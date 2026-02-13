@@ -35,7 +35,7 @@ export default function Contact() {
     { 
       icon: Mail, 
       title: "Écrivez-nous", 
-      lines: ["daaraserignemordiop@gmail.com", "moultazam@gmail.com"],
+      lines: ["daaraserignemordiop@gmail.com", "moultazam@gmail.com","infos@daaraserignemordiop.com"],
       color: "text-gold-600",
       bg: "bg-gold-50"
     },
