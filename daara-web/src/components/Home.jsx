@@ -5,10 +5,20 @@ import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
-  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown 
+  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown, Download, Loader
 } from 'lucide-react';
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
+
+// ✅ AJOUTS POUR LA LECTURE INTELLIGENTE
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 // --- VALEURS PAR DÉFAUT ---
 const DEFAULT_CONTENT = {
@@ -41,31 +51,96 @@ const ImagePlaceholder = ({ label }) => (
   </div>
 );
 
-// --- COMPOSANT POPUP PDF ---
+// --- ✅ NOUVEAU COMPOSANT PDF POPUP INTELLIGENT & RESPONSIVE ---
 const PdfPopup = ({ url, onClose }) => {
+  const [numPages, setNumPages] = useState(null);
+  const [pageWidth, setPageWidth] = useState(window.innerWidth * 0.9);
+
+  // Gère la largeur de la page PDF dynamiquement
+  useEffect(() => {
+    const handleResize = () => {
+      setPageWidth(Math.min(window.innerWidth * 0.95, 850));
+    };
+    window.addEventListener('resize', handleResize);
+    handleResize();
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
   if (!url) return null;
+
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-primary-950/90 backdrop-blur-md p-2 md:p-10">
-      <motion.div 
-        initial={{ opacity: 0, scale: 0.9, y: 50 }} 
-        animate={{ opacity: 1, scale: 1, y: 0 }} 
-        exit={{ opacity: 0, scale: 0.9, y: 50 }}
-        className="bg-white w-full max-w-4xl h-[90vh] rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-2xl border border-white/20"
-      >
-        <div className="p-5 border-b flex justify-between items-center bg-gray-50/50">
-          <div className="flex items-center gap-3 text-primary-900">
-            <div className="p-2 bg-red-100 text-red-600 rounded-lg"><FileText size={20}/></div>
-            <span className="font-bold font-serif text-lg">Biographie Complète</span>
+    <div className="fixed inset-0 z-[100] flex flex-col bg-primary-950/95 backdrop-blur-xl">
+      {/* Header fixe du lecteur */}
+      <div className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 bg-primary-900/50 shadow-xl relative z-10">
+        <div className="flex items-center gap-3 text-white">
+          <div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg">
+            <FileText size={20}/>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-red-50 hover:text-red-500 rounded-full transition-all"><X size={24}/></button>
+          <div className="text-left">
+            <span className="block font-bold font-serif text-lg leading-none">Biographie</span>
+            <span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Version intégrale</span>
+          </div>
         </div>
-        <div className="flex-1 bg-gray-100 relative">
-          <iframe src={`${getSecureUrl(url)}#view=FitH`} className="w-full h-full border-none" title="Bio PDF" />
+        
+        <div className="flex items-center gap-3">
+          <a 
+            href={getSecureUrl(url)} 
+            download 
+            target="_blank" 
+            rel="noreferrer" 
+            className="p-3 bg-white/10 hover:bg-white/20 text-white rounded-full transition-all flex items-center gap-2 group"
+          >
+            <Download size={20}/>
+            <span className="hidden md:inline text-xs font-bold">Télécharger</span>
+          </a>
+          <button 
+            onClick={onClose} 
+            className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"
+          >
+            <X size={24}/>
+          </button>
         </div>
-        <div className="p-4 bg-gray-50 border-t text-center">
-            <a href={getSecureUrl(url)} download target="_blank" rel="noreferrer" className="text-xs font-black uppercase tracking-widest text-primary-500 hover:text-gold-600 transition-colors">Télécharger le document</a>
+      </div>
+
+      {/* Zone de lecture défilante */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10 scrollbar-hide">
+        <div className="max-w-4xl mx-auto flex flex-col items-center">
+          <Document 
+            file={getSecureUrl(url)} 
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            loading={
+              <div className="flex flex-col items-center py-20 text-gold-500 gap-4">
+                <Loader className="animate-spin" size={40} />
+                <p className="font-bold animate-pulse text-xs tracking-widest">OUVERTURE DU DOCUMENT...</p>
+              </div>
+            }
+          >
+            {Array.from(new Array(numPages), (el, index) => (
+              <motion.div 
+                key={`page_${index + 1}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="mb-8 shadow-2xl rounded-lg overflow-hidden border border-white/5"
+              >
+                <Page 
+                  pageNumber={index + 1} 
+                  width={pageWidth}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={false}
+                />
+              </motion.div>
+            ))}
+          </Document>
         </div>
-      </motion.div>
+      </div>
+
+      {/* Footer indication mobile */}
+      <div className="md:hidden p-3 bg-primary-950 border-t border-white/5 text-center">
+        <p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest animate-pulse">
+          Faites défiler pour lire la suite
+        </p>
+      </div>
     </div>
   );
 };
@@ -90,14 +165,12 @@ const EventPopup = ({ event, onClose, onBook }) => {
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
-              {/* ✅ FORMAT DE DATE MODIFIÉ : 14/02/2026 */}
               <div className="flex items-center gap-2"><Calendar size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleDateString('fr-FR')}</span></div>
               <div className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
           </div>
           <p className="text-gray-500 text-sm line-clamp-2 mb-6">{event.description || "Rejoignez-nous."}</p>
           <div className="flex gap-3">
               <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors">Fermer</button>
-              {/* ✅ BOUTON RÉSERVER REMPLACÉ PAR EN SAVOIR PLUS */}
               <button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center justify-center gap-2">
                 <ArrowRight size={18}/> En savoir plus
               </button>
