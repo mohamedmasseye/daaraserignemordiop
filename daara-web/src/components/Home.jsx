@@ -20,6 +20,35 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
+// --- ANIMATIONS VARIANTS (LE STYLE CLASSE) ---
+const fadeInUp = {
+  hidden: { opacity: 0, y: 40, filter: "blur(10px)" },
+  visible: { 
+    opacity: 1, 
+    y: 0, 
+    filter: "blur(0px)",
+    transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } 
+  }
+};
+
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: { staggerChildren: 0.2, delayChildren: 0.1 }
+  }
+};
+
+const imageReveal = {
+  hidden: { opacity: 0, scale: 1.1 },
+  visible: { 
+    opacity: 1, 
+    scale: 1, 
+    transition: { duration: 1.2, ease: [0.22, 1, 0.36, 1] } 
+  }
+};
+
+// --- COMPOSANTS UTILITAIRES ---
 const ImagePlaceholder = ({ label }) => (
   <div className="w-full h-full bg-primary-800 flex flex-col items-center justify-center text-primary-200/50 text-center p-4">
     <ImageIcon size={48} className="mb-2 opacity-50" />
@@ -51,7 +80,7 @@ const PdfPopup = ({ url, onClose }) => {
       </div>
       <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <Document file={getSecureUrl(url)} onLoadSuccess={({ numPages }) => setNumPages(numPages)} loading={<div className="flex flex-col items-center py-20 text-gold-500 animate-pulse font-bold">CHARGEMENT...</div>}>
+          <Document file={getSecureUrl(url)} onLoadSuccess={({ numPages }) => setNumPages(numPages)} loading={<div className="flex flex-col items-center py-20 text-gold-500 animate-pulse font-bold uppercase tracking-widest">Préparation...</div>}>
             {Array.from(new Array(numPages || 0), (el, index) => (
               <motion.div key={`page_${index + 1}`} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="mb-8 shadow-2xl rounded-lg overflow-hidden border border-white/5"><Page pageNumber={index + 1} width={pageWidth} renderTextLayer={true} renderAnnotationLayer={false}/></motion.div>
             ))}
@@ -93,7 +122,6 @@ export default function Home() {
       try {
         const [resHome, resEvents] = await Promise.all([API.get('/api/home-content'), API.get('/api/events')]);
         if (resHome.data) setContent(prev => ({ ...prev, ...resHome.data }));
-        
         const upcoming = (resEvents.data || []).filter(e => new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
         if (upcoming[0]) {
             setFeaturedEvent(upcoming[0]);
@@ -115,8 +143,6 @@ export default function Home() {
     if (featuredEvent) localStorage.setItem('home_popup_log', JSON.stringify({ eventId: featuredEvent._id, lastSeenDate: new Date().toDateString() }));
   };
 
-  const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } };
-
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
       <NotificationBanner />
@@ -125,82 +151,102 @@ export default function Home() {
       <AnimatePresence>{isBioOpen && <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />}</AnimatePresence>
 
       {/* 1. HERO SLIDER */}
-      <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
+      <section className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
         <AnimatePresence mode='wait'>
-          <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
-            {getSecureUrl(content.slides[currentSlide]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-900 flex items-center justify-center"><Star className="text-primary-800 opacity-20 transform scale-[5]" /></div>}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/80 via-primary-900/50 to-primary-900"></div>
+          <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 z-0">
+            {getSecureUrl(content.slides[currentSlide]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} alt="Hero" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-900 flex items-center justify-center"><Star className="text-primary-800 opacity-20 transform scale-[5]" /></div>}
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-900/40 to-primary-900"></div>
           </motion.div>
         </AnimatePresence>
-        <div className="relative z-10 text-center text-white px-4">
-           <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4 drop-shadow-2xl">{content.slides[currentSlide]?.title || "Daara SMD"}</h1>
-           <p className="text-lg opacity-80 max-w-2xl mx-auto mb-8 font-light italic leading-relaxed">{content.slides[currentSlide]?.subtitle}</p>
-           <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs shadow-xl transition-all">Explorer l'Enseignement</button>
+        <div className="relative z-10 text-center text-white px-4 max-w-5xl">
+           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1 }}>
+              <span className="inline-block px-4 py-1.5 rounded-full border border-gold-500/50 bg-gold-500/10 text-gold-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8">{content.slides[currentSlide]?.badge || "Bienvenue"}</span>
+              <h1 className="text-5xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl leading-tight">{content.slides[currentSlide]?.title || "Daara SMD"}</h1>
+              <p className="text-lg md:text-xl opacity-90 max-w-2xl mx-auto mb-10 font-light italic leading-relaxed">{content.slides[currentSlide]?.subtitle}</p>
+              <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-10 py-5 bg-gold-500 text-primary-950 rounded-full font-black uppercase tracking-widest text-[10px] shadow-2xl transform hover:scale-105 active:scale-95 transition-all">Explorer l'Enseignement</button>
+           </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* 2. BIOGRAPHIE */}
-      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto text-center md:text-left">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="grid md:grid-cols-2 gap-12 items-center">
-          <div className="relative">
-            <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3"></div>
-            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 flex items-center justify-center">
-              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Portrait" className="w-full h-full object-cover opacity-90" /> : <ImagePlaceholder label="Portrait" />}
-              <div className="absolute bottom-0 left-0 p-10 text-white"><p className="text-gold-400 font-bold uppercase tracking-widest text-xs mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
+      {/* 2. BIOGRAPHIE (REVEAL ON SCROLL) */}
+      <section id="about" className="py-32 px-4 md:px-8 max-w-7xl mx-auto">
+        <motion.div 
+          initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={staggerContainer}
+          className="grid md:grid-cols-2 gap-16 items-center"
+        >
+          <motion.div variants={imageReveal} className="relative">
+            <div className="absolute inset-0 bg-gold-500 rounded-[3rem] opacity-20 rotate-6 translate-x-4 translate-y-4"></div>
+            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[600px] bg-primary-900 flex items-center justify-center group">
+              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Serigne Mor" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[2s]" /> : <ImagePlaceholder label="Portrait" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-primary-950/80 via-transparent to-transparent"></div>
+              <div className="absolute bottom-0 left-0 p-12 text-white"><p className="text-gold-400 font-black uppercase tracking-[0.2em] text-xs mb-2">Guide Spirituel</p><h3 className="text-4xl font-serif font-bold">Serigne Mor Diop</h3></div>
             </div>
-          </div>
-          <div className="space-y-6 text-center md:text-left">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
-            <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
+          </motion.div>
+
+          <motion.div variants={fadeInUp} className="space-y-8 text-center md:text-left">
+            <h2 className="text-5xl md:text-6xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
+            <div className="w-20 h-1 bg-gold-500 mx-auto md:mx-0 rounded-full"></div>
+            <p className="text-gray-600 text-xl leading-relaxed font-light">{content.about.text1}</p>
             {content.about.bioPdf && (
-              <button onClick={() => setIsBioOpen(true)} className="inline-flex items-center gap-5 bg-white border-2 border-primary-100 px-8 py-5 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group">
-                <div className="text-left"><span className="block font-black text-xs uppercase tracking-widest text-primary-900 leading-none">Biographie</span></div>
-                <div className="p-3 bg-primary-900 text-white rounded-2xl group-hover:bg-gold-500 transition-colors shadow-lg"><FileText size={20}/></div>
-              </button>
+              <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={() => setIsBioOpen(true)} className="inline-flex items-center gap-6 bg-white border-2 border-primary-100 px-10 py-6 rounded-[2.5rem] shadow-xl hover:shadow-2xl transition-all group">
+                <div className="text-left"><span className="block font-black text-xs uppercase tracking-widest text-primary-900">Biographie</span><span className="text-[10px] text-gray-400 uppercase font-bold mt-1">Version intégrale</span></div>
+                <div className="p-4 bg-primary-900 text-white rounded-2xl group-hover:bg-gold-500 transition-colors shadow-lg"><FileText size={24}/></div>
+              </motion.button>
             )}
-          </div>
+          </motion.div>
         </motion.div>
       </section>
 
-      {/* 3. LES PILIERS */}
-      <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10 text-center">
-          <div className="grid md:grid-cols-3 gap-8">
+      {/* 3. LES PILIERS (STAGGERED ANIMATION) */}
+      <section className="bg-primary-900 text-white py-32 px-4 relative overflow-hidden">
+        <div className="absolute inset-0 opacity-5 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-20"><h2 className="text-4xl md:text-6xl font-serif font-bold mb-6 italic">Services & Spiritualité</h2><p className="text-primary-200 text-xl font-light opacity-70">Explorez les ressources numériques du Daara.</p></motion.div>
+          
+          <motion.div 
+            initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.2 }} variants={staggerContainer}
+            className="grid md:grid-cols-3 gap-10"
+          >
             {['p1', 'p2', 'p3'].map((id) => (
-              <motion.div key={id} whileHover={{ y: -10 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-8 cursor-pointer group text-center flex flex-col items-center">
-                <div className="w-full h-48 relative overflow-hidden rounded-[2rem] mb-6">
-                  {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
+              <motion.div key={id} variants={fadeInUp} whileHover={{ y: -15 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[3rem] p-10 cursor-pointer group flex flex-col items-center shadow-2xl transition-all duration-500">
+                <div className="w-full h-56 relative overflow-hidden rounded-[2.5rem] mb-8 shadow-inner">
+                  {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover transition-transform duration-[1.5s] group-hover:scale-125" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
+                  <div className="absolute inset-0 bg-primary-950/20 group-hover:bg-transparent transition-colors"></div>
                 </div>
-                <h3 className="text-2xl font-serif font-bold mb-2 group-hover:text-gold-400 transition-colors">{content.pillars[id]?.label}</h3>
-                <p className="text-primary-200 text-sm mb-6 opacity-80">{content.pillars[id]?.desc}</p>
-                <span className="text-gold-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">Découvrir <ArrowRight size={14}/></span>
+                <h3 className="text-3xl font-serif font-bold mb-4 group-hover:text-gold-400 transition-colors">{content.pillars[id]?.label}</h3>
+                <p className="text-primary-200 text-sm mb-8 leading-relaxed opacity-80 text-center">{content.pillars[id]?.desc}</p>
+                <div className="w-12 h-12 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-gold-500 group-hover:text-primary-900 transition-all"><ArrowRight size={20}/></div>
               </motion.div>
             ))}
-          </div>
+          </motion.div>
         </div>
       </section>
 
-      {/* 4. CITATION */}
-      <section className="py-24 px-4">
-        <div className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-xl border border-gold-100/50">
+      {/* 4. CITATION (SOFT ZOOM) */}
+      <section className="py-32 px-4">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5 }}
+          className="max-w-5xl mx-auto bg-gold-50 rounded-[4rem] p-16 md:p-24 text-center relative overflow-hidden shadow-2xl border border-gold-100/50"
+        >
           <Quote className="absolute top-10 left-10 text-gold-200 w-32 h-32 opacity-30 -scale-x-100" />
-          <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic drop-shadow-sm">{content.quote?.title}</h2>
-          <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed italic opacity-90">{content.quote?.text}</p>
-        </div>
+          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-4xl md:text-6xl font-serif font-bold text-primary-900 mb-10 italic drop-shadow-sm leading-tight">{content.quote?.title}</h2 >
+          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.8 }} className="text-2xl md:text-3xl text-gray-700 max-w-3xl mx-auto leading-relaxed italic font-light opacity-90">"{content.quote?.text}"</motion.p>
+        </motion.div>
       </section>
 
       {/* 5. FOOTER */}
-      <footer className="bg-white border-t border-gray-100 py-20 px-4">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-center md:text-left">
-            <div><h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6"><MapPin className="inline mr-2" size={14}/> Adresse</h4><p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed">{content.info.address}</p></div>
-            <div><h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6"><Clock className="inline mr-2" size={14}/> Horaires</h4><p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed">{content.info.hours}</p></div>
-            <div><h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6"><Calendar className="inline mr-2" size={14}/> Agenda</h4><p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed">{content.info.nextGamou}</p></div>
-            <div className="bg-primary-950 p-8 rounded-[2rem] text-white shadow-2xl">
-              <p className="text-[10px] font-black uppercase text-gold-500 mb-2">Assistance</p>
-              <p className="text-2xl font-black">{content.info.phone}</p>
-              <p className="text-[10px] text-primary-300 mt-2 font-bold uppercase">Contactez {content.info.contactName}</p>
-            </div>
-        </div>
+      <footer className="bg-white border-t border-gray-100 py-24 px-4">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-16 text-center md:text-left">
+            <motion.div variants={fadeInUp}><h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-gold-600 mb-8"><MapPin className="inline mr-3" size={14}/> Adresse</h4><p className="text-primary-900 font-bold text-lg whitespace-pre-line leading-relaxed">{content.info.address}</p></motion.div>
+            <motion.div variants={fadeInUp}><h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-gold-600 mb-8"><Clock className="inline mr-3" size={14}/> Horaires</h4><p className="text-primary-900 font-bold text-lg whitespace-pre-line leading-relaxed">{content.info.hours}</p></motion.div>
+            <motion.div variants={fadeInUp}><h4 className="font-black text-[10px] uppercase tracking-[0.3em] text-gold-600 mb-8"><Calendar className="inline mr-3" size={14}/> Agenda</h4><p className="text-primary-900 font-bold text-lg whitespace-pre-line leading-relaxed">{content.info.nextGamou}</p></motion.div>
+            <motion.div variants={fadeInUp} className="bg-primary-950 p-10 rounded-[3rem] text-white shadow-2xl relative overflow-hidden group">
+              <div className="absolute inset-0 bg-gold-500 opacity-0 group-hover:opacity-10 transition-opacity"></div>
+              <p className="text-[10px] font-black uppercase text-gold-500 mb-4 tracking-widest">Assistance 24/7</p>
+              <p className="text-3xl font-black mb-4">{content.info.phone}</p>
+              <p className="text-[10px] text-primary-300 font-bold uppercase">Contactez {content.info.contactName}</p>
+            </motion.div>
+        </motion.div>
       </footer>
     </div>
   );
