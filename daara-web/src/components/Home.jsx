@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
-import API from '../services/api'; // ✅ UTILISE TON INSTANCE SÉCURISÉE
+import API from '../services/api'; 
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
@@ -10,7 +10,7 @@ import {
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
 
-// ✅ IMPORTS POUR LA LECTURE INTELLIGENTE
+// IMPORTS POUR LA LECTURE PDF
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
@@ -20,21 +20,21 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-// --- CONFIGURATION DES ÉTAPES D'INSTALLATION ---
+// --- CONFIGURATION DES ÉTAPES D'INSTALLATION PWA ---
 const INSTALL_STEPS = {
   safari: [
-    { title: "Étape 1", desc: "Cliquez sur le bouton 'Partager' en bas de Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500" /> },
-    { title: "Étape 2", desc: "Faites défiler et choisissez 'Sur l'écran d'accueil'.", img: "/safari_step2.png", icon: <PlusSquare className="text-primary-900" /> },
-    { title: "Étape 3", desc: "Appuyez sur 'Ajouter' en haut à droite de l'écran.", img: "/safari_step3.png", icon: <Smartphone className="text-gold-500" /> }
+    { title: "Étape 1", desc: "Appuyez sur l'icône 'Partager' en bas du navigateur Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500" /> },
+    { title: "Étape 2", desc: "Faites défiler le menu et sélectionnez 'Sur l'écran d'accueil'.", img: "/safari_step2.png", icon: <PlusSquare className="text-primary-900" /> },
+    { title: "Étape 3", desc: "Appuyez sur 'Ajouter' en haut à droite pour finaliser.", img: "/safari_step3.png", icon: <Smartphone className="text-gold-500" /> }
   ],
   google: [
-    { title: "Étape 1", desc: "Appuyez sur les 3 points en haut à droite de Chrome.", img: "/google_step1.png", icon: <Monitor className="text-gray-500" /> },
-    { title: "Étape 2", desc: "Appuyez sur l'option 'Installer l'application'.", img: "/google_step2.png", icon: <Download className="text-primary-900" /> },
-    { title: "Étape 3", desc: "Confirmez l'ajout pour voir l'icône sur votre écran.", img: "/google_step3.png", icon: <Star className="text-gold-500" /> }
+    { title: "Étape 1", desc: "Appuyez sur les trois points verticaux en haut à droite.", img: "/google_step1.png", icon: <Monitor className="text-gray-500" /> },
+    { title: "Étape 2", desc: "Sélectionnez 'Installer l'application' dans la liste.", img: "/google_step2.png", icon: <Download className="text-primary-900" /> },
+    { title: "Étape 3", desc: "Confirmez l'installation pour voir le Daara sur votre écran.", img: "/google_step3.png", icon: <Star className="text-gold-500" /> }
   ]
 };
 
-// ✅ RÉINTÉGRATION DU COMPOSANT MANQUANT
+// --- COMPOSANTS UTILITAIRES ---
 const ImagePlaceholder = ({ label }) => (
   <div className="w-full h-full bg-primary-800 flex flex-col items-center justify-center text-primary-200/50">
     <ImageIcon size={48} className="mb-2 opacity-50" />
@@ -42,41 +42,73 @@ const ImagePlaceholder = ({ label }) => (
   </div>
 );
 
-const getSecureUrl = (url) => { if (!url) return ""; return url.replace('http://', 'https://'); };
+const getSecureUrl = (url) => {
+  if (!url) return "";
+  if (url.includes('localhost:5000')) return url.replace('http://localhost:5000', '');
+  if (url.startsWith('http://')) return url.replace('http://', 'https://');
+  return url;
+};
 
-// --- COMPOSANT GUIDE INSTALLATION PWA ---
+// --- COMPOSANT GUIDE INSTALLATION PLEIN ÉCRAN ---
 const PWAInstallGuide = ({ isOpen, onClose }) => {
   const [browser, setBrowser] = useState('safari'); 
   const [step, setStep] = useState(0);
+
   if (!isOpen) return null;
-  const currentSteps = INSTALL_STEPS[browser];
 
   return (
-    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-primary-950/90 backdrop-blur-md">
-      <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white w-full max-w-sm rounded-[2.5rem] overflow-hidden shadow-2xl relative">
-        <button onClick={onClose} className="absolute top-6 right-6 p-2 bg-gray-100 rounded-full text-gray-400 hover:text-red-500 transition-colors z-20"><X size={20}/></button>
-        <div className="p-8 text-center">
-          <div className="flex bg-gray-100 p-1 rounded-2xl mb-8">
-            <button onClick={() => { setBrowser('safari'); setStep(0); }} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'safari' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-400'}`}>Safari</button>
-            <button onClick={() => { setBrowser('google'); setStep(0); }} className={`flex-1 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'google' ? 'bg-white text-primary-900 shadow-sm' : 'text-gray-400'}`}>Google Chrome</button>
-          </div>
-          <h3 className="text-xl font-bold text-primary-900">{currentSteps[step].title}</h3>
-          <p className="text-gray-500 text-xs mt-2 px-4 leading-relaxed mb-8">{currentSteps[step].desc}</p>
-          <div className="relative h-64 bg-gray-900 rounded-[2rem] border-[6px] border-gray-800 shadow-xl overflow-hidden mb-8 flex items-center justify-center">
-             <motion.img key={`${browser}-${step}`} initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} src={currentSteps[step].img} className="w-full h-full object-contain" alt="Instruction" onError={(e) => { e.target.src = "https://via.placeholder.com/300x500?text=Aperçu+Etape"; }} />
-             <div className="absolute top-4 left-4 bg-white/10 backdrop-blur-md p-2 rounded-xl">{currentSteps[step].icon}</div>
-          </div>
-          <div className="flex gap-4">
-            <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="flex-1 py-4 border border-gray-100 rounded-2xl text-gray-400 font-bold disabled:opacity-0 transition-all"><ChevronLeft className="mx-auto" /></button>
-            {step < 2 ? (
-              <button onClick={() => setStep(s => s + 1)} className="flex-[2] py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg flex items-center justify-center gap-2">Suivant <ChevronRight size={16}/></button>
-            ) : (
-              <button onClick={onClose} className="flex-[2] py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-lg">J'ai compris</button>
-            )}
+    <motion.div 
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="fixed inset-0 z-[150] bg-white flex flex-col font-sans"
+    >
+      <div className="p-4 md:p-6 flex justify-between items-center bg-white border-b border-gray-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+          <h3 className="font-black text-primary-900 uppercase tracking-tighter text-sm">Installation Daara App</h3>
+        </div>
+        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900 hover:bg-red-50 hover:text-red-500 transition-all">
+          <X size={24}/>
+        </button>
+      </div>
+
+      <div className="bg-gray-50 p-4 shrink-0">
+        <div className="max-w-md mx-auto flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+          <button onClick={() => { setBrowser('safari'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Safari (iOS)</button>
+          <button onClick={() => { setBrowser('google'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Chrome (Android)</button>
+        </div>
+      </div>
+
+      <div className="flex-1 overflow-y-auto p-4 md:p-10 flex flex-col items-center">
+        <div className="max-w-2xl w-full flex flex-col items-center text-center">
+          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full mb-8">
+            <div className="inline-flex items-center gap-2 bg-gold-50 text-gold-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+               {INSTALL_STEPS[browser][step].icon} {INSTALL_STEPS[browser][step].title}
+            </div>
+            <h4 className="text-xl md:text-3xl font-serif font-bold text-primary-900 leading-tight">{INSTALL_STEPS[browser][step].desc}</h4>
+          </motion.div>
+
+          <div className="w-full max-w-[280px] md:max-w-[350px] aspect-[9/16] bg-gray-100 rounded-[3rem] border-[8px] border-primary-900 shadow-2xl overflow-hidden relative mb-10">
+             <motion.img 
+                key={`img-${browser}-${step}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+                src={INSTALL_STEPS[browser][step].img} className="w-full h-full object-cover" alt="Instruction"
+                onError={(e) => { e.target.src = "https://via.placeholder.com/600x1200?text=Capture+Ecran"; }}
+             />
           </div>
         </div>
-      </motion.div>
-    </div>
+      </div>
+
+      <div className="p-6 bg-white border-t border-gray-100 shrink-0">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-6">
+          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20 transition-all font-bold"><ChevronLeft size={28} /></button>
+          <div className="flex gap-2">{[0, 1, 2].map(i => (<div key={i} className={`h-2 rounded-full transition-all duration-300 ${step === i ? 'w-10 bg-gold-500' : 'w-2 bg-gray-200'}`} />))}</div>
+          {step < 2 ? (
+            <button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-2">Suivant <ChevronRight size={18}/></button>
+          ) : (
+            <button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Terminer</button>
+          )}
+        </div>
+      </div>
+    </motion.div>
   );
 };
 
@@ -84,22 +116,28 @@ const PWAInstallGuide = ({ isOpen, onClose }) => {
 const PdfPopup = ({ url, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(window.innerWidth * 0.9);
+
   useEffect(() => {
     const handleResize = () => setPageWidth(Math.min(window.innerWidth * 0.95, 850));
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
   if (!url) return null;
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-primary-950/95 backdrop-blur-xl">
       <div className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 bg-primary-900/50 shadow-xl relative z-10">
-        <div className="flex items-center gap-3 text-white"><div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg"><FileText size={20}/></div><div className="text-left"><span className="block font-bold font-serif text-lg leading-none">Biographie</span><span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span></div></div>
+        <div className="flex items-center gap-3 text-white">
+          <div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg"><FileText size={20}/></div>
+          <div className="text-left"><span className="block font-bold font-serif text-lg leading-none">Biographie</span><span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span></div>
+        </div>
         <button onClick={onClose} className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"><X size={24}/></button>
       </div>
       <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <Document file={getSecureUrl(url)} onLoadSuccess={({ numPages }) => setNumPages(numPages)} loading={<div className="flex flex-col items-center py-20 text-gold-500 gap-4"><Loader className="animate-spin" size={40} /><p className="font-bold animate-pulse text-xs tracking-widest uppercase">Ouverture...</p></div>}>
+          <Document file={getSecureUrl(url)} onLoadSuccess={({ numPages }) => setNumPages(numPages)} loading={<div className="flex flex-col items-center py-20 text-gold-500 gap-4"><Loader className="animate-spin" size={40} /><p className="font-bold animate-pulse text-xs tracking-widest uppercase">Chargement...</p></div>}>
             {Array.from(new Array(numPages || 0), (el, index) => (
               <motion.div key={`page_${index + 1}`} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="mb-8 shadow-2xl rounded-lg overflow-hidden border border-white/5">
                 <Page pageNumber={index + 1} width={pageWidth} renderTextLayer={true} renderAnnotationLayer={false}/>
@@ -108,6 +146,7 @@ const PdfPopup = ({ url, onClose }) => {
           </Document>
         </div>
       </div>
+      <div className="md:hidden p-3 bg-primary-950 border-t border-white/5 text-center"><p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest">Faites défiler pour lire la suite</p></div>
     </div>
   );
 };
@@ -124,7 +163,7 @@ const EventPopup = ({ event, onClose, onBook }) => {
         <div className="p-6">
           <div className="flex items-center justify-between mb-4 text-sm text-gray-600"><div className="flex items-center gap-2"><Calendar size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleDateString('fr-FR')}</span></div><div className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div></div>
           <p className="text-gray-500 text-sm line-clamp-2 mb-6">{event.description || "Rejoignez-nous."}</p>
-          <div className="flex gap-3"><button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl">Fermer</button><button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"><ArrowRight size={18}/> En savoir plus</button></div>
+          <div className="flex gap-3"><button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors">Fermer</button><button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl shadow-lg flex items-center justify-center gap-2"><ArrowRight size={18}/> En savoir plus</button></div>
         </div>
       </motion.div>
     </div>
@@ -133,7 +172,7 @@ const EventPopup = ({ event, onClose, onBook }) => {
 
 // --- VALEURS PAR DÉFAUT ---
 const DEFAULT_CONTENT = {
-  slides: [{ id: 1, image: "", badge: "Bienvenue", title: "Daara SMD", subtitle: "Science & Lumière", cta: "Découvrir", link: "about" }],
+  slides: [{ id: 1, image: "", badge: "Bienvenue", title: "Daara SMD", subtitle: "Chargement...", cta: "Découvrir", link: "about" }],
   about: { title1: "Biographie", text1: "", bioPdf: "" },
   pillars: { p1: {}, p2: {}, p3: {} },
   quote: {}, info: {}
@@ -143,7 +182,7 @@ export default function Home() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
-  const [showInstallBanner, setShowInstallBanner] = useState(true);
+  const [showInstallBanner, setShowInstallBanner] = useState(true); 
   const [isPWAOpen, setIsPWAOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [content, setContent] = useState(DEFAULT_CONTENT);
@@ -180,21 +219,23 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
       
-      {/* BANNIÈRE D'INSTALLATION */}
+      {/* 1. BANNIÈRE D'INSTALLATION (STICKY TOP) */}
       <AnimatePresence>
         {showInstallBanner && (
-          <motion.div exit={{ height: 0, opacity: 0 }} className="bg-primary-950 text-white py-2.5 px-4 md:px-8 flex items-center justify-between border-b border-white/5 relative z-[60] shadow-2xl">
+          <motion.div exit={{ height: 0, opacity: 0 }} className="bg-primary-950 text-white py-3 px-4 md:px-8 flex items-center justify-between border-b border-white/5 relative z-[60] shadow-2xl">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-inner">
+              <div className="w-10 h-10 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-inner">
                 <img src="/logo.png" className="w-full h-full object-contain" alt="Logo" />
               </div>
               <div className="text-left">
-                <h2 className="text-[10px] md:text-sm font-black uppercase tracking-tighter leading-none">Daara App</h2>
-                <p className="text-[8px] md:text-[10px] text-primary-400 font-bold uppercase tracking-widest mt-1">iOS & Android</p>
+                <h2 className="text-[11px] md:text-sm font-black uppercase tracking-tighter leading-none">Daara App</h2>
+                <p className="text-[9px] md:text-[10px] text-primary-400 font-bold uppercase tracking-widest mt-1">Installation iOS / Android</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <button onClick={() => setIsPWAOpen(true)} className="bg-gold-500 text-primary-900 px-5 py-1.5 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95 flex items-center gap-2">Installer <Download size={14} /></button>
+              <button onClick={() => setIsPWAOpen(true)} className="bg-gold-500 text-primary-900 px-5 py-2 rounded-full font-black text-[10px] md:text-xs uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95 flex items-center gap-2">
+                Installer <Download size={14} />
+              </button>
               <button onClick={() => setShowInstallBanner(false)} className="p-1 hover:bg-white/10 rounded-full transition-colors text-primary-400"><X size={18}/></button>
             </div>
           </motion.div>
@@ -207,73 +248,50 @@ export default function Home() {
       <AnimatePresence>{isBioOpen && <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />}</AnimatePresence>
       <AnimatePresence>{isPWAOpen && <PWAInstallGuide isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />}</AnimatePresence>
 
-      {/* HERO SLIDER */}
-      <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
+      {/* RESTE DU SITE (HERO, BIO, PILIERS, FOOTER) */}
+      <div className="relative h-[90vh] bg-primary-900 flex items-center justify-center overflow-hidden">
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
             {getSecureUrl(content.slides[currentSlide]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} alt="Hero" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-900 flex items-center justify-center"><div className="text-primary-800 opacity-20 transform scale-[5]"><Star /></div></div>}
             <div className="absolute inset-0 bg-gradient-to-b from-primary-900/80 via-primary-900/50 to-primary-900"></div>
           </motion.div>
         </AnimatePresence>
-        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center space-y-6 text-white">
-           <h1 className="text-4xl md:text-7xl font-serif font-bold leading-tight mb-6">{content.slides[currentSlide]?.title}</h1>
-           <p className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto font-light mb-8">{content.slides[currentSlide]?.subtitle}</p>
-           <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-xs">Découvrir <ArrowRight className="inline ml-2" size={18}/></button>
+        <div className="relative z-10 text-center text-white px-4">
+           <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4">{content.slides[currentSlide]?.title}</h1>
+           <p className="text-lg opacity-80 max-w-2xl mx-auto mb-8">{content.slides[currentSlide]?.subtitle}</p>
+           <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-xs">Découvrir le Daara</button>
         </div>
       </div>
 
-      {/* BIOGRAPHIE */}
-      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
+      <section id="about" className="py-24 px-4 max-w-7xl mx-auto">
         <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 gap-12 items-center">
           <motion.div variants={fadeInUp} className="relative">
-            <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3"></div>
-            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group flex items-center justify-center">
-              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Serigne Mor" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700" /> : <ImagePlaceholder label="Portrait" />}
+            <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3 translate-x-2 translate-y-2"></div>
+            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 flex items-center justify-center">
+              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Serigne Mor" className="w-full h-full object-cover opacity-90" /> : <ImagePlaceholder label="Portrait" />}
               <div className="absolute inset-0 bg-gradient-to-t from-primary-950 via-transparent to-transparent"></div>
-              <div className="absolute bottom-0 left-0 p-8 text-white"><p className="text-gold-400 font-bold uppercase tracking-wider text-sm mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
+              <div className="absolute bottom-0 left-0 p-8 text-white"><p className="text-gold-400 font-bold uppercase tracking-wider text-xs mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
             </div>
           </motion.div>
           <motion.div variants={fadeInUp} className="space-y-6">
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
+            <h2 className="text-4xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
             <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
             {content.about.bioPdf && (
-              <motion.button onClick={() => setIsBioOpen(true)} className="group flex items-center gap-4 bg-white border-2 border-primary-900/5 px-8 py-4 rounded-2xl shadow-sm hover:shadow-xl transition-all">
-                <div className="flex flex-col items-center"><span className="text-primary-900 font-black uppercase tracking-tighter text-sm mb-0.5">Voir plus</span><ChevronDown size={18} className="text-gold-500" /></div>
-                <div className="h-8 w-[1px] bg-gray-100"></div>
-                <div className="p-2 bg-primary-900 text-white rounded-xl"><FileText size={20} /></div>
-              </motion.button>
+              <button onClick={() => setIsBioOpen(true)} className="inline-flex items-center gap-4 bg-white border-2 border-gray-100 px-8 py-5 rounded-[2rem] shadow-sm hover:shadow-xl transition-all">
+                <span className="font-bold text-sm uppercase tracking-widest text-primary-900">Biographie</span>
+                <div className="p-3 bg-primary-900 text-white rounded-2xl"><FileText size={20}/></div>
+              </button>
             )}
           </motion.div>
         </motion.div>
       </section>
 
-      {/* PILIERS */}
-      <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto relative z-10">
-          <div className="grid md:grid-cols-3 gap-8">
-            {['p1', 'p2', 'p3'].map((id) => (
-              <motion.div key={id} variants={fadeInUp} whileHover={{ y: -10 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden cursor-pointer p-8">
-                <div className="h-48 relative overflow-hidden rounded-2xl mb-6">
-                  {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
-                </div>
-                <h3 className="text-2xl font-serif font-bold mb-2">{content.pillars[id]?.label}</h3>
-                <p className="text-primary-200 text-sm mb-6">{content.pillars[id]?.desc}</p>
-                <span className="text-gold-400 font-bold text-sm">Découvrir <ArrowRight className="inline ml-2" size={16}/></span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* FOOTER */}
       <footer className="bg-white border-t border-gray-100 py-16 px-4">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
-              <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></div>
-              <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Clock className="text-gold-500"/> Horaires</h4><p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p></div>
-              <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Calendar className="text-gold-500"/> Prochain Gamou</h4><p className="text-gray-600 whitespace-pre-line text-gold-600 font-bold">{content.info.nextGamou}</p></div>
-              <div className="bg-primary-50 p-4 rounded-xl border border-primary-100"><p className="text-sm text-primary-800 font-bold mb-2">Aide ?</p><p className="text-2xl font-bold text-primary-900">{content.info.phone}</p></div>
-          </div>
+        <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></div>
+            <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Clock className="text-gold-500"/> Horaires</h4><p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p></div>
+            <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Calendar className="text-gold-500"/> Prochain Gamou</h4><p className="text-gray-600 whitespace-pre-line text-gold-600 font-bold">{content.info.nextGamou}</p></div>
+            <div className="bg-primary-50 p-4 rounded-xl border border-primary-100"><p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p><p className="text-2xl font-bold text-primary-900 whitespace-pre-line">{content.info.phone}</p></div>
         </div>
       </footer>
     </div>
