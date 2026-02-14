@@ -62,31 +62,83 @@ const getSecureUrl = (url) => {
   return url.replace('http://', 'https://');
 };
 
-// --- PDF POPUP ---
+// --- COMPOSANT PDF POPUP (BOUTON TÉLÉCHARGEMENT SUPPRIMÉ) ---
 const PdfPopup = ({ url, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(window.innerWidth * 0.9);
+
   useEffect(() => {
-    const handleResize = () => setPageWidth(Math.min(window.innerWidth * 0.95, 850));
+    const handleResize = () => {
+      setPageWidth(Math.min(window.innerWidth * 0.95, 850));
+    };
     window.addEventListener('resize', handleResize);
     handleResize();
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
   if (!url) return null;
+
   return (
     <div className="fixed inset-0 z-[100] flex flex-col bg-primary-950/95 backdrop-blur-xl">
+      {/* Header fixe */}
       <div className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 bg-primary-900/50 shadow-xl relative z-10">
-        <div className="flex items-center gap-3 text-white"><div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg"><FileText size={20}/></div><div className="text-left"><span className="block font-bold font-serif text-lg leading-none">Biographie</span><span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span></div></div>
-        <button onClick={onClose} className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"><X size={24}/></button>
+        <div className="flex items-center gap-3 text-white">
+          <div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg">
+            <FileText size={20}/>
+          </div>
+          <div className="text-left">
+            <span className="block font-bold font-serif text-lg leading-none">Biographie</span>
+            <span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span>
+          </div>
+        </div>
+        
+        <div className="flex items-center">
+          <button 
+            onClick={onClose} 
+            className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"
+          >
+            <X size={24}/>
+          </button>
+        </div>
       </div>
-      <div className="flex-1 overflow-y-auto p-4 md:p-10 scrollbar-hide">
+
+      {/* Zone de lecture défilante */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden p-4 md:p-10">
         <div className="max-w-4xl mx-auto flex flex-col items-center">
-          <Document file={getSecureUrl(url)} onLoadSuccess={({ numPages }) => setNumPages(numPages)} loading={<div className="flex flex-col items-center py-20 text-gold-500 animate-pulse font-bold uppercase">Ouverture...</div>}>
-            {Array.from(new Array(numPages || 0), (el, index) => (
-              <motion.div key={`page_${index + 1}`} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: index * 0.1 }} className="mb-8 shadow-2xl rounded-lg overflow-hidden border border-white/5"><Page pageNumber={index + 1} width={pageWidth} renderTextLayer={true} renderAnnotationLayer={false}/></motion.div>
+          <Document 
+            file={getSecureUrl(url)} 
+            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+            loading={
+              <div className="flex flex-col items-center py-20 text-gold-500 gap-4">
+                <Loader className="animate-spin" size={40} />
+                <p className="font-bold animate-pulse text-xs tracking-widest">OUVERTURE DU DOCUMENT...</p>
+              </div>
+            }
+          >
+            {Array.from(new Array(numPages), (el, index) => (
+              <motion.div 
+                key={`page_${index + 1}`}
+                initial={{ opacity: 0, y: 30 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="mb-8 shadow-2xl rounded-lg overflow-hidden border border-white/5"
+              >
+                <Page 
+                  pageNumber={index + 1} 
+                  width={pageWidth}
+                  renderTextLayer={true}
+                  renderAnnotationLayer={false}
+                />
+              </motion.div>
             ))}
           </Document>
         </div>
+      </div>
+
+      <div className="md:hidden p-3 bg-primary-950 border-t border-white/5 text-center">
+        <p className="text-[10px] text-primary-400 font-bold uppercase tracking-widest">
+          Faites défiler pour lire la suite
+        </p>
       </div>
     </div>
   );
@@ -176,23 +228,47 @@ export default function Home() {
       </section>
 
       {/* 2. BIOGRAPHIE */}
-      <section id="about" className="py-32 px-4 md:px-8 max-w-7xl mx-auto">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, amount: 0.3 }} variants={staggerContainer} className="grid md:grid-cols-2 gap-16 items-center">
-          <motion.div variants={imageReveal} className="relative">
-            <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3 translate-x-2 translate-y-2"></div>
-            <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 flex items-center justify-center group">
-              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="" className="w-full h-full object-cover opacity-90 group-hover:scale-110 transition-transform duration-[2.5s] ease-out" /> : <ImagePlaceholder label="Portrait" />}
-              <div className="absolute bottom-0 left-0 p-10 text-white"><p className="text-gold-400 font-bold uppercase tracking-widest text-xs mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
+      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid md:grid-cols-2 gap-12 items-center">
+          <motion.div variants={fadeInUp} className="relative">
+            <div className="absolute inset-0 bg-gold-500 rounded-[2rem] rotate-3 translate-x-2 translate-y-2 opacity-20"></div>
+            <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 group flex items-center justify-center">
+              {getSecureUrl(content.about.image) ? (
+                  <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Serigne Mor" className="w-full h-full object-cover opacity-90 group-hover:scale-105 transition-transform duration-700" loading="lazy" />
+              ) : <ImagePlaceholder label="Portrait" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-primary-950 via-transparent to-transparent"></div>
+              <div className="absolute bottom-0 left-0 p-8 text-white">
+                <p className="text-gold-400 font-bold uppercase tracking-wider text-sm mb-1">Guide Spirituel</p>
+                <h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3>
+              </div>
             </div>
           </motion.div>
-          <motion.div variants={fadeInUp} className="space-y-6 text-center md:text-left">
-            <h2 className="text-4xl md:text-6xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1} <span className="text-gold-500">{content.about.highlight1}</span></h2>
-            <p className="text-gray-600 text-lg leading-relaxed italic">{content.about.text1}</p>
+          <motion.div variants={fadeInUp} className="space-y-6">
+            <span className="text-gold-600 font-bold uppercase tracking-widest text-sm bg-gold-50 px-3 py-1 rounded-full">Biographie</span>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary-900 leading-tight">
+              {content.about.title1} <span className="text-gold-500">{content.about.highlight1}</span> {content.about.title2} <span className="text-gold-500">{content.about.highlight2}</span>.
+            </h2>
+            <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
+            <p className="text-gray-600 text-lg leading-relaxed mb-4">{content.about.text2}</p>
+
             {content.about.bioPdf && (
-              <button onClick={() => setIsBioOpen(true)} className="inline-flex items-center gap-5 bg-white border-2 border-primary-100 px-8 py-5 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group">
-                <div className="text-left"><span className="block font-black text-xs uppercase tracking-widest text-primary-900 leading-none">Biographie</span><span className="text-[10px] text-gray-400 uppercase font-bold mt-1 block">Lecture Complète</span></div>
-                <div className="p-3 bg-primary-900 text-white rounded-2xl group-hover:bg-gold-500 transition-colors shadow-lg"><FileText size={20}/></div>
-              </button>
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={() => setIsBioOpen(true)}
+                className="group flex items-center gap-4 bg-white border-2 border-primary-900/5 px-8 py-4 rounded-2xl shadow-sm hover:shadow-xl hover:border-gold-500/30 transition-all duration-300"
+              >
+                <div className="flex flex-col items-center">
+                  <span className="text-primary-900 font-black uppercase tracking-tighter text-sm mb-0.5">Voir plus</span>
+                  <motion.div animate={{ y: [0, 4, 0] }} transition={{ repeat: Infinity, duration: 1.5 }}>
+                    <ChevronDown size={18} className="text-gold-500" />
+                  </motion.div>
+                </div>
+                <div className="h-8 w-[1px] bg-gray-100"></div>
+                <div className="p-2 bg-primary-900 text-white rounded-xl group-hover:bg-gold-500 transition-colors">
+                  <FileText size={20} />
+                </div>
+              </motion.button>
             )}
           </motion.div>
         </motion.div>
