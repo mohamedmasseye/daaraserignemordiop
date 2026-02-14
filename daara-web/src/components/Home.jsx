@@ -307,27 +307,16 @@ export default function Home() {
         </motion.div>
       </section>
 
-      {/* 5. FOOTER (RÉTABLI) */}
-      <footer className="bg-white border-t border-gray-100 py-20 px-4">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-center md:text-left">
-            <motion.div variants={fadeInUp}>
-              <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6 flex items-center gap-2 justify-center md:justify-start"><MapPin size={14}/> Adresse</h4>
-              <p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed italic">{content.info.address}</p>
-            </motion.div>
-            <motion.div variants={fadeInUp}>
-              <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6 flex items-center gap-2 justify-center md:justify-start"><Clock size={14}/> Horaires</h4>
-              <p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed italic">{content.info.hours}</p>
-            </motion.div>
-            <motion.div variants={fadeInUp}>
-              <h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6 flex items-center gap-2 justify-center md:justify-start"><Calendar size={14}/> Événement Spécial</h4>
-              <p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed italic">{content.info.nextGamou}</p>
-            </motion.div>
-            <motion.div variants={fadeInUp} className="bg-primary-950 p-8 rounded-[2rem] text-white shadow-2xl transition-transform hover:scale-105">
-              <p className="text-[10px] font-black uppercase text-gold-500 mb-2">Assistance</p>
-              <p className="text-2xl font-black">{content.info.phone}</p>
-              <p className="text-[10px] text-primary-300 mt-2 font-bold uppercase tracking-widest">Contactez {content.info.contactName}</p>
-            </motion.div>
-        </motion.div>
+      {/* 5. INFOS PRATIQUES */}
+      <footer className="bg-white border-t border-gray-100 py-16 px-4">
+        <div className="max-w-7xl mx-auto">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={staggerContainer} className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></motion.div>
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Clock className="text-gold-500"/> Horaires</h4><p className="text-gray-600 whitespace-pre-line">{content.info.hours}</p></motion.div>
+              <motion.div variants={fadeInUp}><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><Calendar className="text-gold-500"/> Prochain Gamou</h4><p className="text-gray-600 whitespace-pre-line"><span className="text-sm text-gold-600 font-bold">{content.info.nextGamou}</span></p></motion.div>
+              <motion.div variants={fadeInUp} className="bg-primary-50 p-4 rounded-xl border border-primary-100"><p className="text-sm text-primary-800 font-bold mb-2">Besoin d'aide ?</p><p className="text-2xl font-bold text-primary-900 whitespace-pre-line">{content.info.phone}</p><p className="text-xs text-gray-500 mt-1">Contactez {content.info.contactName}</p></motion.div>
+          </motion.div>
+        </div>
       </footer>
     </div>
   );
