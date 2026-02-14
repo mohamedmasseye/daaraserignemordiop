@@ -208,24 +208,47 @@ export default function Home() {
       <AnimatePresence>{isBioOpen && <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />}</AnimatePresence>
 
       {/* 1. HERO SLIDER */}
-      <section className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
+      <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
         <AnimatePresence mode='wait'>
-          <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, scale: 1.15, filter: "blur(20px)" }} animate={{ opacity: 1, scale: 1, filter: "blur(0px)" }} exit={{ opacity: 0 }} transition={{ duration: 1.8, ease: [0.22, 1, 0.36, 1] }} className="absolute inset-0 z-0">
-            {getSecureUrl(content.slides[currentSlide]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} alt="" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-900 flex items-center justify-center"><Star className="text-primary-800 opacity-20 transform scale-[5]" /></div>}
-            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/70 via-primary-900/40 to-primary-900"></div>
+          <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
+            {getSecureUrl(content.slides[currentSlide]?.image) ? (
+                <img 
+                    src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} 
+                    alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" decoding="async"
+                />
+            ) : (
+                <div className="w-full h-full bg-primary-900 flex items-center justify-center">
+                    <div className="text-primary-800 opacity-20 transform scale-[5]"><Star /></div>
+                </div>
+            )}
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/80 via-primary-900/50 to-primary-900"></div>
           </motion.div>
         </AnimatePresence>
-        <div className="relative z-10 text-center text-white px-4 max-w-5xl">
-           <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 1, delay: 0.5 }}>
-              <span className="inline-block px-4 py-1.5 rounded-full border border-gold-500/50 bg-gold-500/10 text-gold-400 text-[10px] font-black uppercase tracking-[0.2em] mb-8">{content.slides[currentSlide]?.badge}</span>
-              <h1 className="text-4xl md:text-8xl font-serif font-bold mb-6 drop-shadow-2xl leading-tight">{content.slides[currentSlide]?.title}</h1>
-              <p className="text-lg md:text-xl opacity-80 max-w-2xl mx-auto mb-10 font-light italic leading-relaxed">{content.slides[currentSlide]?.subtitle}</p>
-              <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-10 py-5 bg-gold-500 text-primary-950 rounded-full font-black uppercase tracking-widest text-[10px] shadow-xl transition-all hover:scale-105 active:scale-95">Explorer le Daara</button>
-           </motion.div>
+        
+        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center space-y-6">
+          <AnimatePresence mode='wait'>
+            <motion.div key={content.slides[currentSlide]?.id || 'text-0'} initial={{ opacity: 0, y: 30, filter: "blur(10px)" }} animate={{ opacity: 1, y: 0, filter: "blur(0px)" }} exit={{ opacity: 0, y: -30, filter: "blur(10px)" }} transition={{ duration: 0.8, delay: 0.2 }}>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/50 bg-gold-500/10 text-gold-400 text-xs font-bold uppercase tracking-widest backdrop-blur-sm mb-6">
+                <Star size={12} className="fill-gold-400"/> {content.slides[currentSlide]?.badge}
+              </div>
+              <h1 className="text-4xl md:text-6xl lg:text-7xl font-serif font-bold text-white leading-tight mb-6 drop-shadow-lg">{content.slides[currentSlide]?.title}</h1>
+              <p className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto font-light leading-relaxed mb-8 drop-shadow-md">{content.slides[currentSlide]?.subtitle}</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <button onClick={() => { const link = content.slides[currentSlide]?.link; if (link?.startsWith('/')) navigate(link); else document.getElementById(link)?.scrollIntoView({ behavior: 'smooth' }); }} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold text-lg hover:bg-white hover:text-primary-900 transition-all shadow-lg transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                  {content.slides[currentSlide]?.cta} <ArrowRight size={20}/>
+                </button>
+              </div>
+            </motion.div>
+          </AnimatePresence>
         </div>
+
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1, y: [0, 10, 0] }} transition={{ delay: 1, duration: 2, repeat: Infinity }} className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/50 flex flex-col items-center gap-2 z-20 cursor-pointer" onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })}>
+          <div className="w-6 h-10 border-2 border-white/30 rounded-full flex justify-center p-1"><div className="w-1 h-2 bg-white/50 rounded-full animate-scroll-down"></div></div>
+          <span className="text-[10px] uppercase tracking-widest">Découvrir</span>
+        </motion.div>
         <button onClick={prevSlide} className="absolute left-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition z-20"><ChevronLeft size={24}/></button>
         <button onClick={nextSlide} className="absolute right-4 top-1/2 -translate-y-1/2 p-3 rounded-full bg-white/5 hover:bg-white/20 text-white/50 hover:text-white transition z-20"><ChevronRight size={24}/></button>
-      </section>
+      </div>
 
       {/* 2. BIOGRAPHIE */}
       <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
@@ -299,11 +322,13 @@ export default function Home() {
       </section>
 
       {/* 4. CITATION */}
-      <section className="py-32 px-4">
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ duration: 1.5 }} className="max-w-5xl mx-auto bg-gold-50 rounded-[4rem] p-12 md:p-20 text-center relative overflow-hidden shadow-xl border border-gold-100/50">
-          <Quote className="absolute top-10 left-10 text-gold-200 w-32 h-32 opacity-30 -scale-x-100" />
-          <motion.h2 initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.5 }} className="text-3xl md:text-6xl font-serif font-bold text-primary-900 mb-8 italic drop-shadow-sm leading-tight">{content.quote?.title}</motion.h2>
-          <motion.p initial={{ opacity: 0 }} whileInView={{ opacity: 1 }} transition={{ delay: 0.8 }} className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed italic opacity-90">{content.quote?.text}</motion.p>
+      <section className="py-24 px-4">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-8 md:p-16 text-center relative overflow-hidden shadow-xl">
+          <Quote className="absolute top-10 left-10 text-gold-200 w-24 h-24 -scale-x-100 opacity-50" />
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic">{content.quote.title}</h2>
+            <p className="text-xl md:text-2xl text-gray-700 font-medium mb-10 max-w-2xl mx-auto leading-relaxed">{content.quote.text}</p>
+          </div>
         </motion.div>
       </section>
 
