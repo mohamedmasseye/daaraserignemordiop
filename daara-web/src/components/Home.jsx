@@ -128,7 +128,10 @@ const PdfPopup = ({ url, onClose }) => {
       <div className="p-4 md:p-6 flex justify-between items-center border-b border-white/10 bg-primary-900/50 shadow-xl relative z-10">
         <div className="flex items-center gap-3 text-white">
           <div className="p-2 bg-gold-500 text-primary-900 rounded-xl shadow-lg"><FileText size={20}/></div>
-          <div className="text-left"><span className="block font-bold font-serif text-lg leading-none">Biographie</span><span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span></div>
+          <div className="text-left">
+            <span className="block font-bold font-serif text-lg leading-none">Biographie</span>
+            <span className="text-[10px] text-gold-400 font-black uppercase tracking-widest mt-1">Lecture Interactive</span>
+          </div>
         </div>
         <button onClick={onClose} className="p-3 bg-red-500/20 text-red-400 hover:bg-red-500 hover:text-white rounded-full transition-all"><X size={24}/></button>
       </div>
@@ -147,12 +150,51 @@ const PdfPopup = ({ url, onClose }) => {
   );
 };
 
+// --- POPUP ÉVÉNEMENT ---
+const EventPopup = ({ event, onClose, onBook }) => {
+  if (!event) return null;
+  const imageUrl = getOptimizedImage(getSecureUrl(event.image), 500);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4 bg-black/60 backdrop-blur-sm">
+      <motion.div initial={{ opacity: 0, scale: 0.9, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: 20 }} className="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden relative border-2 border-gold-500/30">
+        <button onClick={onClose} className="absolute top-3 right-3 p-2 bg-black/10 hover:bg-black/20 rounded-full text-white z-20 transition-colors"><X size={20} /></button>
+        <div className="h-48 relative bg-gray-100">
+          {imageUrl ? <img src={imageUrl} alt={event.title} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-100 flex items-center justify-center text-primary-300"><Calendar size={48}/></div>}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent"></div>
+          <div className="absolute bottom-4 left-4 right-4"><span className="bg-gold-500 text-primary-900 text-[10px] font-bold px-3 py-1 rounded-full uppercase tracking-wider mb-2 inline-block">Prochain Événement</span><h3 className="text-white text-xl font-serif font-bold leading-tight">{event.title}</h3></div>
+        </div>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4 text-sm text-gray-600">
+              <div className="flex items-center gap-2"><Calendar size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleDateString('fr-FR')}</span></div>
+              <div className="flex items-center gap-2"><Clock size={16} className="text-gold-500"/><span>{new Date(event.date).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span></div>
+          </div>
+          <p className="text-gray-500 text-sm line-clamp-2 mb-6">{event.description || "Rejoignez-nous."}</p>
+          <div className="flex gap-3">
+              <button onClick={onClose} className="flex-1 py-3 border border-gray-200 text-gray-600 font-bold rounded-xl hover:bg-gray-50 transition-colors">Fermer</button>
+              <button onClick={onBook} className="flex-[2] py-3 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center justify-center gap-2"><ArrowRight size={18}/> En savoir plus</button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+};
+
 // --- VALEURS PAR DÉFAUT ---
 const DEFAULT_CONTENT = {
-  slides: [{ id: 1, image: "", badge: "Bienvenue", title: "Daara SMD", subtitle: "Chargement...", cta: "Découvrir", link: "about" }],
-  about: { title1: "Biographie", text1: "", bioPdf: "" },
-  pillars: { p1: {}, p2: {}, p3: {} },
-  quote: {}, info: {}
+  slides: [
+    { id: 1, image: "", badge: "Bienvenue au Daara", title: "La Science est une Lumière", subtitle: "Héritier d’une lumière spirituelle...", cta: "Découvrir le Daara", link: "about" },
+    { id: 2, image: "", badge: "Éducation & Excellence", title: "Servir le Coran", subtitle: "Un abreuvoir de connaissances.", cta: "Voir les Enseignements", link: "/livres" },
+    { id: 3, image: "", badge: "Communauté & Partage", title: "Au Service de l'Humanité", subtitle: "Un sanctuaire d'inspiration.", cta: "Faire un Don", link: "/don" }
+  ],
+  about: { title1: "Biographie", highlight1: "foi", title2: "et au", highlight2: "savoir", text1: "...", text2: "...", image: "", bioPdf: "" },
+  pillars: {
+    p1: { image: "", label: "Agenda", desc: "Événements à venir", link: "/evenements" },
+    p2: { image: "", label: "Bibliothèque", desc: "Ouvrages numériques", link: "/livres" },
+    p3: { image: "", label: "Médiathèque", desc: "Podcasts et Vidéos", link: "/podcast" }
+  },
+  quote: { text: "...", title: "..." },
+  info: { address: "...", hours: "...", nextGamou: "...", phone: "...", contactName: "..." }
 };
 
 export default function Home() {
@@ -179,16 +221,33 @@ export default function Home() {
         const [resHome, resEvents] = await Promise.all([API.get('/api/home-content'), API.get('/api/events')]);
         if (resHome.data) setContent(prev => ({ ...prev, ...resHome.data }));
         const upcoming = (resEvents.data || []).filter(e => new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
-        if (upcoming[0]) setFeaturedEvent(upcoming[0]);
+        if (upcoming[0]) {
+            setFeaturedEvent(upcoming[0]);
+            const stored = JSON.parse(localStorage.getItem('home_popup_log') || '{}');
+            if (stored.eventId !== upcoming[0]._id) setTimeout(() => setShowPopup(true), 2500); 
+        }
       } catch (err) { console.error(err); }
     };
     fetchData();
   }, []);
 
+  useEffect(() => {
+    const timer = setInterval(() => { if(content.slides?.length > 0) setCurrentSlide((prev) => (prev + 1) % content.slides.length); }, 6000); 
+    return () => clearInterval(timer);
+  }, [content.slides]);
+
+  const handleClosePopup = () => {
+      setShowPopup(false);
+      if (featuredEvent) localStorage.setItem('home_popup_log', JSON.stringify({ eventId: featuredEvent._id, lastSeenDate: new Date().toDateString() }));
+  };
+
+  const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } };
+  const staggerContainer = { hidden: { opacity: 0 }, visible: { opacity: 1, transition: { staggerChildren: 0.2 } } };
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
       
-      {/* 1. BANNIÈRE D'INSTALLATION DYNAMIQUE */}
+      {/* 1. BANNIÈRE D'INSTALLATION (STICKY TOP) */}
       <AnimatePresence>
         {showInstallBanner && (
           <motion.div exit={{ height: 0, opacity: 0 }} className="bg-primary-950 text-white py-3 px-4 md:px-8 flex items-center justify-between border-b border-white/5 relative z-[60] shadow-2xl">
@@ -213,28 +272,42 @@ export default function Home() {
 
       <NotificationBanner />
 
+      <AnimatePresence>{showPopup && featuredEvent && <EventPopup event={featuredEvent} onClose={handleClosePopup} onBook={() => { handleClosePopup(); navigate('/evenements'); }} />}</AnimatePresence>
       <AnimatePresence>{isBioOpen && <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />}</AnimatePresence>
       <AnimatePresence>{isPWAOpen && <PWAInstallGuide isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />}</AnimatePresence>
 
-      <div className="relative h-[90vh] bg-primary-900 flex items-center justify-center overflow-hidden">
-          <div className="z-10 text-center text-white px-4">
-              <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4">{content.slides[0]?.title || "Daara SMD"}</h1>
-              <p className="text-lg opacity-80 max-w-2xl mx-auto mb-8">{content.slides[0]?.subtitle || "La Science est une Lumière."}</p>
-              <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-xs">Découvrir le Daara</button>
-          </div>
-          <div className="absolute inset-0 bg-black/50 z-0"></div>
+      {/* 2. HERO SLIDER */}
+      <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
+        <AnimatePresence mode='wait'>
+          <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
+            {getSecureUrl(content.slides[currentSlide]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} alt="Hero" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-primary-900 flex items-center justify-center"><div className="text-primary-800 opacity-20 transform scale-[5]"><Star /></div></div>}
+            <div className="absolute inset-0 bg-gradient-to-b from-primary-900/80 via-primary-900/50 to-primary-900"></div>
+          </motion.div>
+        </AnimatePresence>
+        <div className="relative z-10 max-w-5xl mx-auto px-4 text-center space-y-6">
+          <AnimatePresence mode='wait'>
+            <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.8 }}>
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-gold-500/50 bg-gold-500/10 text-gold-400 text-xs font-bold uppercase tracking-widest backdrop-blur-sm mb-6"><Star size={12} className="fill-gold-400"/> {content.slides[currentSlide]?.badge}</div>
+              <h1 className="text-4xl md:text-7xl font-serif font-bold text-white leading-tight mb-6">{content.slides[currentSlide]?.title}</h1>
+              <p className="text-lg md:text-xl text-gray-200 max-w-2xl mx-auto font-light leading-relaxed mb-8">{content.slides[currentSlide]?.subtitle}</p>
+              <button onClick={() => { const link = content.slides[currentSlide]?.link; if (link?.startsWith('/')) navigate(link); else document.getElementById(link)?.scrollIntoView({ behavior: 'smooth' }); }} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold shadow-lg transform hover:-translate-y-1 transition-all flex items-center justify-center gap-2 mx-auto uppercase text-xs tracking-widest">{content.slides[currentSlide]?.cta} <ArrowRight size={20}/></button>
+            </motion.div>
+          </AnimatePresence>
+        </div>
       </div>
 
-      <section id="about" className="py-24 px-4 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center text-center md:text-left">
-          <div className="relative">
+      {/* 3. BIOGRAPHIE */}
+      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} variants={staggerContainer} className="grid md:grid-cols-2 gap-12 items-center">
+          <motion.div variants={fadeInUp} className="relative">
             <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3 translate-x-2 translate-y-2"></div>
             <div className="relative rounded-[2rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 flex items-center justify-center">
               {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Serigne Mor" className="w-full h-full object-cover opacity-90" /> : <ImagePlaceholder label="Portrait" />}
+              <div className="absolute inset-0 bg-gradient-to-t from-primary-950 via-transparent to-transparent"></div>
               <div className="absolute bottom-0 left-0 p-8 text-white"><p className="text-gold-400 font-bold uppercase tracking-wider text-xs mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
             </div>
-          </div>
-          <div className="space-y-6">
+          </motion.div>
+          <motion.div variants={fadeInUp} className="space-y-6">
             <h2 className="text-4xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
             <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
             {content.about.bioPdf && (
@@ -243,10 +316,44 @@ export default function Home() {
                 <div className="p-3 bg-primary-900 text-white rounded-2xl"><FileText size={20}/></div>
               </button>
             )}
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* 4. LES PILIERS */}
+      <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10">
+          <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="text-center mb-16">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold mb-4">Explorez le Daara</h2>
+            <p className="text-primary-200 text-lg">Services et ressources spirituelles.</p>
+          </motion.div>
+          <div className="grid md:grid-cols-3 gap-8">
+            {['p1', 'p2', 'p3'].map((id) => (
+              <motion.div key={id} variants={fadeInUp} whileHover={{ y: -10 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-3xl overflow-hidden cursor-pointer p-8 group">
+                <div className="h-48 relative overflow-hidden rounded-2xl mb-6">
+                  {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
+                </div>
+                <h3 className="text-2xl font-serif font-bold mb-2">{content.pillars[id]?.label}</h3>
+                <p className="text-primary-200 text-sm mb-6">{content.pillars[id]?.desc}</p>
+                <span className="text-gold-400 font-bold text-sm flex items-center gap-2 group-hover:gap-4 transition-all">Découvrir <ArrowRight size={16}/></span>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
+      {/* 5. CITATION */}
+      <section className="py-24 px-4">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-8 md:p-16 text-center relative overflow-hidden shadow-xl">
+          <Quote className="absolute top-10 left-10 text-gold-200 w-24 h-24 -scale-x-100 opacity-50" />
+          <div className="relative z-10">
+            <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic">{content.quote?.title}</h2>
+            <p className="text-xl md:text-2xl text-gray-700 font-medium max-w-2xl mx-auto leading-relaxed">{content.quote?.text}</p>
+          </div>
+        </motion.div>
+      </section>
+
+      {/* 6. INFOS PRATIQUES / FOOTER */}
       <footer className="bg-white border-t border-gray-100 py-16 px-4">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-8">
             <div><h4 className="font-bold text-lg text-primary-900 mb-4 flex items-center gap-2"><MapPin className="text-gold-500"/> Adresse</h4><p className="text-gray-600 whitespace-pre-line">{content.info.address}</p></div>
