@@ -25,7 +25,7 @@ const firebaseConfig = {
 };
 const firebaseApp = initializeApp(firebaseConfig);
 
-// --- IMPORTS COMPOSANTS ---
+// --- IMPORTS COMPOSANTS PUBLICS ---
 import ScrollToTop from './components/ScrollToTop'; 
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -43,6 +43,8 @@ import Podcast from './components/Podcast';
 import Register from './components/auth/Register';
 import LoginPublic from './components/auth/LoginPublic';
 import Profile from './components/auth/Profile';
+
+// --- IMPORTS COMPOSANTS ADMIN ---
 import LoginAdmin from './components/admin/Login';
 import AdminDashboard from './components/admin/AdminDashboard';
 import AdminBooks from './components/admin/AdminBooks';
@@ -57,7 +59,7 @@ import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
 
-// --- CONFIGURATION PWA STEPS ---
+// --- CONFIGURATION ÉTAPES PWA ---
 const PWA_STEPS = {
   safari: [
     { title: "Étape 1", desc: "Appuyez sur l'icône 'Partager' en bas de Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500"/> },
@@ -71,7 +73,7 @@ const PWA_STEPS = {
   ]
 };
 
-// --- COMPOSANT BANNIÈRE PWA ---
+// --- COMPOSANT BANNIÈRE PWA (FIXÉ TOUT EN HAUT) ---
 const PWAHeader = ({ onInstallClick }) => {
   const location = useLocation();
   const [isVisible, setIsVisible] = useState(false);
@@ -92,17 +94,17 @@ const PWAHeader = ({ onInstallClick }) => {
     <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="bg-[#050b15] text-white py-2.5 px-4 md:px-8 flex items-center justify-between border-b border-gold-500/20 relative z-[999] shadow-2xl">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-inner"><img src="/logo.png" className="w-full h-full object-contain" alt="" /></div>
-        <div className="text-left"><h2 className="text-[10px] md:text-sm font-black uppercase text-gold-400 leading-none">Daara App</h2><p className="text-[8px] text-gray-400 font-bold uppercase mt-1 tracking-widest">Installer sur votre écran</p></div>
+        <div className="text-left"><h2 className="text-[10px] md:text-sm font-black uppercase text-gold-400 leading-none">Daara App</h2><p className="text-[8px] text-gray-400 font-bold uppercase mt-1 tracking-widest">Application iOS & Android</p></div>
       </div>
       <div className="flex items-center gap-3">
-        <button onClick={onInstallClick} className="bg-gold-500 text-primary-950 px-5 py-1.5 rounded-full font-black text-[10px] uppercase shadow-lg active:scale-95 transition-all hover:bg-white">Installer</button>
+        <button onClick={onInstallClick} className="bg-gold-500 text-primary-950 px-5 py-1.5 rounded-full font-black text-[10px] uppercase shadow-lg active:scale-95 hover:bg-white transition-all">Installer</button>
         <button onClick={() => { setIsVisible(false); localStorage.setItem('daara_pwa_dismissed', 'true'); }} className="p-1 text-gray-500 hover:text-white transition-colors"><X size={18}/></button>
       </div>
     </motion.div>
   );
 };
 
-// --- COMPOSANT GUIDE INSTALLATION PLEIN ÉCRAN ---
+// --- COMPOSANT GUIDE PWA PLEIN ÉCRAN ---
 const PWAInstallGuide = ({ isOpen, onClose }) => {
   const [browser, setBrowser] = useState('safari'); 
   const [step, setStep] = useState(0);
@@ -113,25 +115,25 @@ const PWAInstallGuide = ({ isOpen, onClose }) => {
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-white flex flex-col font-sans">
       <div className="p-4 md:p-6 flex justify-between items-center bg-white border-b border-gray-100 shrink-0">
         <div className="flex items-center gap-3"><img src="/logo.png" className="w-8 h-8 object-contain" alt=""/><h3 className="font-black text-primary-900 uppercase text-xs">Installation</h3></div>
-        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900"><X size={24}/></button>
+        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900 hover:bg-red-500 transition-colors"><X size={24}/></button>
       </div>
       <div className="bg-gray-50 p-4 shrink-0 flex justify-center gap-4">
-          <button onClick={() => {setBrowser('safari'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase transition-all ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Safari (iOS)</button>
-          <button onClick={() => {setBrowser('google'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase transition-all ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Chrome (Android)</button>
+          <button onClick={() => {setBrowser('safari'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Safari (iOS)</button>
+          <button onClick={() => {setBrowser('google'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Chrome (Android)</button>
       </div>
       <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center text-center">
-          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
+          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 mt-4">
             <div className="inline-flex items-center gap-2 bg-gold-50 text-gold-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-4">{current.icon} {current.title}</div>
             <h4 className="text-xl font-bold text-primary-900 px-4 leading-tight">{current.desc}</h4>
           </motion.div>
           <div className="w-full max-w-[280px] aspect-[9/16] bg-gray-100 rounded-[3rem] border-[8px] border-primary-900 shadow-2xl overflow-hidden mb-10">
-             <motion.img key={`img-${browser}-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={current.img} className="w-full h-full object-cover" onError={(e) => {e.target.src="https://via.placeholder.com/600x1200?text=Image+Instructions"}} />
+             <motion.img key={`img-${browser}-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={current.img} className="w-full h-full object-cover" onError={(e) => {e.target.src="https://via.placeholder.com/600x1200?text=Instruction+Visuelle"}} />
           </div>
       </div>
       <div className="p-6 bg-white border-t border-gray-100 flex items-center justify-between gap-6 shrink-0">
-          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20"><ChevronLeft size={28} /></button>
+          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20 transition-all"><ChevronLeft size={28} /></button>
           <div className="flex gap-2">{[0, 1, 2].map(i => (<div key={i} className={`h-2 rounded-full transition-all ${step === i ? 'w-10 bg-gold-500' : 'w-2 bg-gray-200'}`} />))}</div>
-          {step < 2 ? (<button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs shadow-xl">Suivant</button>) : (<button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs shadow-xl">Terminer</button>)}
+          {step < 2 ? (<button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs shadow-xl transition-all">Suivant</button>) : (<button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs shadow-xl">Terminer</button>)}
       </div>
     </motion.div>
   );
@@ -150,7 +152,7 @@ const AdminProtectedRoute = ({ children }) => {
   return adminToken ? children : <Navigate to="/portal-daara-admin-77" replace />;
 };
 
-// --- LAYOUT PUBLIC ---
+// --- LAYOUTS ---
 const PublicLayout = ({ children }) => (
   <div className="min-h-screen bg-gray-50 flex flex-col justify-between">
     <Navbar />
@@ -159,7 +161,7 @@ const PublicLayout = ({ children }) => (
   </div>
 );
 
-// --- LOGIQUE PRINCIPALE APP CONTENT ---
+// --- LOGIQUE PRINCIPALE ---
 function AppContent() {
   const [isPWAOpen, setIsPWAOpen] = useState(false);
 
@@ -183,7 +185,7 @@ function AppContent() {
     initGoogle();
   }, []);
 
-  // 3. LOGIQUE NOTIFICATIONS PUSH (MOBILE)
+  // 3. LOGIQUE PUSH (MOBILE)
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const initPushLogic = async () => {
@@ -202,7 +204,7 @@ function AppContent() {
     }
   }, []);
 
-  // 4. LOGIQUE WEB PUSH (Uniquement sur navigateur)
+  // 4. LOGIQUE WEB PUSH (NAVIGATEUR)
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       const initWebPush = async () => {
@@ -218,13 +220,13 @@ function AppContent() {
             });
             onMessage(messaging, (payload) => { alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); });
           }
-        } catch (err) { console.log("Erreur initialisation Web Push", err); }
+        } catch (err) { console.log("Erreur Web Push", err); }
       };
       if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) { initWebPush(); }
     }
   }, []);
 
-  // 5. GESTION ROUTING & SERVICE WORKERS
+  // 5. GESTION ROUTING & SW
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => { if (event.data && event.data.url) window.location.href = event.data.url; });
@@ -275,7 +277,6 @@ function AppContent() {
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
         <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
         <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
-
         <Route path="/profil" element={<PublicProtectedRoute><PublicLayout><Profile /></PublicLayout></PublicProtectedRoute>} />
         
         <Route path="/admin-login" element={<Navigate to="/portal-daara-admin-77" replace />} />
@@ -286,7 +287,6 @@ function AppContent() {
   );
 }
 
-// --- WRAPPER FINAL ---
 function App() {
   return (
     <AuthProvider>
