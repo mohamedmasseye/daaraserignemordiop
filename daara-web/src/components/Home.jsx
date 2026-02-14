@@ -5,7 +5,7 @@ import API from '../services/api';
 import { 
   BookOpen, Youtube, MapPin, ArrowRight, Heart, Star, 
   Calendar, Users, PlayCircle, Quote, Clock, ChevronLeft, ChevronRight, X, Ticket, 
-  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown, Loader, Download, Share, PlusSquare, Smartphone, Monitor
+  ShoppingBag, Image as ImageIcon, Bell, FileText, ChevronDown, Loader
 } from 'lucide-react';
 import NotificationBanner from './NotificationBanner';
 import { getOptimizedImage } from '../utils/imageHelper';
@@ -20,21 +20,6 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
   import.meta.url,
 ).toString();
 
-// --- CONFIGURATION DES ÉTAPES D'INSTALLATION ---
-const INSTALL_STEPS = {
-  safari: [
-    { title: "Étape 1", desc: "Appuyez sur l'icône 'Partager' en bas du navigateur Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500" /> },
-    { title: "Étape 2", desc: "Faites défiler le menu et sélectionnez 'Sur l'écran d'accueil'.", img: "/safari_step2.png", icon: <PlusSquare className="text-primary-900" /> },
-    { title: "Étape 3", desc: "Appuyez sur 'Ajouter' en haut à droite pour finaliser.", img: "/safari_step3.png", icon: <Smartphone className="text-gold-500" /> }
-  ],
-  google: [
-    { title: "Étape 1", desc: "Appuyez sur les trois points verticaux en haut à droite.", img: "/google_step1.png", icon: <Monitor className="text-gray-500" /> },
-    { title: "Étape 2", desc: "Sélectionnez 'Installer l'application' dans la liste.", img: "/google_step2.png", icon: <Download className="text-primary-900" /> },
-    { title: "Étape 3", desc: "Confirmez l'installation pour voir le Daara sur votre écran.", img: "/google_step3.png", icon: <Star className="text-gold-500" /> }
-  ]
-};
-
-// --- COMPOSANTS UTILITAIRES ---
 const ImagePlaceholder = ({ label }) => (
   <div className="w-full h-full bg-primary-800 flex flex-col items-center justify-center text-primary-200/50 text-center p-4">
     <ImageIcon size={48} className="mb-2 opacity-50" />
@@ -48,48 +33,6 @@ const getSecureUrl = (url) => {
   return url.replace('http://', 'https://');
 };
 
-// --- GUIDE INSTALLATION PLEIN ÉCRAN ---
-const PWAInstallGuide = ({ isOpen, onClose }) => {
-  const [browser, setBrowser] = useState('safari'); 
-  const [step, setStep] = useState(0);
-  if (!isOpen) return null;
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[150] bg-white flex flex-col">
-      <div className="p-4 md:p-6 flex justify-between items-center bg-white border-b border-gray-100 shrink-0">
-        <div className="flex items-center gap-3">
-          <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
-          <h3 className="font-black text-primary-900 uppercase tracking-tighter text-sm">Installation Daara App</h3>
-        </div>
-        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900 hover:bg-red-50 hover:text-red-500 transition-all"><X size={24}/></button>
-      </div>
-      <div className="bg-gray-50 p-4 shrink-0">
-        <div className="max-w-md mx-auto flex bg-white p-1 rounded-2xl border border-gray-100 shadow-sm">
-          <button onClick={() => { setBrowser('safari'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Safari (iOS)</button>
-          <button onClick={() => { setBrowser('google'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase transition-all ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Chrome (Android)</button>
-        </div>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 md:p-10 flex flex-col items-center text-center">
-          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
-            <div className="inline-flex items-center gap-2 bg-gold-50 text-gold-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-4">{INSTALL_STEPS[browser][step].icon} {INSTALL_STEPS[browser][step].title}</div>
-            <h4 className="text-xl md:text-3xl font-serif font-bold text-primary-900">{INSTALL_STEPS[browser][step].desc}</h4>
-          </motion.div>
-          <div className="w-full max-w-[280px] md:max-w-[350px] aspect-[9/16] bg-gray-100 rounded-[3rem] border-[8px] border-primary-900 shadow-2xl overflow-hidden relative mb-10">
-             <motion.img key={`img-${browser}-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={INSTALL_STEPS[browser][step].img} className="w-full h-full object-cover" onError={(e) => { e.target.src = "https://via.placeholder.com/600x1200?text=Capture+Installation"; }} />
-          </div>
-      </div>
-      <div className="p-6 bg-white border-t border-gray-100 shrink-0">
-        <div className="max-w-md mx-auto flex items-center justify-between gap-6">
-          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20 transition-all"><ChevronLeft size={28} /></button>
-          <div className="flex gap-2">{[0, 1, 2].map(i => (<div key={i} className={`h-2 rounded-full transition-all ${step === i ? 'w-10 bg-gold-500' : 'w-2 bg-gray-200'}`} />))}</div>
-          {step < 2 ? (<button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs shadow-xl flex items-center justify-center gap-2">Suivant <ChevronRight size={18}/></button>) : (<button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs shadow-xl">Terminer</button>)}
-        </div>
-      </div>
-    </motion.div>
-  );
-};
-
-// --- COMPOSANT PDF POPUP ---
 const PdfPopup = ({ url, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [pageWidth, setPageWidth] = useState(window.innerWidth * 0.9);
@@ -119,7 +62,6 @@ const PdfPopup = ({ url, onClose }) => {
   );
 };
 
-// --- COMPOSANT ÉVÉNEMENT POPUP ---
 const EventPopup = ({ event, onClose, onBook }) => {
   if (!event) return null;
   const imageUrl = getOptimizedImage(getSecureUrl(event.image), 500);
@@ -138,43 +80,25 @@ const EventPopup = ({ event, onClose, onBook }) => {
   );
 };
 
-// --- COMPOSANT HOME PRINCIPAL ---
 export default function Home() {
   const navigate = useNavigate();
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
-  const [showInstallBanner, setShowInstallBanner] = useState(false); 
-  const [isPWAOpen, setIsPWAOpen] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
   const [content, setContent] = useState({ slides: [], about: {}, pillars: {p1:{},p2:{},p3:{}}, quote: {}, info: {} });
   const [isBioOpen, setIsBioOpen] = useState(false);
-
-  // ✅ LOGIQUE DE DÉTECTION END-TO-END (BANNER POSITIONNÉE EN HAUT)
-  useEffect(() => {
-    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
-    const isLaptop = window.innerWidth > 1024;
-    const isDismissed = localStorage.getItem('daara_pwa_dismissed');
-
-    if (!isStandalone && !isLaptop && !isDismissed) {
-      setShowInstallBanner(true);
-    }
-  }, []);
-
-  const handleDismissBanner = () => {
-    setShowInstallBanner(false);
-    localStorage.setItem('daara_pwa_dismissed', 'true');
-  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const [resHome, resEvents] = await Promise.all([API.get('/api/home-content'), API.get('/api/events')]);
         if (resHome.data) setContent(prev => ({ ...prev, ...resHome.data }));
+        
         const upcoming = (resEvents.data || []).filter(e => new Date(e.date) > new Date()).sort((a, b) => new Date(a.date) - new Date(b.date));
         if (upcoming[0]) {
             setFeaturedEvent(upcoming[0]);
             const log = JSON.parse(localStorage.getItem('home_popup_log') || '{}');
-            if (log.eventId !== upcoming[0]._id) setTimeout(() => setShowPopup(true), 2500); 
+            if (log.eventId !== upcoming[0]._id || log.lastSeenDate !== new Date().toDateString()) setTimeout(() => setShowPopup(true), 2500); 
         }
       } catch (err) { console.error(err); }
     };
@@ -186,51 +110,21 @@ export default function Home() {
     return () => clearInterval(timer);
   }, [content.slides]);
 
-  const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8 } } };
+  const handleCloseEventPopup = () => {
+    setShowPopup(false);
+    if (featuredEvent) localStorage.setItem('home_popup_log', JSON.stringify({ eventId: featuredEvent._id, lastSeenDate: new Date().toDateString() }));
+  };
+
+  const fadeInUp = { hidden: { opacity: 0, y: 60 }, visible: { opacity: 1, y: 0, transition: { duration: 0.8, ease: [0.22, 1, 0.36, 1] } } };
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
-      
-      {/* ✅ 1. SUPER-BANNIÈRE TOUT EN HAUT (COULEUR NOIR/BLEU NUIT) */}
-      <AnimatePresence>
-        {showInstallBanner && (
-          <motion.div 
-            initial={{ height: 0, opacity: 0 }} 
-            animate={{ height: 'auto', opacity: 1 }} 
-            exit={{ height: 0, opacity: 0 }} 
-            className="bg-[#050b15] text-white py-2.5 px-4 md:px-8 flex items-center justify-between border-b border-gold-500/20 relative z-[70] shadow-xl overflow-hidden"
-          >
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center p-1 shadow-inner">
-                <img src="/logo.png" className="w-full h-full object-contain" alt="Logo" />
-              </div>
-              <div className="text-left">
-                <h2 className="text-[10px] md:text-sm font-black uppercase tracking-tighter leading-none text-gold-400">Daara App</h2>
-                <p className="text-[8px] md:text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Installer sur votre écran</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setIsPWAOpen(true)} 
-                className="bg-gold-500 text-primary-950 px-5 py-1.5 rounded-full font-black text-[10px] uppercase tracking-widest hover:bg-white transition-all shadow-lg active:scale-95 flex items-center gap-2"
-              >
-                Installer <Download size={14} />
-              </button>
-              <button onClick={handleDismissBanner} className="p-1 hover:bg-white/10 rounded-full transition-colors text-gray-500">
-                <X size={18}/>
-              </button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <NotificationBanner />
 
-      <AnimatePresence>{showPopup && featuredEvent && <EventPopup event={featuredEvent} onClose={() => setShowPopup(false)} onBook={() => { setShowPopup(false); navigate('/evenements'); }} />}</AnimatePresence>
+      <AnimatePresence>{showPopup && featuredEvent && <EventPopup event={featuredEvent} onClose={handleCloseEventPopup} onBook={() => { handleCloseEventPopup(); navigate('/evenements'); }} />}</AnimatePresence>
       <AnimatePresence>{isBioOpen && <PdfPopup url={content.about.bioPdf} onClose={() => setIsBioOpen(false)} />}</AnimatePresence>
-      <AnimatePresence>{isPWAOpen && <PWAInstallGuide isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />}</AnimatePresence>
 
-      {/* HERO SLIDER */}
+      {/* 1. HERO SLIDER */}
       <div className="relative h-[90vh] min-h-[600px] flex items-center justify-center overflow-hidden bg-primary-900">
         <AnimatePresence mode='wait'>
           <motion.div key={content.slides[currentSlide]?.id} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
@@ -240,60 +134,62 @@ export default function Home() {
         </AnimatePresence>
         <div className="relative z-10 text-center text-white px-4">
            <h1 className="text-4xl md:text-7xl font-serif font-bold mb-4 drop-shadow-2xl">{content.slides[currentSlide]?.title || "Daara SMD"}</h1>
-           <p className="text-lg opacity-80 max-w-2xl mx-auto mb-8 font-light leading-relaxed">{content.slides[currentSlide]?.subtitle}</p>
-           <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs shadow-xl transition-all">Explorer le Daara</button>
+           <p className="text-lg opacity-80 max-w-2xl mx-auto mb-8 font-light italic leading-relaxed">{content.slides[currentSlide]?.subtitle}</p>
+           <button onClick={() => document.getElementById('about').scrollIntoView({ behavior: 'smooth' })} className="px-8 py-4 bg-gold-500 text-primary-950 rounded-full font-bold uppercase tracking-widest text-[10px] md:text-xs shadow-xl transition-all">Explorer l'Enseignement</button>
         </div>
       </div>
 
-      {/* BIOGRAPHIE */}
-      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto">
-        <div className="grid md:grid-cols-2 gap-12 items-center">
+      {/* 2. BIOGRAPHIE */}
+      <section id="about" className="py-24 px-4 md:px-8 max-w-7xl mx-auto text-center md:text-left">
+        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-100px" }} className="grid md:grid-cols-2 gap-12 items-center">
           <div className="relative">
             <div className="absolute inset-0 bg-gold-500 rounded-[2rem] opacity-20 rotate-3"></div>
             <div className="relative rounded-[3rem] overflow-hidden shadow-2xl h-[500px] bg-primary-900 flex items-center justify-center">
-              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="" className="w-full h-full object-cover opacity-90" /> : <ImagePlaceholder label="Portrait" />}
+              {getSecureUrl(content.about.image) ? <img src={getOptimizedImage(getSecureUrl(content.about.image), 600)} alt="Portrait" className="w-full h-full object-cover opacity-90" /> : <ImagePlaceholder label="Portrait" />}
               <div className="absolute bottom-0 left-0 p-10 text-white"><p className="text-gold-400 font-bold uppercase tracking-widest text-xs mb-1">Guide Spirituel</p><h3 className="text-3xl font-serif font-bold">Serigne Mor Diop</h3></div>
             </div>
           </div>
-          <div className="space-y-6">
+          <div className="space-y-6 text-center md:text-left">
             <h2 className="text-4xl md:text-5xl font-serif font-bold text-primary-900 leading-tight">{content.about.title1}</h2>
             <p className="text-gray-600 text-lg leading-relaxed">{content.about.text1}</p>
             {content.about.bioPdf && (
               <button onClick={() => setIsBioOpen(true)} className="inline-flex items-center gap-5 bg-white border-2 border-primary-100 px-8 py-5 rounded-[2.5rem] shadow-sm hover:shadow-xl transition-all group">
-                <div className="text-left"><span className="block font-black text-xs uppercase tracking-widest text-primary-900 leading-none text-center">Biographie</span></div>
+                <div className="text-left"><span className="block font-black text-xs uppercase tracking-widest text-primary-900 leading-none">Biographie</span></div>
                 <div className="p-3 bg-primary-900 text-white rounded-2xl group-hover:bg-gold-500 transition-colors shadow-lg"><FileText size={20}/></div>
               </button>
             )}
           </div>
-        </div>
-      </section>
-
-      {/* PILIERS */}
-      <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-3 gap-8">
-          {['p1', 'p2', 'p3'].map((id) => (
-            <motion.div key={id} whileHover={{ y: -10 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-8 cursor-pointer group flex flex-col items-center">
-              <div className="w-full h-48 relative overflow-hidden rounded-[2rem] mb-6">
-                {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
-              </div>
-              <h3 className="text-2xl font-serif font-bold mb-2 group-hover:text-gold-400 transition-colors text-center">{content.pillars[id]?.label}</h3>
-              <p className="text-primary-200 text-sm mb-6 text-center opacity-80">{content.pillars[id]?.desc}</p>
-              <span className="text-gold-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">Découvrir <ArrowRight size={14}/></span>
-            </motion.div>
-          ))}
-        </div>
-      </section>
-
-      {/* CITATION */}
-      <section className="py-24 px-4">
-        <motion.div initial="hidden" whileInView="visible" viewport={{ once: true }} variants={fadeInUp} className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-xl">
-          <Quote className="absolute top-10 left-10 text-gold-200 w-32 h-32 opacity-30 -scale-x-100" />
-          <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic drop-shadow-sm">{content.quote?.title}</h2>
-          <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed italic opacity-90">{content.quote?.text}</p>
         </motion.div>
       </section>
 
-      {/* FOOTER */}
+      {/* 3. LES PILIERS */}
+      <section className="bg-primary-900 text-white py-24 px-4 relative overflow-hidden">
+        <div className="max-w-7xl mx-auto relative z-10 text-center">
+          <div className="grid md:grid-cols-3 gap-8">
+            {['p1', 'p2', 'p3'].map((id) => (
+              <motion.div key={id} whileHover={{ y: -10 }} onClick={() => navigate(content.pillars[id]?.link)} className="bg-white/5 backdrop-blur-md border border-white/10 rounded-[2.5rem] p-8 cursor-pointer group text-center flex flex-col items-center">
+                <div className="w-full h-48 relative overflow-hidden rounded-[2rem] mb-6">
+                  {getSecureUrl(content.pillars[id]?.image) ? <img src={getOptimizedImage(getSecureUrl(content.pillars[id].image), 400)} alt="" className="w-full h-full object-cover transition-transform group-hover:scale-110" /> : <ImagePlaceholder label={content.pillars[id]?.label} />}
+                </div>
+                <h3 className="text-2xl font-serif font-bold mb-2 group-hover:text-gold-400 transition-colors">{content.pillars[id]?.label}</h3>
+                <p className="text-primary-200 text-sm mb-6 opacity-80">{content.pillars[id]?.desc}</p>
+                <span className="text-gold-400 font-bold text-xs uppercase tracking-widest flex items-center gap-2">Découvrir <ArrowRight size={14}/></span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* 4. CITATION */}
+      <section className="py-24 px-4">
+        <div className="max-w-5xl mx-auto bg-gold-50 rounded-[3rem] p-12 md:p-20 text-center relative overflow-hidden shadow-xl border border-gold-100/50">
+          <Quote className="absolute top-10 left-10 text-gold-200 w-32 h-32 opacity-30 -scale-x-100" />
+          <h2 className="text-3xl md:text-5xl font-serif font-bold text-primary-900 mb-8 italic drop-shadow-sm">{content.quote?.title}</h2>
+          <p className="text-xl md:text-2xl text-gray-700 max-w-2xl mx-auto leading-relaxed italic opacity-90">{content.quote?.text}</p>
+        </div>
+      </section>
+
+      {/* 5. FOOTER */}
       <footer className="bg-white border-t border-gray-100 py-20 px-4">
         <div className="max-w-7xl mx-auto grid md:grid-cols-2 lg:grid-cols-4 gap-12 text-center md:text-left">
             <div><h4 className="font-black text-[10px] uppercase tracking-[0.2em] text-gold-600 mb-6"><MapPin className="inline mr-2" size={14}/> Adresse</h4><p className="text-primary-900 font-bold whitespace-pre-line leading-relaxed">{content.info.address}</p></div>
