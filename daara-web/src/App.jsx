@@ -59,21 +59,70 @@ import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
 
-// --- CONFIGURATION ÉTAPES PWA ---
-const PWA_STEPS = {
+// --- ✅ CONFIGURATION DES ÉTAPES D'INSTALLATION (MODÈLE CONSERVÉ) ---
+const INSTALL_STEPS = {
   safari: [
-    { title: "Étape 1", desc: "Appuyez sur l'icône 'Partager' en bas de Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500"/> },
-    { title: "Étape 2", desc: "Choisissez 'Sur l'écran d'accueil' dans la liste.", img: "/safari_step2.png", icon: <PlusSquare className="text-primary-900"/> },
-    { title: "Étape 3", desc: "Appuyez sur 'Ajouter' en haut à droite.", img: "/safari_step3.png", icon: <Smartphone className="text-gold-500"/> }
+    { title: "Étape 1", desc: "Appuyez sur l'icône 'Partager' en bas du navigateur Safari.", img: "/safari_step1.png", icon: <Share className="text-blue-500" /> },
+    { title: "Étape 2", desc: "Faites défiler le menu et sélectionnez 'Sur l'écran d'accueil'.", img: "/safari_step2.png", icon: <PlusSquare className="text-primary-900" /> },
+    { title: "Étape 3", desc: "Appuyez sur 'Ajouter' en haut à droite pour finaliser.", img: "/safari_step3.png", icon: <Smartphone className="text-gold-500" /> }
   ],
   google: [
-    { title: "Étape 1", desc: "Appuyez sur les 3 points en haut à droite de Chrome.", img: "/google_step1.png", icon: <Monitor className="text-gray-500"/> },
-    { title: "Étape 2", desc: "Appuyez sur 'Installer l'application'.", img: "/google_step2.png", icon: <Download className="text-primary-900"/> },
-    { title: "Étape 3", desc: "Confirmez l'ajout pour voir l'icône sur votre écran.", img: "/google_step3.png", icon: <Star className="text-gold-500"/> }
+    { title: "Étape 1", desc: "Appuyez sur les trois points verticaux en haut à droite.", img: "/google_step1.png", icon: <Monitor className="text-gray-500" /> },
+    { title: "Étape 2", desc: "Sélectionnez 'Installer l'application' dans la liste.", img: "/google_step2.png", icon: <Download className="text-primary-900" /> },
+    { title: "Étape 3", desc: "Confirmez l'installation pour voir le Daara sur votre écran.", img: "/google_step3.png", icon: <Star className="text-gold-500" /> }
   ]
 };
 
-// --- COMPOSANT BANNIÈRE PWA (FIXÉ TOUT EN HAUT) ---
+// --- ✅ COMPOSANT GUIDE INSTALLATION PLEIN ÉCRAN ---
+const PWAInstallGuide = ({ isOpen, onClose }) => {
+  const [browser, setBrowser] = useState('safari'); 
+  const [step, setStep] = useState(0);
+  if (!isOpen) return null;
+
+  return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-white flex flex-col font-sans">
+      <div className="p-4 md:p-6 flex justify-between items-center bg-white border-b border-gray-100 shrink-0">
+        <div className="flex items-center gap-3">
+          <img src="/logo.png" className="w-8 h-8 object-contain" alt="Logo" />
+          <h3 className="font-black text-primary-900 uppercase tracking-tighter text-sm">Installation Daara App</h3>
+        </div>
+        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900 hover:bg-red-50 hover:text-red-500 transition-all"><X size={24}/></button>
+      </div>
+      <div className="bg-gray-50 p-4 shrink-0">
+        <div className="max-w-md mx-auto flex bg-white p-1 rounded-2xl shadow-sm border border-gray-100">
+          <button onClick={() => { setBrowser('safari'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Safari (iOS)</button>
+          <button onClick={() => { setBrowser('google'); setStep(0); }} className={`flex-1 py-3 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'text-gray-400'}`}>Chrome (Android)</button>
+        </div>
+      </div>
+      <div className="flex-1 overflow-y-auto p-4 md:p-10 flex flex-col items-center">
+        <div className="max-w-2xl w-full flex flex-col items-center text-center">
+          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="w-full mb-8">
+            <div className="inline-flex items-center gap-2 bg-gold-50 text-gold-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest mb-4">
+               {INSTALL_STEPS[browser][step].icon} {INSTALL_STEPS[browser][step].title}
+            </div>
+            <h4 className="text-xl md:text-3xl font-serif font-bold text-primary-900 leading-tight">{INSTALL_STEPS[browser][step].desc}</h4>
+          </motion.div>
+          <div className="w-full max-w-[280px] md:max-w-[350px] aspect-[9/16] bg-gray-100 rounded-[3rem] border-[8px] border-primary-900 shadow-2xl overflow-hidden relative mb-10">
+             <motion.img key={`img-${browser}-${step}`} initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} src={INSTALL_STEPS[browser][step].img} className="w-full h-full object-cover" alt="Instruction" onError={(e) => { e.target.src = "https://via.placeholder.com/600x1200?text=Capture+Ecran"; }} />
+          </div>
+        </div>
+      </div>
+      <div className="p-6 bg-white border-t border-gray-100 shrink-0">
+        <div className="max-w-md mx-auto flex items-center justify-between gap-6">
+          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20 transition-all font-bold"><ChevronLeft size={28} /></button>
+          <div className="flex gap-2">{[0, 1, 2].map(i => (<div key={i} className={`h-2 rounded-full transition-all duration-300 ${step === i ? 'w-10 bg-gold-500' : 'w-2 bg-gray-200'}`} />))}</div>
+          {step < 2 ? (
+            <button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl flex items-center justify-center gap-2">Suivant <ChevronRight size={18}/></button>
+          ) : (
+            <button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs tracking-widest shadow-xl">Terminer</button>
+          )}
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+// --- ✅ COMPOSANT BANNIÈRE PWA HEADER ---
 const PWAHeader = ({ onInstallClick }) => {
   const location = useLocation();
   const [isVisible, setIsVisible] = useState(false);
@@ -94,46 +143,14 @@ const PWAHeader = ({ onInstallClick }) => {
     <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="bg-[#050b15] text-white py-2.5 px-4 md:px-8 flex items-center justify-between border-b border-gold-500/20 relative z-[999] shadow-2xl">
       <div className="flex items-center gap-3">
         <div className="w-9 h-9 bg-white rounded-xl flex items-center justify-center p-1.5 shadow-inner"><img src="/logo.png" className="w-full h-full object-contain" alt="" /></div>
-        <div className="text-left"><h2 className="text-[10px] md:text-sm font-black uppercase text-gold-400 leading-none">Daara App</h2><p className="text-[8px] text-gray-400 font-bold uppercase mt-1 tracking-widest">Application iOS & Android</p></div>
+        <div className="text-left">
+          <h2 className="text-[10px] md:text-sm font-black uppercase text-gold-400 leading-none">Daara App</h2>
+          <p className="text-[8px] text-gray-400 font-bold uppercase mt-1 tracking-widest">Application iOS & Android</p>
+        </div>
       </div>
       <div className="flex items-center gap-3">
         <button onClick={onInstallClick} className="bg-gold-500 text-primary-950 px-5 py-1.5 rounded-full font-black text-[10px] uppercase shadow-lg active:scale-95 hover:bg-white transition-all">Installer</button>
         <button onClick={() => { setIsVisible(false); localStorage.setItem('daara_pwa_dismissed', 'true'); }} className="p-1 text-gray-500 hover:text-white transition-colors"><X size={18}/></button>
-      </div>
-    </motion.div>
-  );
-};
-
-// --- COMPOSANT GUIDE PWA PLEIN ÉCRAN ---
-const PWAInstallGuide = ({ isOpen, onClose }) => {
-  const [browser, setBrowser] = useState('safari'); 
-  const [step, setStep] = useState(0);
-  if (!isOpen) return null;
-  const current = PWA_STEPS[browser][step];
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="fixed inset-0 z-[1000] bg-white flex flex-col font-sans">
-      <div className="p-4 md:p-6 flex justify-between items-center bg-white border-b border-gray-100 shrink-0">
-        <div className="flex items-center gap-3"><img src="/logo.png" className="w-8 h-8 object-contain" alt=""/><h3 className="font-black text-primary-900 uppercase text-xs">Installation</h3></div>
-        <button onClick={onClose} className="p-2 bg-primary-50 rounded-full text-primary-900 hover:bg-red-500 transition-colors"><X size={24}/></button>
-      </div>
-      <div className="bg-gray-50 p-4 shrink-0 flex justify-center gap-4">
-          <button onClick={() => {setBrowser('safari'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase ${browser === 'safari' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Safari (iOS)</button>
-          <button onClick={() => {setBrowser('google'); setStep(0);}} className={`flex-1 max-w-[150px] py-3 rounded-xl text-[10px] font-black uppercase ${browser === 'google' ? 'bg-primary-900 text-white shadow-lg' : 'bg-white text-gray-400'}`}>Chrome (Android)</button>
-      </div>
-      <div className="flex-1 overflow-y-auto p-4 flex flex-col items-center text-center">
-          <motion.div key={`${browser}-${step}`} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="mb-8 mt-4">
-            <div className="inline-flex items-center gap-2 bg-gold-50 text-gold-600 px-4 py-1.5 rounded-full text-[10px] font-black uppercase mb-4">{current.icon} {current.title}</div>
-            <h4 className="text-xl font-bold text-primary-900 px-4 leading-tight">{current.desc}</h4>
-          </motion.div>
-          <div className="w-full max-w-[280px] aspect-[9/16] bg-gray-100 rounded-[3rem] border-[8px] border-primary-900 shadow-2xl overflow-hidden mb-10">
-             <motion.img key={`img-${browser}-${step}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} src={current.img} className="w-full h-full object-cover" onError={(e) => {e.target.src="https://via.placeholder.com/600x1200?text=Instruction+Visuelle"}} />
-          </div>
-      </div>
-      <div className="p-6 bg-white border-t border-gray-100 flex items-center justify-between gap-6 shrink-0">
-          <button disabled={step === 0} onClick={() => setStep(s => s - 1)} className="p-4 bg-gray-50 rounded-2xl text-primary-900 disabled:opacity-20 transition-all"><ChevronLeft size={28} /></button>
-          <div className="flex gap-2">{[0, 1, 2].map(i => (<div key={i} className={`h-2 rounded-full transition-all ${step === i ? 'w-10 bg-gold-500' : 'w-2 bg-gray-200'}`} />))}</div>
-          {step < 2 ? (<button onClick={() => setStep(s => s + 1)} className="flex-1 py-4 bg-primary-900 text-white rounded-2xl font-black uppercase text-xs shadow-xl transition-all">Suivant</button>) : (<button onClick={onClose} className="flex-1 py-4 bg-gold-500 text-primary-900 rounded-2xl font-black uppercase text-xs shadow-xl">Terminer</button>)}
       </div>
     </motion.div>
   );
@@ -161,18 +178,16 @@ const PublicLayout = ({ children }) => (
   </div>
 );
 
-// --- LOGIQUE PRINCIPALE ---
+// --- LOGIQUE PRINCIPALE APP ---
 function AppContent() {
   const [isPWAOpen, setIsPWAOpen] = useState(false);
 
-  // 1. SILENCE CONSOLES EN PROD
   useEffect(() => {
     if (import.meta.env.PROD) {
       console.log = () => {}; console.error = () => {}; console.debug = () => {};
     }
   }, []);
 
-  // 2. INITIALISATION GOOGLE AUTH
   useEffect(() => {
     const initGoogle = async () => {
       if (Capacitor.isNativePlatform()) {
@@ -185,7 +200,6 @@ function AppContent() {
     initGoogle();
   }, []);
 
-  // 3. LOGIQUE PUSH (MOBILE)
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       const initPushLogic = async () => {
@@ -204,7 +218,6 @@ function AppContent() {
     }
   }, []);
 
-  // 4. LOGIQUE WEB PUSH (NAVIGATEUR)
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) {
       const initWebPush = async () => {
@@ -220,13 +233,12 @@ function AppContent() {
             });
             onMessage(messaging, (payload) => { alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); });
           }
-        } catch (err) { console.log("Erreur Web Push", err); }
+        } catch (err) { console.log("Erreur initialisation Web Push", err); }
       };
       if (window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches) { initWebPush(); }
     }
   }, []);
 
-  // 5. GESTION ROUTING & SW
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => { if (event.data && event.data.url) window.location.href = event.data.url; });
@@ -244,10 +256,11 @@ function AppContent() {
   return (
     <>
       <PWAHeader onInstallClick={() => setIsPWAOpen(true)} />
-      <AnimatePresence>{isPWAOpen && <PWAInstallGuide isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {isPWAOpen && <PWAInstallGuide isOpen={isPWAOpen} onClose={() => setIsPWAOpen(false)} />}
+      </AnimatePresence>
 
       <Routes>
-        {/* ROUTES ADMIN */}
         <Route path="/portal-daara-admin-77" element={<LoginAdmin />} /> 
         <Route path="/admin" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
         <Route path="/admin/dashboard" element={<AdminProtectedRoute><AdminDashboard /></AdminProtectedRoute>} />
@@ -263,7 +276,6 @@ function AppContent() {
         <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
         <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />
 
-        {/* ROUTES PUBLIQUES */}
         <Route path="/" element={<PublicLayout><Home /></PublicLayout>} />
         <Route path="/boutique" element={<PublicLayout><ShopHome /></PublicLayout>} />
         <Route path="/boutique/produit/:id" element={<PublicLayout><ProductDetails /></PublicLayout>} />
@@ -277,6 +289,7 @@ function AppContent() {
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
         <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
         <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
+
         <Route path="/profil" element={<PublicProtectedRoute><PublicLayout><Profile /></PublicLayout></PublicProtectedRoute>} />
         
         <Route path="/admin-login" element={<Navigate to="/portal-daara-admin-77" replace />} />
