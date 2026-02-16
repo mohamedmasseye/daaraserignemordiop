@@ -131,10 +131,14 @@ const PWAHeader = ({ onInstallClick }) => {
     const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone;
     const isLaptop = window.innerWidth > 1024;
     const isDismissed = localStorage.getItem('daara_pwa_dismissed');
+    const isNative = Capacitor.isNativePlatform();
     const isHome = location.pathname === "/";
 
-    if (isHome && !isStandalone && !isLaptop && !isDismissed) setIsVisible(true);
-    else setIsVisible(false);
+    if (isHome && !isNative && !isStandalone && !isLaptop && !isDismissed) {
+      setIsVisible(true);
+    } else {
+      setIsVisible(false);
+    }
   }, [location.pathname]);
 
   if (!isVisible) return null;
