@@ -166,6 +166,7 @@ const EventPopup = ({ event, onClose, onBook }) => {
 // --- COMPOSANT HOME PRINCIPAL ---
 export default function Home() {
   const navigate = useNavigate();
+  const [isLoading, setIsLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0);
   const [showPopup, setShowPopup] = useState(false);
   const [featuredEvent, setFeaturedEvent] = useState(null);
@@ -183,7 +184,11 @@ export default function Home() {
             const log = JSON.parse(localStorage.getItem('home_popup_log') || '{}');
             if (log.eventId !== upcoming[0]._id || log.lastSeenDate !== new Date().toDateString()) setTimeout(() => setShowPopup(true), 2500); 
         }
-      } catch (err) { console.error(err); }
+        setIsLoading(false);
+      } catch (err) { 
+        console.error(err);
+        setIsLoading(false);
+      }
     };
     fetchData();
   }, []);
@@ -201,6 +206,24 @@ export default function Home() {
   const nextSlide = () => setCurrentSlide((prev) => (prev + 1) % content.slides.length);
   const prevSlide = () => setCurrentSlide((prev) => (prev - 1 + content.slides.length) % content.slides.length);
 
+  // Écran de chargement pour éviter le flash de l'étoile vide
+  if (isLoading) {
+    return (
+      <div className="h-screen w-full bg-primary-900 flex flex-col items-center justify-center">
+        <motion.img 
+          src="/logo.png" 
+          className="w-24 h-24 mb-6 shadow-2xl rounded-full"
+          animate={{ scale: [1, 1.05, 1], opacity: [0.8, 1, 0.8] }}
+          transition={{ repeat: Infinity, duration: 2, ease: "easeInOut" }}
+        />
+        <div className="flex flex-col items-center gap-2">
+          <Loader className="animate-spin text-gold-500" size={32} />
+          <span className="text-gold-500/50 text-[10px] font-black uppercase tracking-[0.3em] animate-pulse">Chargement du Daara</span>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 font-sans text-gray-800 overflow-x-hidden">
       <NotificationBanner />
@@ -213,8 +236,8 @@ export default function Home() {
           <motion.div key={content.slides[currentSlide]?.id || 'slide-0'} initial={{ opacity: 0, scale: 1.1 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} transition={{ duration: 1.5 }} className="absolute inset-0 z-0">
             {getSecureUrl(content.slides[currentSlide]?.image) ? (
                 <img 
-                    src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} 
-                    alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" decoding="async"
+                  src={getOptimizedImage(getSecureUrl(content.slides[currentSlide]?.image), 1000)} 
+                  alt="Hero" className="w-full h-full object-cover" referrerPolicy="no-referrer" decoding="async"
                 />
             ) : (
                 <div className="w-full h-full bg-primary-900 flex items-center justify-center">
