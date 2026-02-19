@@ -133,8 +133,8 @@ export default function Footer() {
         <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center text-gray-400 text-xs">
           <p>&copy; {new Date().getFullYear()} Moultazam Daara Serigne Mor Diop. Tous droits réservés.</p>
           <div className="flex space-x-4 mt-4 md:mt-0">
-            <a href="#" className="hover:text-white transition-colors">Mentions Légales</a>
-            <a href="#" className="hover:text-white transition-colors">Confidentialité</a>
+            <Link to="/mentions-legales" className="hover:text-white transition-colors">Mentions Légales</Link>
+            <Link to="/privacy" className="hover:text-white transition-colors">Confidentialité</Link>
           </div>
         </div>
       </div>

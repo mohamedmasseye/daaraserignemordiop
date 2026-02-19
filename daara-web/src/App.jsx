@@ -43,6 +43,8 @@ import Podcast from './components/Podcast';
 import Register from './components/auth/Register';
 import LoginPublic from './components/auth/LoginPublic';
 import Profile from './components/auth/Profile';
+import PrivacyPolicy from './components/PrivacyPolicy';
+import MentionsLegales from './components/MentionsLegales';
 
 // --- IMPORTS COMPOSANTS ADMIN ---
 import LoginAdmin from './components/admin/Login';
@@ -293,6 +295,8 @@ function AppContent() {
         <Route path="/don" element={<PublicLayout><Donate /></PublicLayout>} />
         <Route path="/inscription" element={<PublicLayout><Register /></PublicLayout>} />
         <Route path="/login-public" element={<PublicLayout><LoginPublic /></PublicLayout>} />
+        <Route path="/privacy" element={<PublicLayout><PrivacyPolicy /></PublicLayout>} />
+        <Route path="/mentions-legales" element={<PublicLayout><MentionsLegales /></PublicLayout>} />
 
         <Route path="/profil" element={<PublicProtectedRoute><PublicLayout><Profile /></PublicLayout></PublicProtectedRoute>} />
         

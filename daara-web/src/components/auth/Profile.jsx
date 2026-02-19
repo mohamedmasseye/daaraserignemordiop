@@ -119,11 +119,12 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
 export default function Profile() {
   const navigate = useNavigate();
   const fileInputRef = useRef(null);
-  const { user: authUser, logout, token } = useAuth(); //
+  const { logout, token } = useAuth(); 
   
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [formData, setFormData] = useState({ bio: '', city: '', phone: '', avatar: '' });
   const [selectedFile, setSelectedFile] = useState(null);
   const [tickets, setTickets] = useState([]);
@@ -135,7 +136,7 @@ export default function Profile() {
     const fetchUserData = async () => {
       try {
         setLoading(true);
-        const resUser = await API.get('/api/auth/me'); //
+        const resUser = await API.get('/api/auth/me'); 
         setUser(resUser.data);
         setFormData({ 
           bio: resUser.data.bio || '', 
@@ -146,7 +147,7 @@ export default function Profile() {
       } catch (err) {
         console.error("Erreur Profil:", err);
         if (err.response?.status === 401 || err.response?.status === 403) {
-            logout(false); //
+            logout(false); 
         }
       } finally { setLoading(false); }
     };
@@ -160,8 +161,8 @@ export default function Profile() {
         if (!token) return;
         try {
             const [resOrders, resTickets] = await Promise.all([
-                API.get('/api/my-orders'), //
-                API.get('/api/my-tickets') //
+                API.get('/api/my-orders'), 
+                API.get('/api/my-tickets') 
             ]);
             setOrders(resOrders.data);
             setTickets(resTickets.data);
@@ -190,7 +191,7 @@ export default function Profile() {
           dataToSend.append('phone', formData.phone);
           if (selectedFile) dataToSend.append('avatar', selectedFile);
 
-          const res = await API.put('/api/auth/me', dataToSend, { //
+          const res = await API.put('/api/auth/me', dataToSend, { 
               headers: { 'Content-Type': 'multipart/form-data' }
           });
 
@@ -204,9 +205,21 @@ export default function Profile() {
   const handleDeleteOrder = async (orderId) => {
       if(!window.confirm("Supprimer de l'historique ?")) return;
       try {
-          await API.delete(`/api/orders/${orderId}`); //
+          await API.delete(`/api/orders/${orderId}`); 
           setOrders(orders.filter(o => o._id !== orderId));
       } catch (err) { alert("Erreur."); }
+  };
+
+  const handleDeleteAccount = async () => {
+    try {
+        setLoading(true);
+        await API.delete('/api/auth/me'); // Appel à ton backend MongoDB sur Coolify
+        alert("Votre compte et toutes vos données ont été définitivement supprimés.");
+        logout(false); 
+    } catch (err) {
+        alert("Erreur lors de la suppression. Veuillez réessayer plus tard.");
+        setLoading(false);
+    }
   };
 
   if (loading) return (<div className="min-h-screen flex items-center justify-center bg-gray-50"><div className="animate-spin rounded-full h-12 w-12 border-t-4 border-gold-500"></div></div>);
@@ -320,11 +333,68 @@ export default function Profile() {
         </div>
       )}
 
+      {/* ZONE DE DANGER : SUPPRESSION DU COMPTE */}
+      <div className="mt-12 pt-8 border-t border-red-100 mb-8">
+          <div className="bg-red-50 rounded-3xl p-6 border border-red-100 flex flex-col md:flex-row items-center justify-between gap-4">
+              <div>
+                  <h3 className="text-lg font-bold text-red-900 flex items-center gap-2">
+                      <Trash2 size={20} /> Zone de danger
+                  </h3>
+                  <p className="text-sm text-red-600">
+                      La suppression de votre compte est irréversible et effacera toutes vos données sur nos serveurs.
+                  </p>
+              </div>
+              <button 
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="px-6 py-3 bg-white border-2 border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95 shadow-sm"
+              >
+                  Supprimer mon compte
+              </button>
+          </div>
+      </div>
+
       <div className="pt-6 border-t border-gray-200">
         <button onClick={() => logout(false)} className="text-red-600 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition flex items-center gap-2">
             <LogOut size={20} /> Se déconnecter
         </button>
       </div>
+
+      {/* MODAL DE CONFIRMATION DE SUPPRESSION */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-md p-4">
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }} 
+              animate={{ opacity: 1, scale: 1 }} 
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl"
+            >
+              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                <AlertCircle size={32} />
+              </div>
+              <h2 className="text-xl font-bold text-gray-900 mb-2">Êtes-vous sûr ?</h2>
+              <p className="text-gray-500 text-sm mb-6">
+                  Cette action supprimera définitivement vos billets, commandes et accès.
+              </p>
+              <div className="flex flex-col gap-3">
+                <button 
+                  onClick={handleDeleteAccount}
+                  className="w-full py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg"
+                >
+                  Oui, supprimer définitivement
+                </button>
+                <button 
+                  onClick={() => setShowDeleteConfirm(false)}
+                  className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"
+                >
+                  Annuler
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>{selectedTicket && <ClassyTicket ticket={selectedTicket} userName={user.fullName} onClose={() => setSelectedTicket(null)} />}</AnimatePresence>
     </div>
   );
