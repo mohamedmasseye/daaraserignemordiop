@@ -127,7 +127,9 @@ export default function AdminEvents() {
         const combinedDate = new Date(`${formData.startDate}T${formData.startTime}`);
 
         Object.keys(formData).forEach(key => {
-            if (key !== 'startDate' && key !== 'startTime') data.append(key, formData[key]);
+            if (!['startDate', 'startTime', 'date'].includes(key)) {
+                data.append(key, formData[key]);
+            }
         });
         data.append('date', combinedDate.toISOString());
 
