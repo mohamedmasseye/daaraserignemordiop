@@ -1,24 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import API from '../../services/api'; // ✅ Utilise l'instance sécurisée
+import API from '../../services/api'; 
 import { 
   Trash2, Plus, Calendar, Edit, Ticket, DollarSign, Users, 
   Image as ImageIcon, X, Download, QrCode, Loader, Paperclip, 
   FileText, MapPin, Clock, Bell, ArrowUpRight, CheckCircle2, 
-  AlertCircle, Tag, AlignLeft, Link as LinkIcon 
+  AlertCircle, Tag, AlignLeft, CalendarRange
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AdminLayout from './AdminLayout';
 
-// ✅ Style réutilisable pour les champs bien encadrés
-const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-primary-500 focus:ring-4 focus:ring-primary-500/10 outline-none font-bold transition-all duration-200 placeholder:text-gray-300";
+const inputStyle = "w-full mt-1 p-4 bg-white border-2 border-gray-200 rounded-2xl focus:border-gold-500 focus:ring-4 focus:ring-gold-500/10 outline-none font-bold transition-all duration-200 placeholder:text-gray-300";
 
+// --- COMPOSANT : VUE BILLET ADMIN ---
 const AdminTicketView = ({ ticket, onClose }) => {
   const handlePrint = () => { window.print(); };
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center bg-primary-950/90 backdrop-blur-md p-4 print:p-0 print:bg-white">
       <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="relative w-full max-w-4xl bg-white rounded-[2.5rem] overflow-hidden shadow-2xl flex flex-col md:flex-row print:rounded-none">
         <button onClick={onClose} className="absolute top-6 right-6 z-10 p-2 bg-gray-100 hover:bg-gray-200 rounded-full print:hidden transition-colors"><X size={24} className="text-gray-600"/></button>
-        
         <div className="w-full md:w-2/3 bg-primary-900 text-white p-10 md:p-14 relative overflow-hidden flex flex-col justify-between print:bg-black">
             <div className="absolute top-0 right-0 p-10 opacity-10"><Ticket size={200} /></div>
             <div className="relative z-10">
@@ -34,7 +33,6 @@ const AdminTicketView = ({ ticket, onClose }) => {
               <div className="text-right"><p className="text-5xl font-bold text-gold-500">x{ticket.quantity}</p></div>
             </div>
         </div>
-
         <div className="w-full md:w-1/3 bg-white p-10 border-l-2 border-dashed border-gray-100 flex flex-col items-center justify-center text-center">
             <div className="p-4 bg-gray-50 rounded-3xl mb-6 border border-gray-100"><QrCode size={140} className="text-primary-900" /></div>
             <p className="text-[10px] font-mono text-gray-400 mb-8 uppercase tracking-tighter">Ref: {ticket._id?.slice(-12)}</p>
@@ -45,6 +43,7 @@ const AdminTicketView = ({ ticket, onClose }) => {
   );
 };
 
+// --- COMPOSANT PRINCIPAL : ADMIN EVENTS ---
 export default function AdminEvents() {
   const [events, setEvents] = useState([]);
   const [allTickets, setAllTickets] = useState([]);
@@ -56,9 +55,11 @@ export default function AdminEvents() {
   const [isEditing, setIsEditing] = useState(false);
   const [editId, setEditId] = useState(null);
 
+  // Formulaire avec gestion Date/Heure séparée pour l'UI
   const [formData, setFormData] = useState({
-    title: '', description: '', date: '', location: '', locationLink: '', isOnline: false,
-    hasTicket: false, ticketPrice: 0, ticketStock: 0, isDaily: false
+    title: '', description: '', startDate: '', startTime: '14:30', endDate: '',
+    location: '', locationLink: '', isOnline: false, hasTicket: false, 
+    ticketPrice: 0, ticketStock: 0, isDaily: false
   });
   const [imageFile, setImageFile] = useState(null);
   const [documentFile, setDocumentFile] = useState(null);
@@ -69,37 +70,29 @@ export default function AdminEvents() {
       const eventsRes = await API.get('/api/events');
       setEvents(eventsRes.data || []);
 
-      try {
-        const ordersRes = await API.get('/api/orders'); 
-        const extractedTickets = [];
-        (ordersRes.data || []).forEach(order => {
-          if (order.status !== 'Cancelled') {
-            (order.items || []).forEach(item => {
-              if (item.type === 'ticket') {
-                extractedTickets.push({
-                  _id: order._id,
-                  eventId: item.ticketEvent || item.product,
-                  eventTitle: item.name?.replace('Ticket - ', '') || 'Événement',
-                  userName: order.user?.fullName || 'Anonyme',
-                  userEmail: order.user?.email || 'N/A',
-                  quantity: item.quantity,
-                  price: item.price,
-                  totalPrice: item.price * item.quantity,
-                  purchaseDate: order.createdAt
-                });
-              }
-            });
-          }
-        });
-        setAllTickets(extractedTickets);
-      } catch (orderErr) {
-        console.error("Erreur stats billets :", orderErr);
-      }
-    } catch (e) {
-      console.error("Erreur fetchData :", e);
-    } finally {
-      setLoading(false);
-    }
+      const ordersRes = await API.get('/api/orders'); 
+      const extractedTickets = [];
+      (ordersRes.data || []).forEach(order => {
+        if (order.status !== 'Cancelled') {
+          (order.items || []).forEach(item => {
+            if (item.type === 'ticket') {
+              extractedTickets.push({
+                _id: order._id,
+                eventId: item.ticketEvent || item.product,
+                eventTitle: item.name?.replace('Ticket - ', '') || 'Événement',
+                userName: order.user?.fullName || 'Anonyme',
+                userEmail: order.user?.email || 'N/A',
+                quantity: item.quantity,
+                price: item.price,
+                totalPrice: item.price * item.quantity,
+                purchaseDate: order.createdAt
+              });
+            }
+          });
+        }
+      });
+      setAllTickets(extractedTickets);
+    } catch (e) { console.error("Erreur fetchData :", e); } finally { setLoading(false); }
   };
 
   useEffect(() => { fetchData(); }, []);
@@ -109,7 +102,7 @@ export default function AdminEvents() {
     try {
       await API.post('/api/notifications', {
         title: "📅 Nouvel Événement !",
-        body: `${event.title}. Cliquez pour voir les détails et réserver.`,
+        body: `${event.title}. Cliquez pour voir les détails.`,
         type: 'info',
         url: `/evenements?id=${event._id}` 
       });
@@ -131,16 +124,20 @@ export default function AdminEvents() {
     setUploading(true);
     try {
         const data = new FormData();
-        Object.keys(formData).forEach(key => data.append(key, formData[key]));
+        const combinedDate = new Date(`${formData.startDate}T${formData.startTime}`);
+
+        Object.keys(formData).forEach(key => {
+            if (key !== 'startDate' && key !== 'startTime') data.append(key, formData[key]);
+        });
+        data.append('date', combinedDate.toISOString());
+
         if (imageFile) data.append('eventImage', imageFile);
         if (documentFile) data.append('eventDocument', documentFile);
 
         if (isEditing) await API.put(`/api/events/${editId}`, data);
         else await API.post('/api/events', data);
         
-        closeForm();
-        fetchData();
-        alert("Opération réussie !");
+        closeForm(); fetchData(); alert("Opération réussie !");
     } catch (err) { alert("Erreur d'enregistrement."); } finally { setUploading(false); }
   };
 
@@ -148,115 +145,132 @@ export default function AdminEvents() {
     if (!window.confirm("⚠️ Supprimer définitivement cet événement ?")) return;
     try {
       await API.delete(`/api/events/${id}`);
-      setEvents(events.filter(e => e._id !== id));
-      alert("Supprimé.");
+      fetchData();
     } catch (error) { alert("Erreur suppression."); }
   };
 
   const closeForm = () => {
     setIsFormVisible(false); setIsEditing(false); setEditId(null);
-    setFormData({ title: '', description: '', date: '', location: '', locationLink: '', isOnline: false, hasTicket: false, ticketPrice: 0, ticketStock: 0, isDaily: false });
+    setFormData({ title: '', description: '', startDate: '', startTime: '14:30', endDate: '', location: '', locationLink: '', isOnline: false, hasTicket: false, ticketPrice: 0, ticketStock: 0, isDaily: false });
     setImageFile(null); setDocumentFile(null);
   };
 
   const handleEditClick = (event) => {
-      setIsEditing(true); setEditId(event._id); setIsFormVisible(true);
+      const d = new Date(event.date);
+      setEditId(event._id); setIsEditing(true); setIsFormVisible(true);
       setFormData({
-          title: event.title, description: event.description,
-          date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
-          location: event.location || '', locationLink: event.locationLink || '',
-          isOnline: event.isOnline, hasTicket: event.hasTicket,
-          ticketPrice: event.ticketPrice || 0, ticketStock: event.ticketStock || 0,
-          isDaily: event.isDaily || false
+          ...event,
+          startDate: d.toISOString().split('T')[0],
+          startTime: d.toTimeString().slice(0, 5),
+          endDate: event.endDate ? new Date(event.endDate).toISOString().split('T')[0] : ''
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
     <AdminLayout>
+        {/* HEADER */}
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-10 gap-6">
           <div>
             <h1 className="text-4xl font-serif font-bold text-primary-900 flex items-center gap-4">
-                <div className="p-3 bg-gold-500 rounded-2xl text-white shadow-lg shadow-gold-500/20"><Calendar size={28} /></div>
+                <div className="p-3 bg-gold-500 rounded-2xl text-white shadow-lg"><Calendar size={28} /></div>
                 Agenda Spirituel
             </h1>
             <p className="text-gray-500 mt-2 font-medium">Gérez vos célébrations et billetteries.</p>
           </div>
-          <button 
-            onClick={() => { isFormVisible ? closeForm() : setIsFormVisible(true); }} 
-            className={`px-8 py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center gap-3 active:scale-95 ${isFormVisible ? 'bg-white text-gray-600 border border-gray-200' : 'bg-primary-900 text-white hover:bg-primary-800'}`}
-          >
+          <button onClick={() => isFormVisible ? closeForm() : setIsFormVisible(true)} 
+            className={`px-8 py-4 rounded-2xl font-bold shadow-xl transition-all flex items-center gap-3 active:scale-95 ${isFormVisible ? 'bg-white text-gray-600 border border-gray-200' : 'bg-primary-900 text-white hover:bg-primary-800'}`}>
             {isFormVisible ? <><X size={20}/> Annuler</> : <><Plus size={20}/> Créer un événement</>}
           </button>
         </div>
 
+        {/* FORMULAIRE */}
         <AnimatePresence>
         {isFormVisible && (
           <motion.div initial={{ opacity: 0, y: -30 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -30 }} className="bg-white rounded-[2.5rem] shadow-2xl border border-gray-100 overflow-hidden mb-12">
-              <div className="bg-primary-900 p-8 text-white flex justify-between items-center">
-                  <h2 className="text-xl font-bold flex items-center gap-3">{isEditing ? <><Edit size={20} className="text-gold-500"/> Modifier l'événement</> : <><Plus size={20} className="text-gold-500"/> Nouvel événement</>}</h2>
+              <div className="bg-primary-900 p-8 text-white flex justify-between items-center px-12">
+                  <h2 className="text-xl font-bold flex items-center gap-3">{isEditing ? <><Edit size={20} className="text-gold-500"/> Modifier</> : <><Plus size={20} className="text-gold-500"/> Nouvel événement</>}</h2>
               </div>
-              <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 lg:grid-cols-3 gap-12">
+              <form onSubmit={handleSubmit} className="p-10 md:p-14 grid grid-cols-1 lg:grid-cols-3 gap-12">
                 <div className="lg:col-span-2 space-y-8">
                     <div className="space-y-6">
                         <div>
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><Tag size={12}/> Nom de l'événement</label>
-                          <input className={inputStyle} value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required placeholder="Ex: Grand Gamou Annuel"/>
+                          <input className={inputStyle} value={formData.title} onChange={e=>setFormData({...formData, title:e.target.value})} required placeholder="Ex: Zikr de Ramadan"/>
                         </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            <div>
-                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><Clock size={12}/> Date & Heure</label>
-                              <input type="datetime-local" className={inputStyle} value={formData.date} onChange={e=>setFormData({...formData, date:e.target.value})} required/>
+
+                        {/* DESIGN MODERNE DATE/HEURE */}
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className="bg-gray-50 p-5 rounded-2xl border-2 border-gray-100 focus-within:border-gold-500 transition-all">
+                                <label className="text-[10px] font-black text-primary-900 uppercase block mb-2 tracking-tighter flex items-center gap-2"><Calendar size={14} className="text-gold-500"/> {formData.isDaily ? "Début" : "Date"}</label>
+                                <input type="date" className="bg-transparent w-full font-bold outline-none text-lg" value={formData.startDate} onChange={e=>setFormData({...formData, startDate:e.target.value})} required/>
                             </div>
-                            <div>
-                              <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><MapPin size={12}/> Lieu</label>
-                              <input className={inputStyle} value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})} placeholder="Ville, Quartier..."/>
+                            <div className="bg-gray-50 p-5 rounded-2xl border-2 border-gray-100 focus-within:border-gold-500 transition-all">
+                                <label className="text-[10px] font-black text-primary-900 uppercase block mb-2 tracking-tighter flex items-center gap-2"><Clock size={14} className="text-gold-500"/> Heure (24h)</label>
+                                <input type="time" className="bg-transparent w-full font-bold outline-none text-lg" value={formData.startTime} onChange={e=>setFormData({...formData, startTime:e.target.value})} required/>
                             </div>
+                            <AnimatePresence>
+                                {formData.isDaily && (
+                                    <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="bg-gold-50 p-5 rounded-2xl border-2 border-gold-200">
+                                        <label className="text-[10px] font-black text-gold-700 uppercase block mb-2 tracking-tighter flex items-center gap-2"><CalendarRange size={14}/> Date de Fin</label>
+                                        <input type="date" className="bg-transparent w-full font-bold outline-none text-lg text-gold-900" value={formData.endDate} onChange={e=>setFormData({...formData, endDate:e.target.value})} required={formData.isDaily}/>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
                         </div>
+
+                        {!formData.isDaily && (
+                          <div>
+                            <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><MapPin size={12}/> Lieu</label>
+                            <input className={inputStyle} value={formData.location} onChange={e=>setFormData({...formData, location:e.target.value})} placeholder="Ville, Quartier..."/>
+                          </div>
+                        )}
+
                         <div>
                           <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1 flex items-center gap-2"><AlignLeft size={12}/> Description détaillée</label>
                           <textarea className={`${inputStyle} h-40 resize-none font-medium`} value={formData.description} onChange={e=>setFormData({...formData, description:e.target.value})} placeholder="Présentez l'événement..."/>
                         </div>
                     </div>
                 </div>
-                <div className="space-y-8 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Options & Médias</label>
-                        <div className="grid grid-cols-1 gap-4">
-                            {/* RECURRENCE QUOTIDIENNE */}
-                            <div className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${formData.isDaily ? 'bg-primary-900 text-white border-primary-950' : 'bg-white border-gray-200 text-gray-400 hover:border-gold-500'}`}>
-                                <label className="flex items-center gap-3 font-bold text-xs uppercase cursor-pointer">
-                                    <input type="checkbox" checked={formData.isDaily} onChange={e=>setFormData({...formData, isDaily:e.target.checked})} className="w-5 h-5 rounded-lg accent-gold-500"/> 
-                                    <Clock size={16}/> Événement Quotidien
-                                </label>
-                            </div>
 
-                            <div className="relative group">
-                              <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
-                              <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors">
-                                <ImageIcon className="mx-auto text-gray-400 mb-2"/> 
-                                <span className="text-xs font-bold text-gray-500 truncate block">{imageFile ? imageFile.name : "Affiche (JPG/PNG)"}</span>
-                              </div>
+                <div className="space-y-6">
+                    <div className="bg-primary-900 p-8 rounded-[2.5rem] text-white shadow-xl border border-white/5">
+                        <label className="flex items-center gap-4 font-bold text-sm uppercase cursor-pointer mb-6">
+                            <input type="checkbox" checked={formData.isDaily} onChange={e=>setFormData({...formData, isDaily:e.target.checked})} className="w-6 h-6 rounded-lg accent-gold-500"/> 
+                            Événement Quotidien
+                        </label>
+                        <label className="flex items-center gap-4 font-bold text-sm uppercase cursor-pointer mb-6">
+                            <input type="checkbox" checked={formData.isOnline} onChange={e=>setFormData({...formData, isOnline:e.target.checked})} className="w-6 h-6 rounded-lg accent-gold-500"/> 
+                            Diffusé en Live
+                        </label>
+                        
+                        <div className="pt-6 border-t border-white/10 space-y-4">
+                            <div className="relative bg-white/5 border-2 border-dashed border-white/10 p-5 rounded-2xl hover:border-gold-500 transition-all text-center">
+                                <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                                <ImageIcon size={24} className="mx-auto text-gold-500 mb-2"/>
+                                <p className="text-[10px] font-bold truncate">{imageFile ? imageFile.name : "Affiche Image"}</p>
                             </div>
-                            <div className="relative group">
-                              <input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
-                              <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors">
-                                <FileText className="mx-auto text-gray-400 mb-2"/> 
-                                <span className="text-xs font-bold text-gray-500 truncate block">{documentFile ? documentFile.name : "Programme (PDF)"}</span>
-                              </div>
+                            <div className="relative bg-white/5 border-2 border-dashed border-white/10 p-5 rounded-2xl hover:border-gold-500 transition-all text-center">
+                                <input type="file" accept=".pdf" onChange={e => setDocumentFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
+                                <FileText size={24} className="mx-auto text-gold-500 mb-2"/>
+                                <p className="text-[10px] font-bold truncate">{documentFile ? documentFile.name : "Programme PDF"}</p>
                             </div>
                         </div>
                     </div>
-                    <div className={`p-6 rounded-2xl border-2 transition-all ${formData.hasTicket ? 'bg-gold-500 text-white border-gold-600 shadow-lg shadow-gold-500/20' : 'bg-white border-gray-100 text-gray-400'}`}>
-                        <label className="flex items-center gap-3 font-black uppercase text-[10px] tracking-widest cursor-pointer"><input type="checkbox" checked={formData.hasTicket} onChange={e=>setFormData({...formData, hasTicket:e.target.checked})} className="w-5 h-5 rounded-lg accent-primary-900"/> Activer la Billetterie</label>
+
+                    <div className={`p-8 rounded-[2.5rem] border-2 transition-all ${formData.hasTicket ? 'bg-gold-500 border-gold-600 text-white' : 'bg-gray-50 border-gray-100 text-gray-400'}`}>
+                        <label className="flex items-center gap-4 font-black uppercase text-[10px] tracking-widest cursor-pointer mb-6">
+                            <input type="checkbox" checked={formData.hasTicket} onChange={e=>setFormData({...formData, hasTicket:e.target.checked})} className="w-6 h-6 rounded-lg accent-primary-900"/> Billetterie
+                        </label>
                         {formData.hasTicket && (
-                            <div className="grid grid-cols-2 gap-4 mt-6">
-                                <div><span className="text-[8px] font-black uppercase block mb-1">Prix (F)</span><input type="number" className="w-full p-2 bg-white/20 border-none rounded-lg text-white font-bold placeholder-white/50" value={formData.ticketPrice} onChange={e=>setFormData({...formData, ticketPrice:e.target.value})}/></div>
-                                <div><span className="text-[8px] font-black uppercase block mb-1">Places</span><input type="number" className="w-full p-2 bg-white/20 border-none rounded-lg text-white font-bold placeholder-white/50" value={formData.ticketStock} onChange={e=>setFormData({...formData, ticketStock:e.target.value})}/></div>
+                            <div className="grid grid-cols-2 gap-4">
+                                <input type="number" className="p-4 bg-white/20 rounded-xl text-white font-bold outline-none" placeholder="Prix" value={formData.ticketPrice} onChange={e=>setFormData({...formData, ticketPrice:e.target.value})}/>
+                                <input type="number" className="p-4 bg-white/20 rounded-xl text-white font-bold outline-none" placeholder="Places" value={formData.ticketStock} onChange={e=>setFormData({...formData, ticketStock:e.target.value})}/>
                             </div>
                         )}
                     </div>
-                    <button disabled={uploading} type="submit" className="w-full bg-primary-900 text-white py-5 rounded-[1.5rem] font-black uppercase tracking-widest text-xs hover:bg-gold-500 transition-all shadow-xl flex justify-center items-center gap-3">
+
+                    <button disabled={uploading} type="submit" className="w-full bg-primary-900 text-white py-6 rounded-3xl font-black uppercase tracking-widest text-xs hover:bg-gold-500 transition-all shadow-xl flex justify-center items-center gap-3">
                         {uploading ? <Loader className="animate-spin"/> : (isEditing ? "Mettre à jour" : "Publier l'événement")}
                     </button>
                 </div>
@@ -265,21 +279,13 @@ export default function AdminEvents() {
         )}
         </AnimatePresence>
 
+        {/* LISTE DES ÉVÉNEMENTS */}
         <div className="grid grid-cols-1 gap-6">
-          {loading ? <div className="text-center py-20"><Loader className="animate-spin mx-auto text-gold-500" size={48}/></div> : events.length === 0 ? (
-             <div className="text-center py-24 text-gray-400 bg-white rounded-[3rem] border-2 border-dashed border-gray-100 italic">Aucun événement.</div>
-          ) : (
-            events.map((event) => {
+          {loading ? <div className="text-center py-20"><Loader className="animate-spin mx-auto text-gold-500" size={48}/></div> : events.map((event) => {
               const stats = getEventStats(event._id);
               const eventDate = new Date(event.date);
               return (
-                <motion.div 
-                  key={event._id} 
-                  initial={{ opacity: 0, x: -20 }} 
-                  whileInView={{ opacity: 1, x: 0 }} 
-                  viewport={{ once: true }}
-                  className="bg-white p-6 md:p-8 rounded-[2rem] shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-500 flex flex-col lg:flex-row items-center gap-8 group"
-                >
+                <motion.div key={event._id} initial={{ opacity: 0, x: -20 }} whileInView={{ opacity: 1, x: 0 }} viewport={{ once: true }} className="bg-white p-6 md:p-8 rounded-[2.5rem] shadow-sm hover:shadow-xl border border-gray-100 transition-all duration-500 flex flex-col lg:flex-row items-center gap-8 group">
                    <div className="flex flex-col items-center justify-center w-20 h-20 bg-primary-50 rounded-2xl shrink-0 group-hover:bg-primary-900 transition-colors duration-500">
                       <span className="text-2xl font-black text-primary-900 group-hover:text-gold-500 leading-none">{eventDate.getDate()}</span>
                       <span className="text-[10px] font-black text-primary-400 uppercase tracking-widest group-hover:text-white">{eventDate.toLocaleDateString('fr-FR', {month: 'short'})}</span>
@@ -292,7 +298,7 @@ export default function AdminEvents() {
                       <div className="space-y-2">
                           <h3 className="font-serif font-bold text-2xl text-primary-900 group-hover:text-gold-600 transition-colors">
                               {event.title}
-                              {event.isDaily && <span className="ml-3 text-[9px] bg-gold-500 text-primary-900 px-2 py-0.5 rounded-full uppercase tracking-tighter">Quotidien</span>}
+                              {event.isDaily && <span className="ml-3 text-[9px] bg-gold-100 text-gold-700 px-3 py-1 rounded-full border border-gold-200 uppercase font-black">Quotidien</span>}
                           </h3>
                           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-tighter">
                             <span className="flex items-center gap-1.5"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
@@ -321,15 +327,15 @@ export default function AdminEvents() {
                       {event.hasTicket && (
                         <button onClick={() => setSelectedEventForStats({ ...event, ...stats })} className="p-4 bg-primary-900 text-white rounded-2xl hover:bg-gold-500 transition-all active:scale-95" title="Liste participants"><Users size={20}/></button>
                       )}
-                      <button onClick={() => handleEditClick(event)} className="p-4 text-gray-400 hover:text-primary-900 hover:bg-gray-100 rounded-2xl transition-all"><Edit size={20} /></button>
-                      <button onClick={() => handleDelete(event._id)} className="p-4 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-2xl transition-all"><Trash2 size={20} /></button>
+                      <button onClick={() => handleEditClick(event)} className="p-4 text-gray-400 hover:text-primary-900 bg-gray-50 rounded-2xl transition-all"><Edit size={20} /></button>
+                      <button onClick={() => handleDelete(event._id)} className="p-4 text-gray-400 hover:text-red-600 bg-gray-50 rounded-2xl transition-all"><Trash2 size={20} /></button>
                    </div>
                 </motion.div>
               );
-            })
-          )}
+          })}
         </div>
 
+        {/* MODALE PARTICIPANTS */}
         <AnimatePresence>
           {selectedEventForStats && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-primary-950/80 backdrop-blur-sm p-4">
@@ -359,7 +365,7 @@ export default function AdminEvents() {
                                <tr key={i} className="group hover:bg-primary-50/30 transition-colors">
                                   <td className="py-5 px-8">
                                     <div className="flex items-center gap-3">
-                                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-900 flex items-center justify-center font-black text-xs">{t.userName.charAt(0)}</div>
+                                      <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-900 flex items-center justify-center font-black text-xs">{t.userName?.charAt(0)}</div>
                                       <div><p className="font-bold text-primary-900">{t.userName}</p><p className="text-[10px] text-gray-400 font-medium">{t.userEmail}</p></div>
                                     </div>
                                   </td>
@@ -369,7 +375,6 @@ export default function AdminEvents() {
                              ))}
                           </tbody>
                        </table>
-                       {selectedEventForStats.eventTickets.length === 0 && <div className="py-20 text-center text-gray-400 flex flex-col items-center gap-4"><AlertCircle size={48} className="opacity-20"/><p className="font-medium italic text-sm">Aucune vente.</p></div>}
                      </div>
                   </div>
                </motion.div>
