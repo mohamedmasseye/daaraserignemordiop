@@ -60,6 +60,7 @@ import AdminPodcast from './components/admin/AdminPodcast';
 import AdminProducts from './components/admin/AdminProducts';
 import AdminOrders from './components/admin/AdminOrders';
 import AdminHome from './components/admin/AdminHome';
+import AdminMonitoring from './components/admin/AdminMonitoring';
 
 // --- ✅ CONFIGURATION DES ÉTAPES D'INSTALLATION (MODÈLE CONSERVÉ) ---
 const INSTALL_STEPS = {
@@ -278,6 +279,7 @@ function AppContent() {
         <Route path="/admin/orders" element={<AdminProtectedRoute><AdminOrders /></AdminProtectedRoute>} />
         <Route path="/admin/users" element={<AdminProtectedRoute><AdminUsers /></AdminProtectedRoute>} />
         <Route path="/admin/events" element={<AdminProtectedRoute><AdminEvents /></AdminProtectedRoute>} />
+        <Route path="/admin/monitoring" element={<AdminMonitoring />} />
         <Route path="/admin/notifications" element={<AdminProtectedRoute><AdminNotifications /></AdminProtectedRoute>} />
         <Route path="/admin/messages" element={<AdminProtectedRoute><AdminMessages /></AdminProtectedRoute>} />
         <Route path="/admin/home" element={<AdminProtectedRoute><AdminHome /></AdminProtectedRoute>} />

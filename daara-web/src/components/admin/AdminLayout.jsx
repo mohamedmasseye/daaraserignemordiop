@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext'; // ✅ Chemin corrigé
 import { 
   LayoutDashboard, BookOpen, Calendar, MessageSquare, 
   Bell, LogOut, Users, ChevronRight, Mic, Image, 
-  Newspaper, Menu, X, Package, ShoppingBag, Layout
+  Newspaper, Menu, X, Package, ShoppingBag, Layout,Activity
 } from 'lucide-react';
 
 export default function AdminLayout({ children }) {
@@ -20,6 +20,7 @@ export default function AdminLayout({ children }) {
 
   const menuItems = [
     { path: '/admin/dashboard', icon: LayoutDashboard, label: 'Tableau de bord' },
+    { path: '/admin/monitoring', icon: Activity, label: 'Monitoring Système' },
     { path: '/admin/home', icon: Layout, label: 'Gestion Accueil' },
     { path: '/admin/books', icon: BookOpen, label: 'Bibliothèque' },
     { path: '/admin/blog', icon: Newspaper, label: 'Journal / Blog' },
