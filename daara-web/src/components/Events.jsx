@@ -124,7 +124,6 @@ export default function Events() {
               
               {nextEvent && (
                 <div className="flex flex-wrap gap-4">
-                  {/* Billetterie masquée dans le Hero */}
                   <button onClick={() => handleDetailsClick(nextEvent)} className="px-8 py-4 bg-gold-500 text-primary-900 rounded-full font-bold text-lg hover:bg-white transition-all shadow-lg flex items-center gap-2 transform hover:-translate-y-1">Plus d'informations</button>
                   
                   {nextEvent.documentUrl && (
@@ -157,7 +156,6 @@ export default function Events() {
       {/* 2. AGENDA SECTION */}
       <div id="agenda" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         
-        {/* Onglets supprimés pour masquer la Billetterie */}
         <div className="flex justify-center mb-12">
             <div className="text-center">
                 <span className="text-gold-600 font-bold uppercase tracking-[0.3em] text-sm">Calendrier des activités</span>
@@ -191,7 +189,16 @@ export default function Events() {
                         {days.map((day, idx) => {
                           if (!day) return <div key={idx} className="aspect-square"></div>;
                           const isToday = day.toDateString() === today.toDateString();
-                          const hasEvent = events.some(e => new Date(e.date).toDateString() === day.toDateString());
+                          
+                          // ✅ LOGIQUE DE RÉCURRENCE : Affiche un point si event date normale OU si event isDaily et date passée
+                          const hasEvent = events.some(e => {
+                              const eDate = new Date(e.date);
+                              if (e.isDaily) {
+                                  return day >= new Date(eDate.setHours(0,0,0,0)) && day.getMonth() === eDate.getMonth();
+                              }
+                              return eDate.toDateString() === day.toDateString();
+                          });
+
                           return (
                             <div key={idx} className={`aspect-square rounded-xl flex flex-col items-center justify-center relative cursor-pointer transition-all hover:scale-105 group ${isToday ? 'bg-primary-900 text-white shadow-lg' : 'bg-gray-50 text-gray-700 hover:bg-gold-50'} ${hasEvent ? 'border-2 border-gold-400' : 'border border-transparent'}`}>
                               <span className="text-sm font-bold">{day.getDate()}</span>
@@ -233,9 +240,6 @@ export default function Events() {
                         <div className="md:w-1/3 h-56 md:h-auto relative overflow-hidden bg-gray-200 shrink-0">
                            {event.image ? <img src={event.image} alt="" className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" /> : <div className="w-full h-full flex items-center justify-center text-gray-300"><Moon size={40}/></div>}
                            
-                           {/* Badge Prix masqué */}
-
-                           {/* Badge PDF */}
                            {event.documentUrl && (
                              <div className="absolute top-4 right-4 bg-white/90 backdrop-blur-md p-2 rounded-xl text-primary-900 shadow-lg">
                                 <FileText size={18} />
@@ -244,27 +248,32 @@ export default function Events() {
                         </div>
 
                         <div className="flex-1 p-6 md:p-8 flex flex-col">
-                           <div className="flex justify-between items-start mb-4">
-                             <div>
-                                {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded mb-2 uppercase tracking-widest">Live</span>}
-                                <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
-                                <div className="flex items-center gap-4 text-xs font-bold text-gray-400 uppercase">
+                            <div className="flex justify-between items-start mb-4">
+                              <div>
+                                 {event.isDaily && (
+                                     <span className="inline-flex items-center gap-1.5 bg-gold-500 text-primary-900 text-[10px] font-black px-3 py-1 rounded-full mb-3 uppercase tracking-widest shadow-sm">
+                                         <Clock size={12}/> Tous les jours
+                                     </span>
+                                 )}
+                                 {event.isOnline && <span className="inline-block bg-red-50 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded mb-2 ml-2 uppercase tracking-widest">Live</span>}
+                                 <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2 group-hover:text-gold-600 transition-colors">{event.title}</h3>
+                                 <div className="flex items-center gap-4 text-xs font-bold text-gray-400 uppercase">
                                   <span className="flex items-center gap-1.5"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([],{hour:'2-digit', minute:'2-digit'})}</span>
                                   <span className="flex items-center gap-1.5"><MapPin size={14} className="text-gold-500"/> {event.location}</span>
-                                </div>
-                             </div>
-                           </div>
-                           
-                           <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
-                           
-                           <div className="pt-6 border-t border-gray-50 flex items-center justify-between">
-                              <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{getHijriDate(eventDate)}</span>
-                              <div className="flex gap-2">
-                                <button onClick={() => handleDetailsClick(event)} className="px-6 py-3 bg-primary-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center gap-2">
-                                    <Eye size={16}/> Détails
-                                </button>
+                                 </div>
                               </div>
-                           </div>
+                            </div>
+                            
+                            <p className="text-gray-500 text-sm line-clamp-2 mb-6 flex-1">{event.description}</p>
+                            
+                            <div className="pt-6 border-t border-gray-50 flex items-center justify-between">
+                               <span className="text-[10px] font-black text-gray-300 uppercase tracking-widest">{event.isDaily ? "Période du mois" : getHijriDate(eventDate)}</span>
+                               <div className="flex gap-2">
+                                 <button onClick={() => handleDetailsClick(event)} className="px-6 py-3 bg-primary-900 text-white rounded-xl font-bold text-xs uppercase tracking-widest hover:bg-gold-500 hover:text-primary-900 transition-all shadow-lg flex items-center gap-2">
+                                     <Eye size={16}/> Détails
+                                 </button>
+                               </div>
+                            </div>
                         </div>
                      </motion.div>
                    );
@@ -283,10 +292,9 @@ export default function Events() {
               
               <div className="text-center mb-8">
                   <h3 className="text-2xl font-serif font-bold text-primary-900">{selectedEvent.title}</h3>
-                  <p className="text-gold-600 text-xs font-bold uppercase tracking-[0.2em] mt-2">{getHijriDate(new Date(selectedEvent.date))}</p>
+                  <p className="text-gold-600 text-xs font-bold uppercase tracking-[0.2em] mt-2">{selectedEvent.isDaily ? "Événement récurrent" : getHijriDate(new Date(selectedEvent.date))}</p>
               </div>
 
-              {/* MODAL TYPE: DETAILS */}
               <div className="space-y-6">
                   <div className="h-48 rounded-2xl overflow-hidden bg-gray-100 relative">
                      {selectedEvent.image ? <img src={selectedEvent.image} className="w-full h-full object-cover" alt=""/> : <div className="w-full h-full bg-primary-800"></div>}

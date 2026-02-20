@@ -58,7 +58,7 @@ export default function AdminEvents() {
 
   const [formData, setFormData] = useState({
     title: '', description: '', date: '', location: '', locationLink: '', isOnline: false,
-    hasTicket: false, ticketPrice: 0, ticketStock: 0 
+    hasTicket: false, ticketPrice: 0, ticketStock: 0, isDaily: false
   });
   const [imageFile, setImageFile] = useState(null);
   const [documentFile, setDocumentFile] = useState(null);
@@ -66,11 +66,9 @@ export default function AdminEvents() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      // 1. Charger les événements
       const eventsRes = await API.get('/api/events');
       setEvents(eventsRes.data || []);
 
-      // 2. Charger les tickets (stats)
       try {
         const ordersRes = await API.get('/api/orders'); 
         const extractedTickets = [];
@@ -157,7 +155,7 @@ export default function AdminEvents() {
 
   const closeForm = () => {
     setIsFormVisible(false); setIsEditing(false); setEditId(null);
-    setFormData({ title: '', description: '', date: '', location: '', locationLink: '', isOnline: false, hasTicket: false, ticketPrice: 0, ticketStock: 0 });
+    setFormData({ title: '', description: '', date: '', location: '', locationLink: '', isOnline: false, hasTicket: false, ticketPrice: 0, ticketStock: 0, isDaily: false });
     setImageFile(null); setDocumentFile(null);
   };
 
@@ -168,7 +166,8 @@ export default function AdminEvents() {
           date: event.date ? new Date(event.date).toISOString().slice(0, 16) : '',
           location: event.location || '', locationLink: event.locationLink || '',
           isOnline: event.isOnline, hasTicket: event.hasTicket,
-          ticketPrice: event.ticketPrice || 0, ticketStock: event.ticketStock || 0
+          ticketPrice: event.ticketPrice || 0, ticketStock: event.ticketStock || 0,
+          isDaily: event.isDaily || false
       });
       window.scrollTo({ top: 0, behavior: 'smooth' });
   };
@@ -222,8 +221,16 @@ export default function AdminEvents() {
                 </div>
                 <div className="space-y-8 bg-gray-50 p-8 rounded-[2rem] border border-gray-100">
                     <div className="space-y-4">
-                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Médias associés</label>
+                        <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Options & Médias</label>
                         <div className="grid grid-cols-1 gap-4">
+                            {/* RECURRENCE QUOTIDIENNE */}
+                            <div className={`p-4 rounded-xl border-2 transition-all cursor-pointer ${formData.isDaily ? 'bg-primary-900 text-white border-primary-950' : 'bg-white border-gray-200 text-gray-400 hover:border-gold-500'}`}>
+                                <label className="flex items-center gap-3 font-bold text-xs uppercase cursor-pointer">
+                                    <input type="checkbox" checked={formData.isDaily} onChange={e=>setFormData({...formData, isDaily:e.target.checked})} className="w-5 h-5 rounded-lg accent-gold-500"/> 
+                                    <Clock size={16}/> Événement Quotidien
+                                </label>
+                            </div>
+
                             <div className="relative group">
                               <input type="file" accept="image/*" onChange={e => setImageFile(e.target.files[0])} className="absolute inset-0 opacity-0 cursor-pointer z-10"/>
                               <div className="p-4 bg-white border-2 border-dashed border-gray-200 rounded-xl text-center group-hover:border-gold-500 transition-colors">
@@ -283,7 +290,10 @@ export default function AdminEvents() {
                         {event.image ? <img src={event.image} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" alt="" /> : <div className="w-full h-full flex items-center justify-center text-gray-200"><ImageIcon size={32}/></div>}
                       </div>
                       <div className="space-y-2">
-                          <h3 className="font-serif font-bold text-2xl text-primary-900 group-hover:text-gold-600 transition-colors">{event.title}</h3>
+                          <h3 className="font-serif font-bold text-2xl text-primary-900 group-hover:text-gold-600 transition-colors">
+                              {event.title}
+                              {event.isDaily && <span className="ml-3 text-[9px] bg-gold-500 text-primary-900 px-2 py-0.5 rounded-full uppercase tracking-tighter">Quotidien</span>}
+                          </h3>
                           <div className="flex flex-wrap items-center gap-4 text-xs font-bold text-gray-400 uppercase tracking-tighter">
                             <span className="flex items-center gap-1.5"><Clock size={14} className="text-gold-500"/> {eventDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</span>
                             <span className="flex items-center gap-1.5"><MapPin size={14} className="text-gold-500"/> {event.location || 'N/A'}</span>
