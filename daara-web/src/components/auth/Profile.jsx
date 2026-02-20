@@ -35,14 +35,14 @@ const SmartTimeline = ({ status }) => {
                     </div>
                 ))}
             </div>
-            <div className="md:hidden flex flex-col gap-2 pl-2">
-                <span className="font-bold text-gold-600">Statut : {status}</span>
+            <div className="md:hidden flex flex-col gap-2 pl-2 border-l-2 border-gold-500 ml-2">
+                <span className="font-bold text-gold-600 uppercase text-xs tracking-widest">Statut : {status}</span>
             </div>
         </div>
     );
 };
 
-const DeliveredBanner = () => (<div className="bg-green-50 p-4 rounded text-center text-green-700 font-bold">Commande Livrée !</div>);
+const DeliveredBanner = () => (<div className="bg-green-50 p-4 rounded-xl border border-green-100 text-center text-green-700 font-bold flex items-center justify-center gap-2"><CheckCircle size={18}/> Commande Livrée !</div>);
 
 const ClassyTicket = ({ ticket, onClose, userName }) => {
   if (!ticket) return null;
@@ -61,7 +61,7 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
         `}
       </style>
 
-      <motion.div id="printable-ticket-container" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden relative flex flex-col md:flex-row print:shadow-none print:rounded-none">
+      <motion.div id="printable-ticket-container" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }} className="bg-white w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden relative flex flex-col md:flex-row print:shadow-none print:rounded-none">
         <button onClick={onClose} className="absolute top-4 right-4 z-50 bg-white/20 hover:bg-white/40 text-white p-2 rounded-full backdrop-blur-md transition no-print md:text-gray-800 md:bg-gray-100 md:hover:bg-gray-200">
             <X size={20} />
         </button>
@@ -107,7 +107,7 @@ const ClassyTicket = ({ ticket, onClose, userName }) => {
                 <p className="text-[10px] text-gray-400 font-mono uppercase tracking-widest break-all">ID: {ticket.qrCode || ticket._id}</p>
             </div>
             <div className="mt-6 no-print relative z-10">
-                <button className="w-full py-4 bg-primary-900 text-white font-bold rounded-xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2 active:scale-95" onClick={handlePrint}><Download size={20}/> Imprimer le Billet</button>
+                <button className="w-full py-4 bg-primary-900 text-white font-bold rounded-2xl hover:bg-gold-500 hover:text-primary-900 transition shadow-lg flex items-center justify-center gap-2 active:scale-95" onClick={handlePrint}><Download size={20}/> Imprimer le Billet</button>
             </div>
         </div>
       </motion.div>
@@ -213,7 +213,7 @@ export default function Profile() {
   const handleDeleteAccount = async () => {
     try {
         setLoading(true);
-        await API.delete('/api/auth/me'); // Appel à ton backend MongoDB sur Coolify
+        await API.delete('/api/auth/me'); 
         alert("Votre compte et toutes vos données ont été définitivement supprimés.");
         logout(false); 
     } catch (err) {
@@ -228,65 +228,66 @@ export default function Profile() {
   const shopOrders = orders.filter(order => order.items.some(item => item.type !== 'ticket'));
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-12 min-h-screen font-sans">
+    <div className="max-w-5xl mx-auto px-4 py-8 md:py-12 min-h-screen font-sans">
       
       {/* BLOC 1 : PROFIL */}
-      <div className="bg-white rounded-3xl shadow-xl overflow-hidden relative mb-12">
-        <div className="h-48 bg-gradient-to-r from-primary-900 to-primary-700 relative">
+      <div className="bg-white rounded-[2rem] shadow-xl overflow-hidden relative mb-12 border border-gray-100">
+        <div className="h-40 md:h-48 bg-gradient-to-r from-primary-900 to-primary-700 relative">
           <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
         </div>
-        <div className="px-8 pb-8">
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end -mt-16 mb-6">
+        <div className="px-6 md:px-8 pb-8">
+          <div className="flex flex-col md:flex-row justify-between items-center md:items-end -mt-16 mb-6 gap-4">
             <div className="relative group">
-              <div className="h-32 w-32 rounded-full border-4 border-white bg-white shadow-lg overflow-hidden flex items-center justify-center">
+              <div className="h-32 w-32 rounded-3xl border-4 border-white bg-white shadow-xl overflow-hidden flex items-center justify-center transform group-hover:scale-[1.02] transition-transform duration-300">
                 {(isEditing ? formData.avatar : user.avatar) ? (
                     <img src={isEditing ? formData.avatar : user.avatar} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
-                    <span className="text-4xl font-bold text-primary-300">{user.fullName?.charAt(0)}</span>
+                    <span className="text-5xl font-bold text-primary-100 bg-primary-900 w-full h-full flex items-center justify-center">{user.fullName?.charAt(0)}</span>
                 )}
               </div>
-              {isEditing && <div onClick={() => fileInputRef.current.click()} className="absolute bottom-2 right-2 bg-white p-2 rounded-full shadow cursor-pointer text-gray-600 hover:text-primary-600 transition"><Camera className="h-5 w-5" /></div>}
+              {isEditing && <div onClick={() => fileInputRef.current.click()} className="absolute bottom-1 right-1 bg-gold-500 p-2.5 rounded-2xl shadow-lg cursor-pointer text-primary-900 hover:bg-white transition-colors border-2 border-white"><Camera className="h-5 w-5" /></div>}
               <input ref={fileInputRef} type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
             </div>
             
-            <div className="mt-4 md:mt-0 space-x-3">
+            <div className="flex gap-3 w-full md:w-auto">
               {isEditing ? (
                 <>
-                    <button onClick={() => { setIsEditing(false); setSelectedFile(null); setFormData({...formData, avatar: user.avatar}); }} className="px-4 py-2 bg-gray-100 rounded-lg font-bold text-gray-600">Annuler</button>
-                    <button onClick={handleSave} className="px-4 py-2 bg-primary-600 rounded-lg font-bold text-white shadow-lg">Enregistrer</button>
+                    <button onClick={() => { setIsEditing(false); setSelectedFile(null); setFormData({...formData, avatar: user.avatar}); }} className="flex-1 md:flex-none px-6 py-3 bg-gray-100 rounded-xl font-bold text-gray-600 hover:bg-gray-200 transition-colors">Annuler</button>
+                    <button onClick={handleSave} className="flex-1 md:flex-none px-6 py-3 bg-primary-900 text-white rounded-xl font-bold shadow-lg hover:bg-gold-500 hover:text-primary-900 transition-all flex items-center justify-center gap-2"><Save size={18}/> Enregistrer</button>
                 </>
               ) : (
-                <button onClick={() => setIsEditing(true)} className="px-6 py-2 border-2 border-gray-200 rounded-lg font-bold text-gray-600 hover:border-primary-600 hover:text-primary-600 transition">Modifier le profil</button>
+                <button onClick={() => setIsEditing(true)} className="w-full md:w-auto px-8 py-3 bg-white border-2 border-gray-100 rounded-xl font-bold text-gray-700 hover:border-gold-500 hover:text-gold-600 transition-all shadow-sm">Modifier le profil</button>
               )}
             </div>
           </div>
 
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 font-serif">{user.fullName}</h1>
-            <p className="text-primary-600 font-medium flex items-center gap-2 mb-4">
-              {user.email ? <><Mail size={16}/> {user.email}</> : <><Phone size={16}/> {user.phone}</>}
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl font-bold text-gray-900 font-serif mb-1">{user.fullName}</h1>
+            <p className="text-primary-600 font-bold flex items-center justify-center md:justify-start gap-2 mb-6 bg-primary-50 w-fit mx-auto md:mx-0 px-4 py-1 rounded-full text-sm">
+              {user.email ? <><Mail size={14} className="text-gold-600"/> {user.email}</> : <><Phone size={14} className="text-gold-600"/> {user.phone}</>}
             </p>
+
             {isEditing ? (
-              <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 bg-gray-50 p-6 rounded-xl border border-gray-200">
-                <div className="col-span-2">
-                    <label className="text-sm font-bold text-gray-700 mb-1 block">Bio</label>
-                    <textarea className="w-full p-3 border border-gray-300 rounded-xl outline-none" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} />
+              <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 bg-gray-50/50 p-4 md:p-8 rounded-[2rem] border border-gray-100">
+                <div className="col-span-1 md:col-span-2">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Bio / Description</label>
+                    <textarea className="w-full p-4 border-2 border-gray-100 rounded-2xl outline-none focus:border-gold-500 bg-white transition-all text-gray-700" rows="3" value={formData.bio} onChange={e => setFormData({...formData, bio: e.target.value})} placeholder="Parlez-nous de vous..." />
                 </div>
-                <div>
-                    <label className="text-sm font-bold text-gray-700 mb-1 block">Ville</label>
-                    <input type="text" className="w-full p-3 border border-gray-300 rounded-xl outline-none" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} />
+                <div className="w-full"> {/* ✅ Correction Responsivité Ville */}
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Ville</label>
+                    <input type="text" className="w-full p-4 border-2 border-gray-100 rounded-2xl outline-none focus:border-gold-500 bg-white transition-all text-gray-700" value={formData.city} onChange={e => setFormData({...formData, city: e.target.value})} placeholder="Ex: Dakar" />
                 </div>
-                <div>
-                    <label className="text-sm font-bold text-gray-700 mb-1 block">Téléphone</label>
-                    <input type="text" className="w-full p-3 border border-gray-300 rounded-xl outline-none" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} />
+                <div className="w-full">
+                    <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Téléphone</label>
+                    <input type="text" className="w-full p-4 border-2 border-gray-100 rounded-2xl outline-none focus:border-gold-500 bg-white transition-all text-gray-700" value={formData.phone} onChange={e => setFormData({...formData, phone: e.target.value})} placeholder="Ex: 77..." />
                 </div>
               </div>
             ) : (
-              <div className="mt-6 space-y-4">
-                <div className="bg-gray-50 p-4 rounded-xl border border-gray-100"><p className="text-gray-600 italic">{user.bio || "Aucune description."}</p></div>
-                <div className="flex gap-6 text-gray-600 text-sm font-medium">
-                  <div className="flex items-center"><MapPin className="h-5 w-5 mr-2 text-gold-500" />{user.city || "Ville non renseignée"}</div>
-                  <div className="flex items-center"><Phone className="h-5 w-5 mr-2 text-gold-500" />{user.phone || "Non renseigné"}</div>
+              <div className="mt-6 space-y-6">
+                <div className="bg-gray-50/80 p-6 rounded-2xl border border-gray-50 shadow-inner"><p className="text-gray-600 italic leading-relaxed">{user.bio || "Aucune description renseignée pour le moment."}</p></div>
+                <div className="flex flex-wrap justify-center md:justify-start gap-4 md:gap-8 text-gray-700 text-sm font-bold">
+                  <div className="flex items-center bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm"><MapPin className="h-4 w-4 mr-2 text-gold-500" />{user.city || "Ville non renseignée"}</div>
+                  <div className="flex items-center bg-white px-4 py-2 rounded-xl border border-gray-100 shadow-sm"><Phone className="h-4 w-4 mr-2 text-gold-500" />{user.phone || "Non renseigné"}</div>
                 </div>
               </div>
             )}
@@ -294,7 +295,8 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* BLOC 2 : COMMANDES */}
+      {/* BLOC 2 : COMMANDES (EN COURS DE DÉVELOPPEMENT) */}
+      {/*
       <div className="mb-12">
         <h2 className="text-2xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2"><ShoppingBag className="text-gold-500" /> Suivi de mes Commandes</h2>
         <div className="grid grid-cols-1 gap-8">
@@ -314,48 +316,58 @@ export default function Profile() {
             )) : <p className="text-center py-12 text-gray-400">Aucune commande.</p>}
         </div>
       </div>
+      */}
 
       {/* BLOC 3 : BILLETS */}
       {tickets.length > 0 && (
         <div className="mb-12">
-            <h2 className="text-2xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2"><Ticket className="text-gold-500" /> Mes Billets</h2>
+            <h2 className="text-2xl font-bold text-gray-900 font-serif mb-6 flex items-center gap-2 px-2"><Ticket className="text-gold-500" /> Mes Billets d'événements</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {tickets.map((ticket, idx) => (
-                <div key={idx} className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all group flex flex-col relative">
-                    <div className="h-32 bg-primary-900 flex items-center justify-center text-white"><Ticket size={40}/></div>
-                    <div className="p-6 flex-1 flex flex-col">
-                        <p className="font-bold text-lg mb-2">{ticket.event?.title || "Événement"}</p>
-                        <button onClick={() => setSelectedTicket(ticket)} className="mt-auto w-full py-3 rounded-xl border-2 border-primary-900 text-primary-900 font-bold hover:bg-primary-900 hover:text-white transition-all flex items-center justify-center gap-2"><Download size={18} /> Voir le Billet</button>
+                <motion.div whileHover={{ y: -5 }} key={idx} className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all group flex flex-col relative">
+                    <div className="h-32 bg-primary-900 flex items-center justify-center text-white relative">
+                        <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/arabesque.png')]"></div>
+                        <Ticket size={48} className="text-gold-500/50" />
+                        <div className="absolute bottom-4 left-4 right-4 flex justify-between items-end">
+                            <span className="text-[10px] font-black uppercase tracking-widest text-gold-500">Pass Officiel</span>
+                        </div>
                     </div>
-                </div>
+                    <div className="p-6 flex-1 flex flex-col">
+                        <p className="font-bold text-xl text-primary-900 mb-2 leading-tight">{ticket.event?.title || "Événement Spécial"}</p>
+                        <div className="flex items-center text-xs text-gray-400 font-bold gap-4 mb-6 uppercase tracking-wider">
+                            <span className="flex items-center gap-1"><Calendar size={14} className="text-gold-500"/> {ticket.event?.date ? new Date(ticket.event.date).toLocaleDateString() : "--/--"}</span>
+                        </div>
+                        <button onClick={() => setSelectedTicket(ticket)} className="mt-auto w-full py-4 rounded-2xl bg-gray-50 text-primary-900 font-bold hover:bg-primary-900 hover:text-white transition-all flex items-center justify-center gap-2 border border-gray-100"><QrCode size={18} /> Afficher mon billet</button>
+                    </div>
+                </motion.div>
                 ))}
             </div>
         </div>
       )}
 
       {/* ZONE DE DANGER : SUPPRESSION DU COMPTE */}
-      <div className="mt-12 pt-8 border-t border-red-100 mb-8">
-          <div className="bg-red-50 rounded-3xl p-6 border border-red-100 flex flex-col md:flex-row items-center justify-between gap-4">
-              <div>
-                  <h3 className="text-lg font-bold text-red-900 flex items-center gap-2">
-                      <Trash2 size={20} /> Zone de danger
+      <div className="mt-16 pt-8 border-t border-red-50 mb-8">
+          <div className="bg-red-50/50 rounded-[2rem] p-6 md:p-8 border border-red-100 flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="text-center md:text-left">
+                  <h3 className="text-lg font-black text-red-900 flex items-center justify-center md:justify-start gap-2 mb-2 uppercase tracking-tighter">
+                      <AlertCircle size={20} /> Suppression définitive
                   </h3>
-                  <p className="text-sm text-red-600">
-                      La suppression de votre compte est irréversible et effacera toutes vos données sur nos serveurs.
+                  <p className="text-sm text-red-700/80 max-w-md font-medium">
+                      Conformément au RGPD et aux règles de Google, vous pouvez supprimer toutes vos données. Cette action est irréversible.
                   </p>
               </div>
               <button 
                   onClick={() => setShowDeleteConfirm(true)}
-                  className="px-6 py-3 bg-white border-2 border-red-200 text-red-600 font-bold rounded-xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95 shadow-sm"
+                  className="w-full md:w-auto px-8 py-4 bg-white border-2 border-red-100 text-red-600 font-bold rounded-2xl hover:bg-red-600 hover:text-white hover:border-red-600 transition-all active:scale-95 shadow-sm"
               >
                   Supprimer mon compte
               </button>
           </div>
       </div>
 
-      <div className="pt-6 border-t border-gray-200">
-        <button onClick={() => logout(false)} className="text-red-600 font-bold hover:bg-red-50 px-4 py-2 rounded-lg transition flex items-center gap-2">
-            <LogOut size={20} /> Se déconnecter
+      <div className="flex justify-center pt-8">
+        <button onClick={() => logout(false)} className="group px-8 py-3 text-gray-400 font-bold hover:text-red-600 transition-all flex items-center gap-3 bg-gray-50 rounded-2xl">
+            <LogOut size={20} className="group-hover:translate-x-1 transition-transform" /> Se déconnecter de la session
         </button>
       </div>
 
@@ -367,25 +379,25 @@ export default function Profile() {
               initial={{ opacity: 0, scale: 0.9 }} 
               animate={{ opacity: 1, scale: 1 }} 
               exit={{ opacity: 0, scale: 0.9 }}
-              className="bg-white w-full max-w-sm rounded-3xl p-8 text-center shadow-2xl"
+              className="bg-white w-full max-w-sm rounded-[2.5rem] p-8 text-center shadow-2xl border border-red-50"
             >
-              <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-                <AlertCircle size={32} />
+              <div className="w-20 h-20 bg-red-50 text-red-600 rounded-3xl flex items-center justify-center mx-auto mb-6">
+                <Trash2 size={40} />
               </div>
-              <h2 className="text-xl font-bold text-gray-900 mb-2">Êtes-vous sûr ?</h2>
-              <p className="text-gray-500 text-sm mb-6">
-                  Cette action supprimera définitivement vos billets, commandes et accès.
+              <h2 className="text-2xl font-bold text-gray-900 mb-2 font-serif">Confirmation</h2>
+              <p className="text-gray-500 text-sm mb-8 leading-relaxed">
+                  Toutes vos données (billets, accès, profil) seront supprimées de nos serveurs MongoDB immédiatement.
               </p>
               <div className="flex flex-col gap-3">
                 <button 
                   onClick={handleDeleteAccount}
-                  className="w-full py-4 bg-red-600 text-white font-bold rounded-xl hover:bg-red-700 transition shadow-lg"
+                  className="w-full py-4 bg-red-600 text-white font-bold rounded-2xl hover:bg-red-700 transition shadow-lg active:scale-95"
                 >
-                  Oui, supprimer définitivement
+                  Confirmer la suppression
                 </button>
                 <button 
                   onClick={() => setShowDeleteConfirm(false)}
-                  className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-xl hover:bg-gray-200 transition"
+                  className="w-full py-4 bg-gray-100 text-gray-600 font-bold rounded-2xl hover:bg-gray-200 transition"
                 >
                   Annuler
                 </button>
