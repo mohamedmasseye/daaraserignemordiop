@@ -139,7 +139,7 @@ function StatCard({ title, value, icon, color, detail }) {
       <p className="text-gray-400 text-xs font-bold uppercase tracking-widest">{title}</p>
       <h3 className="text-2xl font-bold text-primary-900 my-1">{value}</h3>
       <p className="text-[10px] text-gray-500 font-medium">{detail}</p>
-    </div>
+    </div>  
   );
 }
 
