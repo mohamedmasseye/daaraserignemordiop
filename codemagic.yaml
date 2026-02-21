@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App (Validation)
+    name: Build iOS Daara App (Force CocoaPods)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
@@ -15,14 +15,19 @@ workflows:
         script: |
           cd daara-web
           npm run build
-      - name: Capacitor Sync
+      - name: Capacitor Sync & Force Pods
         script: |
           cd daara-web
+          # 1. On synchronise Capacitor
           npx cap sync ios
+          # 2. On supprime le fichier SPM pour forcer Xcode à utiliser CocoaPods
+          rm -f ios/App/Package.swift
+          # 3. On installe les dépendances via CocoaPods
+          cd ios/App && pod install
       - name: Build iOS (Validation Simulateur)
         script: | 
           cd daara-web/ios/App
-          # On compile pour simulateur (pas besoin de signature ni de compte Apple)
-          xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator
+          # ✅ Maintenant on utilise le .xcworkspace (créé par CocoaPods)
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator
     artifacts:
       - daara-web/ios/App/build/iphonesimulator/*.app
