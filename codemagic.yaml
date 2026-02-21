@@ -1,13 +1,13 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App (CocoaPods Manual Fix)
+    name: Build iOS Daara App (Final Fix)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       node: 22
       xcode: latest
       vars:
-        CAPACITOR_PROJECT_USE_SPM: "false" # ✅ On dit au système de ne pas toucher à SPM
+        CAPACITOR_PROJECT_USE_SPM: "false"
     scripts:
       - name: Install Dependencies
         script: |
@@ -17,27 +17,38 @@ workflows:
         script: |
           cd daara-web
           npm run build
-      - name: Force CocoaPods Generation
+      - name: Force CocoaPods & Build
         script: |
           cd daara-web
-          # 1. Nettoyage complet
+          # 1. Nettoyage total
           rm -rf ios
           npx cap add ios
           
-          # 2. Création MANUELLE du Podfile (Le fichier manquant)
-          echo "require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'" > ios/App/Podfile
-          echo "platform :ios, '14.0'" >> ios/App/Podfile
-          echo "use_frameworks!" >> ios/App/Podfile
-          echo "target 'App' do" >> ios/App/Podfile
-          echo "  capacitor_pods" >> ios/App/Podfile
-          echo "end" >> ios/App/Podfile
+          # 2. Suppression des fichiers SPM qui bloquent tout
+          rm -f ios/App/Package.swift
+          rm -rf ios/App/App.swiftpm
           
-          # 3. Synchronisation et installation
+          # 3. Création d'un Podfile manuel ultra-propre
+          cat > ios/App/Podfile <<EOF
+          platform :ios, '14.0'
+          use_frameworks!
+          
+          # On importe les fonctions Capacitor
+          require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
+          
+          target 'App' do
+            capacitor_pods
+          end
+          EOF
+          
+          # 4. Installation des dépendances via CocoaPods
           npx cap sync ios
           cd ios/App && pod install
+          
       - name: Build iOS (Validation Simulateur)
         script: | 
           cd daara-web/ios/App
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator
+          # On compile le workspace généré
+          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator | xcpretty
     artifacts:
       - daara-web/ios/App/build/iphonesimulator/*.app
