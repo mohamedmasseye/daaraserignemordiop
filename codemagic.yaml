@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App (Modern SPM)
+    name: Build iOS Daara (Version 8.1.0)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
@@ -18,14 +18,14 @@ workflows:
       - name: Capacitor Sync
         script: |
           cd daara-web
-          # On nettoie l'ancien dossier ios pour repartir sur une base SPM propre
+          # On laisse Capacitor créer lui-même les fichiers nécessaires
           rm -rf ios
           npx cap add ios
           npx cap sync ios
       - name: Build iOS (Validation Simulateur)
         script: | 
           cd daara-web/ios/App
-          # En mode SPM, Xcode gère tout via le .xcodeproj
+          # Compilation standard Xcode
           xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator | xcpretty
     artifacts:
       - daara-web/ios/App/build/iphonesimulator/*.app
