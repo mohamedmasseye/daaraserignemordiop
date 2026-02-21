@@ -1,11 +1,13 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App (CocoaPods Fix)
+    name: Build iOS Daara App (CocoaPods Manual Fix)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       node: 22
       xcode: latest
+      vars:
+        CAPACITOR_PROJECT_USE_SPM: "false" # ✅ On dit au système de ne pas toucher à SPM
     scripts:
       - name: Install Dependencies
         script: |
@@ -15,21 +17,27 @@ workflows:
         script: |
           cd daara-web
           npm run build
-      - name: Force Rebuild iOS Platform
+      - name: Force CocoaPods Generation
         script: |
           cd daara-web
-          # 1. On supprime le dossier ios pour éviter les restes de SPM
+          # 1. Nettoyage complet
           rm -rf ios
-          # 2. On rajoute la plateforme (cela va générer le Podfile car SPM est désactivé dans le json)
           npx cap add ios
-          # 3. On synchronise
+          
+          # 2. Création MANUELLE du Podfile (Le fichier manquant)
+          echo "require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'" > ios/App/Podfile
+          echo "platform :ios, '14.0'" >> ios/App/Podfile
+          echo "use_frameworks!" >> ios/App/Podfile
+          echo "target 'App' do" >> ios/App/Podfile
+          echo "  capacitor_pods" >> ios/App/Podfile
+          echo "end" >> ios/App/Podfile
+          
+          # 3. Synchronisation et installation
           npx cap sync ios
-          # 4. On installe les Pods
           cd ios/App && pod install
       - name: Build iOS (Validation Simulateur)
         script: | 
           cd daara-web/ios/App
-          # On compile le .xcworkspace généré par CocoaPods
           xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator
     artifacts:
       - daara-web/ios/App/build/iphonesimulator/*.app
