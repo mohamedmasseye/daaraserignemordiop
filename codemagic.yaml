@@ -15,17 +15,15 @@ workflows:
         script: |
           cd daara-web
           npm run build
-      - name: Capacitor Sync & Pods
+      - name: Capacitor Sync
         script: |
           cd daara-web
           npx cap sync ios
-          # ✅ On force l'installation des Pods pour générer le .xcworkspace
-          cd ios/App && pod install
       - name: Build iOS (.ipa)
         script: | 
           cd daara-web
-          # ✅ On utilise une commande plus simple qui cherche le projet automatiquement
-          xcode-project build-ipa --workspace daara-web/ios/App/App.xcworkspace --scheme App
+          # Puisque tu es en mode SPM, on utilise le .xcodeproj au lieu du .xcworkspace
+          xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
     artifacts:
       - daara-web/ios/App/build/ios/ipa/*.ipa
       - "*.ipa"
