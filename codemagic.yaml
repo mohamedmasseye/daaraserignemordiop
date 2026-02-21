@@ -1,13 +1,11 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App (Standard Fix)
+    name: Build iOS Daara App (Modern SPM)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
       node: 22
       xcode: latest
-      vars:
-        CAPACITOR_PROJECT_USE_SPM: "false" # On désactive le système qui pose problème
     scripts:
       - name: Install Dependencies
         script: |
@@ -17,38 +15,17 @@ workflows:
         script: |
           cd daara-web
           npm run build
-      - name: Force CocoaPods & Plugins
+      - name: Capacitor Sync
         script: |
           cd daara-web
-          # 1. On nettoie tout
+          # On nettoie l'ancien dossier ios pour repartir sur une base SPM propre
           rm -rf ios
           npx cap add ios
-          
-          # 2. On écrit un Podfile "Manuel" qui ne dépend pas des macros Capacitor
-          # On liste directement tes 3 plugins pour que Xcode les trouve à coup sûr
-          cat > ios/App/Podfile <<EOF
-          platform :ios, '14.0'
-          use_frameworks!
-
-          target 'App' do
-            # Core de Capacitor
-            pod 'Capacitor', :path => '../../node_modules/@capacitor/ios'
-            pod 'CapacitorCordova', :path => '../../node_modules/@capacitor/ios'
-            
-            # Tes Plugins (Installation directe)
-            pod 'CapacitorCommunityFcm', :path => '../../node_modules/@capacitor-community/fcm'
-            pod 'CapacitorPushNotifications', :path => '../../node_modules/@capacitor/push-notifications'
-            pod 'CapacitorGoogleAuth', :path => '../../node_modules/@codetrix-studio/capacitor-google-auth'
-          end
-          EOF
-          
-          # 3. Installation des Pods
-          cd ios/App && pod install
-          
+          npx cap sync ios
       - name: Build iOS (Validation Simulateur)
         script: | 
           cd daara-web/ios/App
-          # On utilise le workspace généré par nos soins
-          xcodebuild -workspace App.xcworkspace -scheme App -configuration Debug -sdk iphonesimulator | xcpretty
+          # En mode SPM, Xcode gère tout via le .xcodeproj
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator | xcpretty
     artifacts:
       - daara-web/ios/App/build/iphonesimulator/*.app
