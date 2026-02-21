@@ -8,14 +8,22 @@ workflows:
       xcode: latest
     scripts:
       - name: Install Dependencies
-        script: npm install
+        script: |
+          cd daara-web
+          npm install
       - name: Web Build
-        script: npm run build
+        script: |
+          cd daara-web
+          npm run build
       - name: Capacitor Sync
-        script: npx cap sync ios
+        script: |
+          cd daara-web
+          npx cap sync ios
       - name: Build iOS (.ipa)
         script: | 
-          # Cette partie génère le fichier final pour iPhone
+          cd daara-web
+          # Cette commande compile l'application pour iPhone
           xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
     artifacts:
-      - build/ios/ipa/*.ipa
+      - daara-web/build/ios/ipa/*.ipa
+      - daara-web/ios/App/build/ios/ipa/*.ipa
