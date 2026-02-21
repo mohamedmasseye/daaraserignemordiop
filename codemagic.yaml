@@ -1,6 +1,6 @@
 workflows:
   ios-workflow:
-    name: Build iOS Daara App
+    name: Build iOS Daara App (Validation)
     max_build_duration: 60
     instance_type: mac_mini_m2
     environment:
@@ -19,11 +19,10 @@ workflows:
         script: |
           cd daara-web
           npx cap sync ios
-      - name: Build iOS (.ipa)
+      - name: Build iOS (Validation Simulateur)
         script: | 
-          cd daara-web
-          # Puisque tu es en mode SPM, on utilise le .xcodeproj au lieu du .xcworkspace
-          xcode-project build-ipa --project ios/App/App.xcodeproj --scheme App
+          cd daara-web/ios/App
+          # On compile pour simulateur (pas besoin de signature ni de compte Apple)
+          xcodebuild -project App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator
     artifacts:
-      - daara-web/ios/App/build/ios/ipa/*.ipa
-      - "*.ipa"
+      - daara-web/ios/App/build/iphonesimulator/*.app
