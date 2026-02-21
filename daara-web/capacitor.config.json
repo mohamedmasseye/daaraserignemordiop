@@ -9,9 +9,6 @@
       "91.99.200.188:5000"
     ]
   },
-  "ios": {
-    "useSwiftPackageManager": false
-  },
   "plugins": {
     "CapacitorHttp": {
       "enabled": false
