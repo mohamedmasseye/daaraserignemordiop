@@ -10,7 +10,8 @@ workflows:
       - name: Install Dependencies
         script: |
           cd daara-web
-          npm install
+          # ✅ Ajout du flag pour ignorer les conflits de version
+          npm install --legacy-peer-deps 
       - name: Web Build
         script: |
           cd daara-web
@@ -22,7 +23,7 @@ workflows:
       - name: Build iOS (.ipa)
         script: | 
           cd daara-web
-          # Cette commande compile l'application pour iPhone
+          # Compilation du projet Xcode
           xcode-project build-ipa --workspace ios/App/App.xcworkspace --scheme App
     artifacts:
       - daara-web/build/ios/ipa/*.ipa
