@@ -14,8 +14,8 @@ workflows:
         bundle_identifier: com.daara.app
       node: 22
       xcode: latest
-      # Ajouter dans Codemagic → projet → Environment variables :
-      # GOOGLESERVICE_INFO_PLIST  (type: fichier, valeur: contenu base64 du GoogleService-Info.plist)
+      groups:
+        - ios_secrets   # contient GOOGLESERVICE_INFO_PLIST
       vars:
         BUNDLE_ID: "com.daara.app"
 
