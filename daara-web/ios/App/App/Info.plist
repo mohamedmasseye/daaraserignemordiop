@@ -2,12 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
+
+	<!-- ✅ Région de développement : français -->
 	<key>CFBundleDevelopmentRegion</key>
-	<string>en</string>
+	<string>fr</string>
+
 	<key>CFBundleDisplayName</key>
-        <string>Daara App</string>
+	<string>Daara App</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,16 +25,49 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+
+	<!-- ✅ URL Scheme pour Google Auth (REVERSED_CLIENT_ID) -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.1060878832216-kkdinu78sa2qu2p903037ln4httod4om</string>
+			</array>
+		</dict>
+	</array>
+
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+
+	<!-- ✅ Permissions iOS obligatoires -->
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Daara App a besoin d'accéder à votre galerie pour changer votre photo de profil.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>Daara App souhaite sauvegarder des images dans votre galerie.</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Daara App a besoin de la caméra pour prendre une photo de profil.</string>
+
+	<!-- ✅ Sécurité réseau HTTPS -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
 	<string>Main</string>
+
+	<!-- ✅ Architecture arm64 uniquement (armv7 obsolète depuis 2021) -->
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
-		<string>armv7</string>
+		<string>arm64</string>
 	</array>
+
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>

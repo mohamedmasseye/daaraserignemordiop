@@ -3,10 +3,9 @@
   "appName": "Daara App",
   "webDir": "dist",
   "server": {
-    "androidScheme": "http",
+    "androidScheme": "https",
     "allowNavigation": [
-      "91.99.200.188",
-      "91.99.200.188:5000"
+      "api.daaraserignemordiop.com"
     ]
   },
   "plugins": {
