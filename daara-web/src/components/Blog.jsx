@@ -235,6 +235,24 @@ export default function Blog() {
                           <Link to="/login-public" className="inline-block bg-white text-orange-600 px-6 py-2 rounded-full font-bold shadow-sm">Se connecter</Link>
                       </div>
                     )}
+                    {selectedPost.comments?.length > 0 && (
+                      <div className="space-y-6 mt-6">
+                        {selectedPost.comments.map((c, i) => (
+                          <div key={i} className="flex gap-4">
+                            <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold text-sm flex-shrink-0">
+                              {c.author?.charAt(0)?.toUpperCase() || '?'}
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex items-center gap-3 mb-1">
+                                <span className="font-bold text-gray-800">{c.author}</span>
+                                <span className="text-xs text-gray-400">{new Date(c.date).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                              </div>
+                              <p className="text-gray-600 leading-relaxed">{c.content}</p>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 </div>
               </motion.div>
