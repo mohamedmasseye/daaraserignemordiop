@@ -234,10 +234,17 @@ function AppContent() {
           const permission = await Notification.requestPermission();
           if (permission === 'granted') {
             const registration = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
-            await getToken(messaging, { 
-              serviceWorkerRegistration: registration, 
-              vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY' 
+            const token = await getToken(messaging, {
+              serviceWorkerRegistration: registration,
+              vapidKey: 'BJ74WZL1ng1TMrj6o-grxR-xu8JyKQtPyYMbYNkN2hXShorKLXraBUfHwanYJG1HYmJntivywjMNqmbUYTMGetY'
             });
+            if (token) {
+              await fetch('https://api.daaraserignemordiop.com/api/notifications/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ token })
+              });
+            }
             onMessage(messaging, (payload) => { alert(`🔔 ${payload.notification.title}\n${payload.notification.body}`); });
           }
         } catch (err) { console.log("Erreur initialisation Web Push", err); }
